@@ -95,7 +95,7 @@ class AppRouter {
           settings: settings,
           builder: (_) => CloudinaryVideoScreen(
             title: args['title'] as String? ?? 'Python lesson',
-            subtitle: args['subtitle'] as String? ?? 'SkillsBridge Academy',
+            subtitle: args['subtitle'] as String? ?? 'SkillBridge Academy',
             publicId: args['publicId'] as String? ?? '',
           ),
         );

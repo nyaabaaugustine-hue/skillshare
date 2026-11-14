@@ -1,4 +1,4 @@
-"""Draws the SkillsBridge robot app icon.
+"""Draws the SkillBridge robot app icon.
 
 Usage (from the project root):
     pip install pillow

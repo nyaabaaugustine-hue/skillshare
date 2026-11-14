@@ -1,5 +1,5 @@
 name: skillbridge_python_lab
-description: "SkillsBridge Academy - an offline-first mobile Python coding and learning app."
+description: "SkillBridge Academy - an offline-first mobile Python coding and learning app."
 publish_to: 'none'
 
 version: 1.0.0+1

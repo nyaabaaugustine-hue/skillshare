@@ -26,9 +26,9 @@ const sampleLesson = Lesson(
           output: 'Hello, Ama',
         ),
         CodeLine(
-          code: 'print("Welcome to SkillsBridge Academy!")',
+          code: 'print("Welcome to SkillBridge Academy!")',
           note: 'Python moves down to the next line and prints this message.',
-          output: 'Welcome to SkillsBridge Academy!',
+          output: 'Welcome to SkillBridge Academy!',
         ),
       ],
     ),

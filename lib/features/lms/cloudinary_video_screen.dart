@@ -567,7 +567,7 @@ class _LoadingOrError extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              hasError ? 'Check your connection and try again.' : 'Connecting securely to the SkillsBridge Academy video library.',
+              hasError ? 'Check your connection and try again.' : 'Connecting securely to the SkillBridge Academy video library.',
               style: const TextStyle(color: SkillBridgeColors.textMuted),
               textAlign: TextAlign.center,
             ),

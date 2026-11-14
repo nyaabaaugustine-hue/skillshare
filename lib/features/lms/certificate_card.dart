@@ -130,7 +130,7 @@ class CertificateCard extends StatelessWidget {
                       _Emblem(width: _clamp(width * 0.115, 52, 86)),
                       SizedBox(height: pad * 0.7),
                       Text(
-                        'SKILLSBRIDGE ACADEMY',
+                        'SKILLBRIDGE ACADEMY',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: _navy,
@@ -245,7 +245,7 @@ class CertificateCard extends StatelessWidget {
                           _RibbonSeal(size: sealSize),
                           Expanded(
                             child: _FooterField(
-                              value: 'SkillsBridge Academy',
+                              value: 'SkillBridge Academy',
                               caption: 'AUTHORISED SIGNATURE',
                               color: _navy,
                               fontSize: bodySize,

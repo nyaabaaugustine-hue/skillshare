@@ -52,7 +52,7 @@ class _LmsHubScreenState extends State<LmsHubScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'SkillsBridge Academy',
+              'SkillBridge Academy',
               style: TextStyle(fontWeight: FontWeight.w800),
             ),
             Text(
@@ -66,7 +66,7 @@ class _LmsHubScreenState extends State<LmsHubScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: 'About SkillsBridge Academy',
+            tooltip: 'About SkillBridge Academy',
             onPressed: () => _showAbout(context),
             icon: const Icon(Icons.info_outline_rounded),
           ),
@@ -112,12 +112,12 @@ class _LmsHubScreenState extends State<LmsHubScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'About SkillsBridge Academy',
+              'About SkillBridge Academy',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
             ),
             SizedBox(height: 10),
             Text(
-              'SkillsBridge Academy makes technology education more accessible for every learner.',
+              'SkillBridge Academy makes technology education more accessible for every learner.',
               style: TextStyle(color: SkillBridgeColors.textMuted, height: 1.5),
             ),
             SizedBox(height: 14),
@@ -1199,7 +1199,7 @@ class _NewsSection extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
       children: const [
         _NewsCard(
-          title: 'Welcome to the SkillsBridge Academy',
+          title: 'Welcome to the SkillBridge Academy',
           tag: 'GENERAL',
           date: '20 Sep 2026',
           text: 'Access Python lessons anytime, track your progress, and keep building your future.',
@@ -1531,7 +1531,7 @@ class _CertificateSectionState extends State<_CertificateSection> {
       final file = File(
         p.join(
           dir.path,
-          'SkillsBridge_Certificate_${safe.isEmpty ? 'Learner' : safe}.png',
+          'SkillBridge_Certificate_${safe.isEmpty ? 'Learner' : safe}.png',
         ),
       );
       await file.writeAsBytes(bytes, flush: true);
@@ -1984,7 +1984,7 @@ class _AboutSection extends StatelessWidget {
               ),
               SizedBox(height: 8),
               Text(
-                'SkillsBridge Academy makes technology education more accessible for every learner.',
+                'SkillBridge Academy makes technology education more accessible for every learner.',
                 style: TextStyle(color: Color(0xFFD8E9FF), height: 1.5),
               ),
             ],

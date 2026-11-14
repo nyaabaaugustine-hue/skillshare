@@ -26,7 +26,7 @@ class WelcomeScreen extends StatelessWidget {
           child: Column(
             children: [
               const Text(
-                'SkillsBridge',
+                'SkillBridge',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w800,

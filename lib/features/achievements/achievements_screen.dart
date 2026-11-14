@@ -107,7 +107,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 const SizedBox(height: 24),
                 const _SectionHeader(
                   title: 'Achievements',
-                  caption: 'Confirmed by the SkillsBridge Academy LMS',
+                  caption: 'Confirmed by the SkillBridge Academy LMS',
                   icon: Icons.emoji_events_outlined,
                 ),
                 const SizedBox(height: 12),
@@ -1058,7 +1058,7 @@ class _CoinNote extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              'SkillCoins are confirmed by the SkillsBridge Academy LMS after it grades '
+              'SkillCoins are confirmed by the SkillBridge Academy LMS after it grades '
               'your submission. This app never awards coins on its own.',
               style: TextStyle(
                 fontSize: 11.5,

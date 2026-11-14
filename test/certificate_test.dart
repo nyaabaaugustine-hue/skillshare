@@ -84,7 +84,7 @@ void main() {
     expect(find.byType(CertificateCard), findsOneWidget);
     expect(find.text('SAMPLE PREVIEW'), findsOneWidget);
     expect(find.text('Certificate of Completion'), findsOneWidget);
-    expect(find.text('SKILLSBRIDGE ACADEMY'), findsOneWidget);
+    expect(find.text('SKILLBRIDGE ACADEMY'), findsOneWidget);
     expect(find.text(pythonKickstartCourse.title), findsOneWidget);
 
     // ... but it is locked, so there is no download action yet.

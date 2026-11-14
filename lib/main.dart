@@ -127,7 +127,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SkillsBridge Academy',
+      title: 'SkillBridge Academy',
       debugShowCheckedModeBanner: false,
       theme: buildDarkTheme(),
       darkTheme: buildDarkTheme(),
@@ -153,8 +153,8 @@ class _BootstrapAppState extends State<BootstrapApp> {
   }
 }
 
-/// Pops the welcome video (with the English / Twi choice) once, right after
-/// a successful sign-in. It is mounted only while authenticated, so signing
+/// Pops the English welcome video once after a successful sign-in. It is
+/// mounted only while authenticated, so signing
 /// out and back in shows it again.
 class _WelcomeGate extends StatefulWidget {
   const _WelcomeGate({required this.child});

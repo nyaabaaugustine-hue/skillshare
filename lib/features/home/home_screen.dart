@@ -617,7 +617,7 @@ class _LmsDrawer extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'SKILLSBRIDGE ACADEMY',
+                          'SKILLBRIDGE ACADEMY',
                           style: TextStyle(
                             color: Color(0xFFFFE4D8),
                             fontSize: 11,
@@ -734,7 +734,7 @@ class _LmsDrawer extends StatelessWidget {
                   const Divider(height: 30),
                   _DrawerItem(
                     icon: Icons.info_outline_rounded,
-                    label: 'About SkillsBridge Academy',
+                    label: 'About SkillBridge Academy',
                     caption: 'Learn • Build • Grow',
                     onTap: () => onDestinationSelected(4),
                   ),
@@ -850,7 +850,7 @@ class _BrandHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'SkillsBridge ACADEMY',
+                      'SkillBridge ACADEMY',
                       style: TextStyle(
                         color: Color(0xFFBFE0FF),
                         fontSize: 12,
@@ -926,7 +926,7 @@ class _LearnerGreeting extends StatelessWidget {
                 Text(
                   hasStarted
                       ? 'Welcome back'
-                      : 'Welcome to SkillsBridge Academy',
+                      : 'Welcome to SkillBridge Academy',
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
@@ -1224,7 +1224,7 @@ class _ProgressCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'SkillCoins are verified by your SkillsBridge Academy account.',
+              'SkillCoins are verified by your SkillBridge Academy account.',
               style: TextStyle(
                 fontSize: 12,
                 color: SkillBridgeColors.textMuted,

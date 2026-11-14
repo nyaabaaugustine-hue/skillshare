@@ -508,7 +508,7 @@ class AuthController extends ChangeNotifier {
 
     if (_config?.requiresCloudAuth ?? kReleaseMode) {
       throw const _AuthFailure(
-        'Shared sign-in is not configured. Please contact SkillsBridge Academy '
+        'Shared sign-in is not configured. Please contact SkillBridge Academy '
         'support before creating an account.',
       );
     }

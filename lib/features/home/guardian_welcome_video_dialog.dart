@@ -82,7 +82,7 @@ class _GuardianWelcomeVideoDialogState
                   children: [
                     const Expanded(
                       child: Text(
-                        'Welcome to SkillsBridge Academy',
+                        'Welcome to SkillBridge Academy',
                         style: TextStyle(
                           color: SkillBridgeColors.textPrimary,
                           fontSize: 18,

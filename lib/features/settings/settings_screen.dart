@@ -272,7 +272,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 color: SkillBridgeColors.textPrimary,
                               ),
                               child: const Text(
-                                'print("Hello, SkillsBridge Academy!")',
+                                'print("Hello, SkillBridge Academy!")',
                               ),
                             ),
                           ),
@@ -368,7 +368,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       colors: IconBadge.blue,
                       title: 'How your data is handled',
                       subtitle:
-                          'Your code is stored on this device. It is only sent to the SkillsBridge Academy LMS '
+                          'Your code is stored on this device. It is only sent to the SkillBridge Academy LMS '
                           'when you tap Submit. We do not collect phone numbers or run advertising.',
                     ),
                     _SettingTile(
@@ -390,7 +390,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       icon: Icons.info_rounded,
                       colors: IconBadge.gold,
                       iconColor: Color(0xFF2A1D00),
-                      title: 'SkillsBridge Academy',
+                      title: 'SkillBridge Academy',
                       subtitle:
                           'Version $appVersion • Offline-first Python practice',
                     ),

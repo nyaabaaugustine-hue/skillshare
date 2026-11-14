@@ -532,7 +532,7 @@ class _BrandRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
             Text(
-              'SKILLSBRIDGE',
+              'SKILLBRIDGE',
               style: TextStyle(
                 color: SkillBridgeColors.textPrimary,
                 fontSize: 13,

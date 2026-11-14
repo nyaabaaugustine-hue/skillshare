@@ -32,7 +32,7 @@ class LearningPlace {
 /// Uploads are named `<index>._<Words_joined_by_underscores>.mp4`, so the name
 /// is the file name with the index prefix and the extension removed and the
 /// underscores turned back into spaces. The academy tag that some uploads carry
-/// (`SEPNET`, any case) is shown as "SkillsBridge Academy". Reading the name off the
+/// (`SEPNET`, any case) is shown as "SkillBridge Academy". Reading the name off the
 /// link keeps the app and the video library in step.
 ///
 /// The tag is matched *after* the underscores become spaces: `_` is a word
@@ -45,8 +45,8 @@ String videoTitleFromPublicId(String publicId) {
       .replaceFirst(RegExp(r'^\d+\._?'), '')
       .replaceAll('_', ' ')
       .replaceAll(
-        RegExp(r'\b(sepnet|skillsbridge)\b', caseSensitive: false),
-        'SkillsBridge Academy',
+        RegExp(r'\b(sepnet|skills?bridge)\b', caseSensitive: false),
+        'SkillBridge Academy',
       )
       .replaceAll(RegExp(r'\s+'), ' ')
       .trim();

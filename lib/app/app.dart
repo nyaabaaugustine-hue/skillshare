@@ -12,7 +12,7 @@ class SkillBridgeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SkillsBridge Academy',
+      title: 'SkillBridge Academy',
       debugShowCheckedModeBanner: false,
       theme: buildDarkTheme(),
       darkTheme: buildDarkTheme(),

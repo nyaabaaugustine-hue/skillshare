@@ -93,7 +93,7 @@ class CompletionView extends StatelessWidget {
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'Your XP is confirmed by SkillsBridge Academy when you are online.',
+                  'Your XP is confirmed by SkillBridge Academy when you are online.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,

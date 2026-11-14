@@ -9,7 +9,7 @@ import '../../shared/widgets/icon_badge.dart';
 
 /// Cold-start splash on a clean white canvas.
 ///
-/// The SkillsBridge mark rises into the centre while two counter-rotating
+/// The SkillBridge mark rises into the centre while two counter-rotating
 /// rings of learning icons orbit it. Icons on the far side of the orbit are
 /// drawn behind the mark, smaller and dimmer; icons on the near side are drawn
 /// in front, larger and brighter, so the rings read as real depth rather than a
@@ -301,7 +301,7 @@ class _SplashScreenState extends State<SplashScreen>
                   from: 0.45,
                   to: 0.75,
                   child: const Text(
-                    'SKILLSBRIDGE ACADEMY',
+                    'SKILLBRIDGE ACADEMY',
                     style: TextStyle(
                       color: _inkMuted,
                       fontSize: 12.5,
@@ -364,7 +364,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-/// The SkillsBridge mark, drawn from the transparent asset so it sits directly
+/// The SkillBridge mark, drawn from the transparent asset so it sits directly
 /// on the white canvas without a white tile around it.
 class _LogoMark extends StatelessWidget {
   const _LogoMark({required this.size});
@@ -382,7 +382,7 @@ class _LogoMark extends StatelessWidget {
           width: size,
           fit: BoxFit.contain,
           filterQuality: FilterQuality.high,
-          semanticLabel: 'SkillsBridge Academy logo',
+          semanticLabel: 'SkillBridge Academy logo',
         ),
       ),
     );
