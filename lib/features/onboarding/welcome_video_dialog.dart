@@ -16,7 +16,7 @@ enum WelcomeLanguage {
 }
 
 const String _welcomeVideoEnglish =
-    'https://res.cloudinary.com/jrqocjcd/video/upload/v1793550785/newvid.mp4';
+    'https://res.cloudinary.com/dx1nrew3h/video/upload/v1794677999/nnnnewww_jl1qzc.mp4';
 
 /// Cloudinary URL of the Twi welcome video.
 const String _welcomeVideoTwi =
