@@ -14,16 +14,15 @@ Future<void> showGuardianCredentialsSheet(
   BuildContext context, {
   required GuardianCredentials credentials,
   required String studentName,
-}) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _GuardianCredentialsSheet(
-        credentials: credentials,
-        studentName: studentName,
-      ),
-    );
+}) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  backgroundColor: Colors.transparent,
+  builder: (context) => _GuardianCredentialsSheet(
+    credentials: credentials,
+    studentName: studentName,
+  ),
+);
 
 class _GuardianCredentialsSheet extends StatelessWidget {
   const _GuardianCredentialsSheet({
@@ -107,7 +106,10 @@ class _GuardianCredentialsSheet extends StatelessWidget {
             const Text(
               'You can reset the parent password later in Settings.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: SkillBridgeColors.textMuted, fontSize: 11.5),
+              style: TextStyle(
+                color: SkillBridgeColors.textMuted,
+                fontSize: 11.5,
+              ),
             ),
           ],
         ),

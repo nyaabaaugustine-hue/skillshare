@@ -5,11 +5,14 @@ import 'package:skillbridge_python_lab/core/storage/settings_repository.dart';
 /// App-level preferences (theme, editor sizing) backed by [SettingsRepository].
 class SettingsController extends ChangeNotifier {
   SettingsController(this._repository)
-      : _themeMode = _parseThemeMode(_repository.themeMode),
-        _editorFontSize = _repository.editorFontSize,
-        _tabSize = _repository.tabSize,
-        _wordWrap = _repository.wordWrap,
-        _autoSaveDraft = _repository.autoSaveDraft;
+    : _themeMode = _parseThemeMode(_repository.themeMode),
+      _editorFontSize = _repository.editorFontSize,
+      _tabSize = _repository.tabSize,
+      _wordWrap = _repository.wordWrap,
+      _autoSaveDraft = _repository.autoSaveDraft,
+      _reminderEnabled = _repository.reminderEnabled,
+      _reminderHour = _repository.reminderHour,
+      _reminderMinute = _repository.reminderMinute;
 
   final SettingsRepository _repository;
 
@@ -18,12 +21,19 @@ class SettingsController extends ChangeNotifier {
   int _tabSize;
   bool _wordWrap;
   bool _autoSaveDraft;
+  bool _reminderEnabled;
+  int _reminderHour;
+  int _reminderMinute;
 
   ThemeMode get themeMode => _themeMode;
   double get editorFontSize => _editorFontSize;
   int get tabSize => _tabSize;
   bool get wordWrap => _wordWrap;
   bool get autoSaveDraft => _autoSaveDraft;
+
+  bool get reminderEnabled => _reminderEnabled;
+  int get reminderHour => _reminderHour;
+  int get reminderMinute => _reminderMinute;
 
   static ThemeMode _parseThemeMode(String value) {
     switch (value) {
@@ -72,6 +82,20 @@ class SettingsController extends ChangeNotifier {
     _autoSaveDraft = value;
     notifyListeners();
     await _repository.setAutoSaveDraft(value);
+  }
+
+  Future<void> setReminderEnabled(bool value) async {
+    if (value == _reminderEnabled) return;
+    _reminderEnabled = value;
+    notifyListeners();
+    await _repository.setReminderEnabled(value);
+  }
+
+  Future<void> setReminderTime({required int hour, required int minute}) async {
+    _reminderHour = hour;
+    _reminderMinute = minute;
+    notifyListeners();
+    await _repository.setReminderTime(hour: hour, minute: minute);
   }
 
   /// Number of spaces inserted by the indentation shortcut.

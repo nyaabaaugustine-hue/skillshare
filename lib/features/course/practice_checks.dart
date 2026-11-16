@@ -13,13 +13,54 @@ class PracticeCheck {
 
 /// Outcome of checking a real run against a practice step's requirements.
 class PracticeVerdict {
-  const PracticeVerdict(this.checks);
+  const PracticeVerdict(this.checks, {this.diff = const []});
 
   final List<PracticeCheck> checks;
+
+  /// Expected-versus-actual lines shown when the run failed. Empty when the
+  /// step passed or the step has no comparable expected output.
+  final List<String> diff;
 
   bool get passed => checks.isNotEmpty && checks.every((c) => c.passed);
 
   int get passedCount => checks.where((c) => c.passed).length;
+}
+
+/// Builds the "what you should have seen" comparison for a failed run.
+///
+/// Beginners cannot tell "wrong number" from "wrong words" by reading a
+/// checklist, so the expected and real output are shown side by side, capped so
+/// a runaway loop cannot flood the screen.
+List<String> practiceDiff({
+  required CodeBlock block,
+  required ExecutionResult result,
+}) {
+  final printed = result.stdout.replaceAll('\r\n', '\n').trim();
+  final actualLines = printed.isEmpty
+      ? const <String>['(nothing)']
+      : printed.split('\n').take(6).toList();
+  const cap = 6;
+
+  final expected = block.expectedOutput?.trim();
+  if (expected != null && expected.isNotEmpty) {
+    return <String>[
+      'Expected:',
+      ...expected.split('\n').take(cap),
+      'You printed:',
+      ...actualLines,
+    ];
+  }
+
+  final missing = block.outputContains
+      .where((token) => !printed.contains(token))
+      .toList();
+  if (missing.isEmpty) return const <String>[];
+  return <String>[
+    'Missing from your output:',
+    ...missing.take(cap).map((token) => '  "$token"'),
+    'You printed:',
+    ...actualLines,
+  ];
 }
 
 /// Hands the editor everything it needs to run a course practice step: what to
@@ -132,6 +173,15 @@ PracticeVerdict evaluatePractice({
     );
   }
 
+  for (final literal in block.forbiddenLiterals) {
+    checks.add(
+      PracticeCheck(
+        label: 'Total worked out in code, not typed as text',
+        passed: !source.contains(literal),
+      ),
+    );
+  }
+
   final expected = block.expectedOutput?.trim();
   if (expected != null && expected.isNotEmpty) {
     checks.add(
@@ -142,5 +192,10 @@ PracticeVerdict evaluatePractice({
     );
   }
 
-  return PracticeVerdict(checks);
+  final verdict = PracticeVerdict(checks);
+  if (verdict.passed) return verdict;
+  return PracticeVerdict(
+    checks,
+    diff: practiceDiff(block: block, result: result),
+  );
 }

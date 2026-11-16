@@ -22,8 +22,9 @@ class EditorController extends ChangeNotifier {
     required AppDependencies deps,
     required this.exercise,
     Duration? autosaveDebounce,
-  })  : _deps = deps,
-        _autosaveDebounce = autosaveDebounce ?? const Duration(milliseconds: 1500);
+  }) : _deps = deps,
+       _autosaveDebounce =
+           autosaveDebounce ?? const Duration(milliseconds: 1500);
 
   final AppDependencies _deps;
   final Exercise exercise;
@@ -128,12 +129,14 @@ class EditorController extends ChangeNotifier {
     _result = null;
     notifyListeners();
     try {
-      final result = await _deps.runtime.execute(ExecutionRequest(
-        code: _code,
-        stdinLines: stdinLines,
-        timeout: _deps.config.executionTimeout,
-        maxOutputChars: _deps.config.maxOutputChars,
-      ));
+      final result = await _deps.runtime.execute(
+        ExecutionRequest(
+          code: _code,
+          stdinLines: stdinLines,
+          timeout: _deps.config.executionTimeout,
+          maxOutputChars: _deps.config.maxOutputChars,
+        ),
+      );
       _result = result;
       return result;
     } catch (e) {
@@ -204,7 +207,8 @@ class EditorController extends ChangeNotifier {
 
       if (!_deps.connectivity.isOnline) {
         _lastSubmitOutcome = SubmitOutcome.queuedOffline;
-        _submitMessage = "Saved offline. It will be sent when you're back online.";
+        _submitMessage =
+            "Saved offline. It will be sent when you're back online.";
         return _lastSubmitOutcome!;
       }
 
@@ -224,34 +228,44 @@ class EditorController extends ChangeNotifier {
     try {
       final receipt = await _deps.lmsClient.submitSolution(submission);
       final accepted = receipt.verdict == GradeVerdict.accepted;
-      await _deps.submissions.update(submission.copyWith(
-        syncState: accepted ? SubmissionSyncState.accepted : SubmissionSyncState.rejected,
-        attemptCount: submission.attemptCount + 1,
-        lastAttemptAt: DateTime.now(),
-        serverResponseRef: receipt.serverRef,
-        serverStatus: receipt.verdict.name,
-      ));
+      await _deps.submissions.update(
+        submission.copyWith(
+          syncState: accepted
+              ? SubmissionSyncState.accepted
+              : SubmissionSyncState.rejected,
+          attemptCount: submission.attemptCount + 1,
+          lastAttemptAt: DateTime.now(),
+          serverResponseRef: receipt.serverRef,
+          serverStatus: receipt.verdict.name,
+        ),
+      );
       _submitMessage = receipt.message;
       return accepted ? SubmitOutcome.accepted : SubmitOutcome.rejected;
     } on AuthenticationException {
-      await _deps.submissions.update(submission.copyWith(
-        syncState: SubmissionSyncState.failed,
-        lastError: 'Session expired',
-      ));
+      await _deps.submissions.update(
+        submission.copyWith(
+          syncState: SubmissionSyncState.failed,
+          lastError: 'Session expired',
+        ),
+      );
       _submitMessage = 'Saved. Sign in again to send it.';
       return SubmitOutcome.authExpired;
     } on NetworkException {
-      await _deps.submissions.update(submission.copyWith(
-        syncState: SubmissionSyncState.failed,
-        lastError: 'Network problem',
-      ));
+      await _deps.submissions.update(
+        submission.copyWith(
+          syncState: SubmissionSyncState.failed,
+          lastError: 'Network problem',
+        ),
+      );
       _submitMessage = "Saved. It will send when you're back online.";
       return SubmitOutcome.queuedOffline;
     } on AppException catch (e) {
-      await _deps.submissions.update(submission.copyWith(
-        syncState: SubmissionSyncState.failed,
-        lastError: e.userMessage,
-      ));
+      await _deps.submissions.update(
+        submission.copyWith(
+          syncState: SubmissionSyncState.failed,
+          lastError: e.userMessage,
+        ),
+      );
       _submitMessage = e.userMessage;
       return SubmitOutcome.failed;
     }

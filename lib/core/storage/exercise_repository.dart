@@ -17,34 +17,34 @@ class ExerciseRepository {
   Future<void> upsertAll(List<Exercise> exercises) async {
     final batch = _db.batch();
     for (final exercise in exercises) {
-      batch.insert(
-        'exercises',
-        {
-          'exercise_id': exercise.id,
-          'lesson_id': exercise.lessonId,
-          'title': exercise.title,
-          'instructions': exercise.instructions,
-          'objectives': _join(exercise.objectives),
-          'starter_code': exercise.starterCode,
-          'requirements': _join(exercise.requirements),
-          'hints': _join(exercise.hints),
-          // Null rather than '{}' when empty, so the column stays small and a
-          // row that predates schema 3 is indistinguishable from one whose
-          // exercise simply has no lesson.
-          'lesson': exercise.lesson.isNotEmpty
-              ? jsonEncode(exercise.lesson.toJson())
-              : null,
-          'version': exercise.version,
-          'updated_at': DateTime.now().millisecondsSinceEpoch,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      batch.insert('exercises', {
+        'exercise_id': exercise.id,
+        'lesson_id': exercise.lessonId,
+        'title': exercise.title,
+        'instructions': exercise.instructions,
+        'objectives': _join(exercise.objectives),
+        'starter_code': exercise.starterCode,
+        'requirements': _join(exercise.requirements),
+        'hints': _join(exercise.hints),
+        // Null rather than '{}' when empty, so the column stays small and a
+        // row that predates schema 3 is indistinguishable from one whose
+        // exercise simply has no lesson.
+        'lesson': exercise.lesson.isNotEmpty
+            ? jsonEncode(exercise.lesson.toJson())
+            : null,
+        'version': exercise.version,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
     await batch.commit(noResult: true);
   }
 
   Future<List<Exercise>> listAll({int limit = 100}) async {
-    final rows = await _db.query('exercises', orderBy: 'updated_at DESC', limit: limit);
+    final rows = await _db.query(
+      'exercises',
+      orderBy: 'updated_at DESC',
+      limit: limit,
+    );
     return rows.map(_fromRow).toList();
   }
 
@@ -92,15 +92,15 @@ class ExerciseRepository {
   }
 
   static Exercise _fromRow(Map<String, Object?> row) => Exercise(
-        id: row['exercise_id'] as String,
-        lessonId: row['lesson_id'] as String?,
-        title: row['title'] as String,
-        instructions: row['instructions'] as String,
-        starterCode: row['starter_code'] as String,
-        objectives: _split(row['objectives']),
-        requirements: _split(row['requirements']),
-        hints: _split(row['hints']),
-        lesson: _lessonFrom(row['lesson']),
-        version: (row['version'] as num).toInt(),
-      );
+    id: row['exercise_id'] as String,
+    lessonId: row['lesson_id'] as String?,
+    title: row['title'] as String,
+    instructions: row['instructions'] as String,
+    starterCode: row['starter_code'] as String,
+    objectives: _split(row['objectives']),
+    requirements: _split(row['requirements']),
+    hints: _split(row['hints']),
+    lesson: _lessonFrom(row['lesson']),
+    version: (row['version'] as num).toInt(),
+  );
 }

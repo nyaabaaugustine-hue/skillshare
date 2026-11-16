@@ -23,8 +23,8 @@ import 'schema_migrations.dart';
 /// belong in platform secure storage; see `docs/SECURITY_AND_PRIVACY.md`.
 class AppDatabase {
   AppDatabase({DatabaseFactory? factory, String? path})
-      : _factory = factory,
-        _overridePath = path;
+    : _factory = factory,
+      _overridePath = path;
 
   final DatabaseFactory? _factory;
   final String? _overridePath;
@@ -53,7 +53,9 @@ class AppDatabase {
   Future<void> open() async {
     if (_db != null) return;
     final factory = _factory ?? _platformFactory();
-    final path = _overridePath ?? p.join(await factory.getDatabasesPath(), 'skillbridge_lab.db');
+    final path =
+        _overridePath ??
+        p.join(await factory.getDatabasesPath(), 'skillbridge_lab.db');
     _db = await factory.openDatabase(
       path,
       options: OpenDatabaseOptions(
@@ -63,11 +65,8 @@ class AppDatabase {
           await db.execute('PRAGMA foreign_keys = ON');
         },
         onCreate: (db, version) => createLatestSchema(db),
-        onUpgrade: (db, oldVersion, newVersion) => runMigrations(
-          db,
-          from: oldVersion,
-          to: newVersion,
-        ),
+        onUpgrade: (db, oldVersion, newVersion) =>
+            runMigrations(db, from: oldVersion, to: newVersion),
       ),
     );
   }

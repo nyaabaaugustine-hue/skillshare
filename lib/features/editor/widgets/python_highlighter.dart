@@ -25,18 +25,75 @@ class PythonSyntaxHighlighter {
   const PythonSyntaxHighlighter();
 
   static const Set<String> keywords = {
-    'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await', 'break',
-    'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally',
-    'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal',
-    'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield',
-    'match', 'case',
+    'False',
+    'None',
+    'True',
+    'and',
+    'as',
+    'assert',
+    'async',
+    'await',
+    'break',
+    'class',
+    'continue',
+    'def',
+    'del',
+    'elif',
+    'else',
+    'except',
+    'finally',
+    'for',
+    'from',
+    'global',
+    'if',
+    'import',
+    'in',
+    'is',
+    'lambda',
+    'nonlocal',
+    'not',
+    'or',
+    'pass',
+    'raise',
+    'return',
+    'try',
+    'while',
+    'with',
+    'yield',
+    'match',
+    'case',
   };
 
   static const Set<String> builtins = {
-    'print', 'input', 'len', 'range', 'int', 'float', 'str', 'bool', 'list',
-    'dict', 'set', 'tuple', 'sum', 'min', 'max', 'abs', 'round', 'sorted',
-    'enumerate', 'zip', 'map', 'filter', 'type', 'isinstance', 'open',
-    'append', 'keys', 'values', 'items',
+    'print',
+    'input',
+    'len',
+    'range',
+    'int',
+    'float',
+    'str',
+    'bool',
+    'list',
+    'dict',
+    'set',
+    'tuple',
+    'sum',
+    'min',
+    'max',
+    'abs',
+    'round',
+    'sorted',
+    'enumerate',
+    'zip',
+    'map',
+    'filter',
+    'type',
+    'isinstance',
+    'open',
+    'append',
+    'keys',
+    'values',
+    'items',
   };
 
   /// Symbolic operators that may be longer than one character (`==`, `!=`,
@@ -71,9 +128,8 @@ class PythonSyntaxHighlighter {
       // Strings (single, double, and triple-quoted).
       if (ch == '"' || ch == "'") {
         final start = i;
-        final triple = i + 2 < source.length &&
-            source[i + 1] == ch &&
-            source[i + 2] == ch;
+        final triple =
+            i + 2 < source.length && source[i + 1] == ch && source[i + 2] == ch;
         final quote = triple ? ch * 3 : ch;
         i += quote.length;
         while (i < source.length) {
@@ -97,12 +153,17 @@ class PythonSyntaxHighlighter {
       }
 
       // Numbers (incl. simple floats and underscores).
-      if (_isDigit(ch) || (ch == '.' && i + 1 < source.length && _isDigit(source[i + 1]))) {
+      if (_isDigit(ch) ||
+          (ch == '.' && i + 1 < source.length && _isDigit(source[i + 1]))) {
         final start = i;
         while (i < source.length &&
-            (_isDigit(source[i]) || source[i] == '.' || source[i] == '_' ||
-                source[i] == 'e' || source[i] == 'E' ||
-                ((source[i] == '+' || source[i] == '-') && i > start &&
+            (_isDigit(source[i]) ||
+                source[i] == '.' ||
+                source[i] == '_' ||
+                source[i] == 'e' ||
+                source[i] == 'E' ||
+                ((source[i] == '+' || source[i] == '-') &&
+                    i > start &&
                     (source[i - 1] == 'e' || source[i - 1] == 'E')))) {
           i++;
         }
@@ -119,7 +180,9 @@ class PythonSyntaxHighlighter {
         final word = source.substring(start, i);
         final type = keywords.contains(word)
             ? CodeTokenType.keyword
-            : (builtins.contains(word) ? CodeTokenType.builtin : CodeTokenType.identifier);
+            : (builtins.contains(word)
+                  ? CodeTokenType.builtin
+                  : CodeTokenType.identifier);
         flush(word, type);
         continue;
       }
@@ -128,7 +191,10 @@ class PythonSyntaxHighlighter {
       if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
         final start = i;
         while (i < source.length &&
-            (source[i] == ' ' || source[i] == '\t' || source[i] == '\n' || source[i] == '\r')) {
+            (source[i] == ' ' ||
+                source[i] == '\t' ||
+                source[i] == '\n' ||
+                source[i] == '\r')) {
           i++;
         }
         flush(source.substring(start, i), CodeTokenType.plain);
@@ -158,7 +224,8 @@ class PythonSyntaxHighlighter {
     return tokens;
   }
 
-  static bool _isDigit(String ch) => ch.codeUnitAt(0) >= 0x30 && ch.codeUnitAt(0) <= 0x39;
+  static bool _isDigit(String ch) =>
+      ch.codeUnitAt(0) >= 0x30 && ch.codeUnitAt(0) <= 0x39;
 
   static bool _isIdentStart(String ch) {
     final c = ch.codeUnitAt(0);

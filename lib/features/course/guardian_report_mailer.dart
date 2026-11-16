@@ -26,8 +26,8 @@ class GuardianReportMailer {
     required this.config,
     http.Client? client,
     DateTime Function()? clock,
-  })  : _http = client ?? http.Client(),
-        _clock = clock ?? DateTime.now;
+  }) : _http = client ?? http.Client(),
+       _clock = clock ?? DateTime.now;
 
   final AppConfig config;
   final http.Client _http;

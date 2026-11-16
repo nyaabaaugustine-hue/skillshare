@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:skillbridge_python_lab/core/di/app_dependencies.dart';
@@ -8,6 +8,7 @@ import 'package:skillbridge_python_lab/features/settings/settings_controller.dar
 import 'package:skillbridge_python_lab/features/editor/editor_controller.dart';
 import 'package:skillbridge_python_lab/features/exercises/exercise.dart';
 import 'package:skillbridge_python_lab/app/theme.dart';
+import 'package:skillbridge_python_lab/features/course/course_models.dart';
 import 'package:skillbridge_python_lab/features/course/practice_checks.dart';
 import 'package:skillbridge_python_lab/features/python_runtime/execution_result.dart';
 
@@ -101,7 +102,7 @@ class _EditorScreenState extends State<EditorScreen> {
       _initialiseError = e is AppException
           ? '${e.userMessage} You can still edit your code and try again.'
           : 'Your saved draft could not be loaded. You can still edit your '
-              'code and try again.';
+                'code and try again.';
     } finally {
       _initialising = false;
       if (mounted) setState(() {});
@@ -401,7 +402,8 @@ class _EditorScreenState extends State<EditorScreen> {
                   ),
                 ),
               ),
-              if (_showInstructions) _InstructionsCard(exercise: widget.exercise),
+              if (_showInstructions)
+                _InstructionsCard(exercise: widget.exercise),
             ],
             if (_initialiseError != null)
               _RuntimeWarning(message: _initialiseError!, onRetry: _initialise),
@@ -453,20 +455,22 @@ class _EditorScreenState extends State<EditorScreen> {
             // Keyboard up: a one-line console keeps recent output glanceable
             // without stealing the editor's height.
             SizedBox(
-              height: keyboardVisible
-                  ? 84
-                  : (_verdict == null ? 160 : 100),
+              height: keyboardVisible ? 84 : (_verdict == null ? 160 : 100),
               child: OutputConsole(
                 result: _editor.result,
                 isRunning: _editor.isRunning,
                 compact: keyboardVisible,
+                source: _editor.code,
               ),
             ),
             // The checklist is post-run feedback the learner reads between
             // edits, not while typing; hiding it while the keyboard is up keeps
             // a short phone from overflowing.
             if (_verdict != null && !keyboardVisible)
-              _ChecklistPanel(verdict: _verdict!),
+              _ChecklistPanel(
+                verdict: _verdict!,
+                block: widget.practice?.block,
+              ),
             ShortcutBar(controller: _codeController, focusNode: _focusNode),
             _ActionBar(
               isRunning: _editor.isRunning,
@@ -520,10 +524,17 @@ class _RuntimeWarning extends StatelessWidget {
   }
 }
 
-class _InstructionsCard extends StatelessWidget {
+class _InstructionsCard extends StatefulWidget {
   const _InstructionsCard({required this.exercise});
 
   final Exercise exercise;
+
+  @override
+  State<_InstructionsCard> createState() => _InstructionsCardState();
+}
+
+class _InstructionsCardState extends State<_InstructionsCard> {
+  int _revealedHints = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -535,10 +546,10 @@ class _InstructionsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(exercise.instructions, style: theme.textTheme.bodyMedium),
-          if (exercise.requirements.isNotEmpty) ...[
+          Text(widget.exercise.instructions, style: theme.textTheme.bodyMedium),
+          if (widget.exercise.requirements.isNotEmpty) ...[
             const SizedBox(height: 8),
-            for (final requirement in exercise.requirements)
+            for (final requirement in widget.exercise.requirements)
               Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Row(
@@ -556,6 +567,31 @@ class _InstructionsCard extends StatelessWidget {
                 ),
               ),
           ],
+          if (widget.exercise.hints.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            for (var index = 0; index < _revealedHints; index++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  'Hint ${index + 1}: ${widget.exercise.hints[index]}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            TextButton.icon(
+              onPressed: _revealedHints >= widget.exercise.hints.length
+                  ? null
+                  : () => setState(() => _revealedHints++),
+              icon: const Icon(Icons.lightbulb_outline, size: 18),
+              label: Text(
+                _revealedHints == 0
+                    ? 'Need a hint?'
+                    : _revealedHints >= widget.exercise.hints.length
+                    ? 'All hints shown'
+                    : 'Show next hint (${_revealedHints + 1} of '
+                          '${widget.exercise.hints.length})',
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -565,14 +601,16 @@ class _InstructionsCard extends StatelessWidget {
 /// Live checklist for a practice step: one row per requirement, ticked or not
 /// from the real output of the last run.
 class _ChecklistPanel extends StatelessWidget {
-  const _ChecklistPanel({required this.verdict});
+  const _ChecklistPanel({required this.verdict, this.block});
 
   final PracticeVerdict verdict;
+  final CodeBlock? block;
 
   @override
   Widget build(BuildContext context) {
     final passed = verdict.passed;
     final color = passed ? SkillBridgeColors.success : SkillBridgeColors.accent;
+    final firstFailed = verdict.checks.where((check) => !check.passed);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       width: double.infinity,
@@ -637,6 +675,70 @@ class _ChecklistPanel extends StatelessWidget {
                     ],
                   ),
                 ),
+              if (!passed && verdict.diff.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0B1220),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final line in verdict.diff)
+                        Text(
+                          line,
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 11.5,
+                            height: 1.35,
+                            color: Color(0xFFE6EAF0),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+              if (!passed) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Try this next: Start with the first unchecked check, make '
+                  'one change, then run again. Your code is still here.',
+                  style: TextStyle(color: color, fontSize: 12, height: 1.3),
+                ),
+                if (firstFailed.isNotEmpty)
+                  Text(
+                    'First to review: ${firstFailed.first.label}',
+                    style: const TextStyle(fontSize: 12, height: 1.3),
+                  ),
+              ],
+              if (passed && block?.whyItWorks != null) ...[
+                const SizedBox(height: 6),
+                const Text(
+                  'Why this works',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                ),
+                Text(
+                  block!.whyItWorks!,
+                  style: const TextStyle(fontSize: 12, height: 1.3),
+                ),
+              ],
+              if (passed && block?.takeaway != null) ...[
+                const SizedBox(height: 4),
+                const Text(
+                  'What you can now do',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                ),
+                Text(
+                  block!.takeaway!,
+                  style: const TextStyle(fontSize: 12, height: 1.3),
+                ),
+              ],
             ],
           ),
         ),
@@ -690,7 +792,7 @@ class _ActionBar extends StatelessWidget {
                   : FilledButton.icon(
                       onPressed: onRun,
                       icon: const Icon(Icons.play_arrow),
-                      label: const Text('Run'),
+                      label: Text(practiceMode ? 'Run & check' : 'Run'),
                     ),
             ),
             const SizedBox(width: 10),

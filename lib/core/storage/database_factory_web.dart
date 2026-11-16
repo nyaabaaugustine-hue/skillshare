@@ -27,8 +27,8 @@ DatabaseFactory platformDatabaseFactory() {
 /// harness that needs one. Naming the mistake beats silently returning a
 /// factory that would behave differently from the one tests rely on.
 DatabaseFactory get databaseFactoryFfiNoIsolate => throw UnsupportedError(
-      'databaseFactoryFfiNoIsolate has no web equivalent: '
-      'sqflite_common_ffi_web runs SQLite in a shared worker, and web tests do '
-      'not use the fake-async harness that makes the in-process factory '
-      'necessary on native.',
-    );
+  'databaseFactoryFfiNoIsolate has no web equivalent: '
+  'sqflite_common_ffi_web runs SQLite in a shared worker, and web tests do '
+  'not use the fake-async harness that makes the in-process factory '
+  'necessary on native.',
+);

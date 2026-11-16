@@ -260,8 +260,9 @@ class _LessonStepView extends StatelessWidget {
     'Great focus. You are doing well.',
   ];
 
-  static String _line(int index, bool isLast) =>
-      isLast ? "Last bit! Then it's your turn to code." : _coach[index % _coach.length];
+  static String _line(int index, bool isLast) => isLast
+      ? "Last bit! Then it's your turn to code."
+      : _coach[index % _coach.length];
 
   static BuddyMood _mood(int index, bool isLast) {
     if (isLast) return BuddyMood.celebrate;
@@ -289,10 +290,7 @@ class _LessonStepView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          BuddySays(
-            message: _line(index, isLast),
-            mood: _mood(index, isLast),
-          ),
+          BuddySays(message: _line(index, isLast), mood: _mood(index, isLast)),
           const SizedBox(height: 20),
           InlineCodeText(
             step.prose,
@@ -308,5 +306,3 @@ class _LessonStepView extends StatelessWidget {
     );
   }
 }
-
-

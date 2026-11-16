@@ -702,8 +702,7 @@ class _InterwovenPracticeState extends State<_InterwovenPractice> {
           icon: Icons.play_circle_outline_rounded,
           color: SkillBridgeColors.accent,
           title: 'Watch the idea',
-          body:
-              'Follow the introduction video and pause whenever you want to try the idea yourself.',
+          body: 'Follow the introduction video and pause whenever you want to try the idea yourself.',
         ),
         _FlowCard(
           index: '02',
@@ -834,7 +833,10 @@ class _QuickCheckSheetState extends State<_QuickCheckSheet> {
                     color: const Color(0xFFC9A7FF).withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.quiz_rounded, color: Color(0xFFC9A7FF)),
+                  child: const Icon(
+                    Icons.quiz_rounded,
+                    color: Color(0xFFC9A7FF),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
@@ -849,8 +851,10 @@ class _QuickCheckSheetState extends State<_QuickCheckSheet> {
                 ),
                 if (_attempts > 0)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
@@ -913,7 +917,8 @@ class _QuickCheckSheetState extends State<_QuickCheckSheet> {
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: () =>
-                      Navigator.of(context).pop(_CheckResult(attempts: _attempts)),
+                      Navigator.of(context)
+                          .pop(_CheckResult(attempts: _attempts)),
                   icon: const Icon(Icons.check_rounded),
                   label: const Text('Done'),
                 ),
@@ -1208,8 +1213,9 @@ class _FlowCard extends StatelessWidget {
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: SkillBridgeColors.success
-                                .withValues(alpha: 0.15),
+                            color: SkillBridgeColors.success.withValues(
+                              alpha: 0.15,
+                            ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -1237,7 +1243,10 @@ class _FlowCard extends StatelessWidget {
                         const SizedBox(height: 11),
                         FilledButton.tonalIcon(
                           onPressed: action,
-                          icon: const Icon(Icons.arrow_forward_rounded, size: 17),
+                          icon: const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 17,
+                          ),
                           label: Text(actionLabel),
                         ),
                       ],

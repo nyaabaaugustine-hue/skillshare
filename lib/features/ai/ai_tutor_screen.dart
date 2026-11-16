@@ -73,10 +73,7 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
               baseUrl: deps.config.aiTutorBaseUrl,
               token: deps.config.aiTutorToken,
             ).registry(contextData);
-      _service.updateContext(
-        contextData,
-        tools: tools,
-      );
+      _service.updateContext(contextData, tools: tools);
       if (mounted) setState(() {});
     } catch (_) {
       // The offline tutor remains usable when the LMS is unavailable.
@@ -91,8 +88,11 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
     super.dispose();
   }
 
-  _ChatMessage _message(String text, {bool fromUser = false, bool error = false}) =>
-      _ChatMessage(_nextId++, text, fromUser: fromUser, error: error);
+  _ChatMessage _message(
+    String text, {
+    bool fromUser = false,
+    bool error = false,
+  }) => _ChatMessage(_nextId++, text, fromUser: fromUser, error: error);
 
   Future<void> _send(String raw) async {
     final text = raw.trim();
@@ -121,10 +121,12 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _messages.add(_message(
-          'Something went wrong while thinking. Please try again.',
-          error: true,
-        ));
+        _messages.add(
+          _message(
+            'Something went wrong while thinking. Please try again.',
+            error: true,
+          ),
+        );
       });
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -191,8 +193,11 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
                 shape: BoxShape.circle,
                 gradient: SkillBridgeColors.brandGradient,
               ),
-              child: const Icon(Icons.auto_awesome_rounded,
-                  color: Colors.white, size: 17),
+              child: const Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.white,
+                size: 17,
+              ),
             ),
             const SizedBox(width: 10),
             const Text('AI Tutor'),
@@ -217,8 +222,11 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.bolt_rounded,
-                    color: SkillBridgeColors.accent, size: 14),
+                const Icon(
+                  Icons.bolt_rounded,
+                  color: SkillBridgeColors.accent,
+                  size: 14,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   _service.modeLabel,
@@ -276,8 +284,7 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
                           ),
                   ),
                 ),
-                if (hasMessages)
-                  _FollowUpChips(enabled: !_busy, onPick: _send),
+                if (hasMessages) _FollowUpChips(enabled: !_busy, onPick: _send),
                 _Composer(
                   controller: _input,
                   focusNode: _focus,
@@ -296,8 +303,12 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
 }
 
 class _ChatMessage {
-  const _ChatMessage(this.id, this.text,
-      {this.fromUser = false, this.error = false});
+  const _ChatMessage(
+    this.id,
+    this.text, {
+    this.fromUser = false,
+    this.error = false,
+  });
 
   final int id;
   final String text;
@@ -505,8 +516,9 @@ class _PromptCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: iconColor.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(15),
-                      border:
-                          Border.all(color: iconColor.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: iconColor.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: Icon(icon, color: iconColor, size: 24),
                   ),
@@ -541,7 +553,11 @@ class _PromptCard extends StatelessWidget {
   }
 }
 
-Future<void> _copy(BuildContext context, String text, String confirmation) async {
+Future<void> _copy(
+  BuildContext context,
+  String text,
+  String confirmation,
+) async {
   await Clipboard.setData(ClipboardData(text: text));
   HapticFeedback.selectionClick();
   if (!context.mounted) return;
@@ -571,8 +587,9 @@ class _MessageBubble extends StatelessWidget {
       if (i.isOdd) {
         final code = part.trim();
         final language = RegExp(r'^[a-zA-Z_]+\n').firstMatch(code);
-        final lines =
-            language == null ? code : code.substring(language.end).trimRight();
+        final lines = language == null
+            ? code
+            : code.substring(language.end).trimRight();
         widgets.add(_CodeBlock(code: lines));
       } else {
         widgets.add(
@@ -635,8 +652,9 @@ class _MessageBubble extends StatelessWidget {
       );
     }
 
-    final accent =
-        message.error ? SkillBridgeColors.error : SkillBridgeColors.primary;
+    final accent = message.error
+        ? SkillBridgeColors.error
+        : SkillBridgeColors.primary;
     final borderColor = message.error
         ? SkillBridgeColors.error.withValues(alpha: 0.5)
         : SkillBridgeColors.outline;
@@ -654,9 +672,7 @@ class _MessageBubble extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: message.error
-                  ? null
-                  : SkillBridgeColors.brandGradient,
+              gradient: message.error ? null : SkillBridgeColors.brandGradient,
               color: message.error ? accent.withValues(alpha: 0.18) : null,
             ),
             child: Icon(
@@ -695,11 +711,8 @@ class _MessageBubble extends StatelessWidget {
                           child: _MiniAction(
                             icon: Icons.copy_rounded,
                             label: 'Copy',
-                            onTap: () => _copy(
-                              context,
-                              message.text,
-                              'Reply copied',
-                            ),
+                            onTap: () =>
+                                _copy(context, message.text, 'Reply copied'),
                           ),
                         ),
                       ),
@@ -778,13 +791,17 @@ class _CodeBlock extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(12, 2, 4, 2),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.04),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(14)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(14),
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.terminal_rounded,
-                    size: 14, color: SkillBridgeColors.textMuted),
+                const Icon(
+                  Icons.terminal_rounded,
+                  size: 14,
+                  color: SkillBridgeColors.textMuted,
+                ),
                 const SizedBox(width: 6),
                 const Text(
                   'PYTHON',
@@ -873,8 +890,11 @@ class _TypingIndicatorState extends State<_TypingIndicator>
               shape: BoxShape.circle,
               gradient: SkillBridgeColors.brandGradient,
             ),
-            child: const Icon(Icons.auto_awesome_rounded,
-                size: 16, color: Colors.white),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              size: 16,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(width: 9),
           Container(
@@ -933,7 +953,11 @@ class _FollowUpChips extends StatelessWidget {
   final ValueChanged<String> onPick;
 
   static const _items = <(IconData, String, String)>[
-    (Icons.unfold_more_rounded, 'Explain more', 'Can you explain that in more detail?'),
+    (
+      Icons.unfold_more_rounded,
+      'Explain more',
+      'Can you explain that in more detail?',
+    ),
     (Icons.code_rounded, 'Show an example', 'Show me a short example'),
     (Icons.quiz_rounded, 'Test me', 'Test me on what we just covered'),
   ];
@@ -952,11 +976,13 @@ class _FollowUpChips extends StatelessWidget {
           return Pressable(
             enabled: enabled,
             child: ActionChip(
-              avatar: Icon(item.$1,
-                  size: 16,
-                  color: enabled
-                      ? SkillBridgeColors.primary
-                      : SkillBridgeColors.textMuted),
+              avatar: Icon(
+                item.$1,
+                size: 16,
+                color: enabled
+                    ? SkillBridgeColors.primary
+                    : SkillBridgeColors.textMuted,
+              ),
               label: Text(item.$2),
               labelStyle: TextStyle(
                 color: enabled
@@ -1019,8 +1045,9 @@ class _Composer extends StatelessWidget {
               boxShadow: focused
                   ? [
                       BoxShadow(
-                        color:
-                            SkillBridgeColors.primary.withValues(alpha: 0.18),
+                        color: SkillBridgeColors.primary.withValues(
+                          alpha: 0.18,
+                        ),
                         blurRadius: 16,
                       ),
                     ]

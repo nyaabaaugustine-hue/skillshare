@@ -7,6 +7,7 @@ import 'package:skillbridge_python_lab/core/storage/submission_repository.dart';
 import 'package:skillbridge_python_lab/integrations/lms/lms_client.dart';
 import 'package:skillbridge_python_lab/integrations/lms/lms_models.dart';
 import 'package:skillbridge_python_lab/features/submissions/submission.dart';
+
 import 'connectivity_service.dart';
 
 /// Summary of one synchronization pass, surfaced to the UI.
@@ -30,14 +31,19 @@ class SyncReport {
   bool get didWork => attempted > 0;
   bool get allSettled => attempted == accepted + rejected;
 
-  SyncReport _merge({int? attempted, int? accepted, int? rejected, int? failed}) => SyncReport(
-        attempted: attempted ?? this.attempted,
-        accepted: accepted ?? this.accepted,
-        rejected: rejected ?? this.rejected,
-        failed: failed ?? this.failed,
-        authExpired: authExpired,
-        offline: offline,
-      );
+  SyncReport _merge({
+    int? attempted,
+    int? accepted,
+    int? rejected,
+    int? failed,
+  }) => SyncReport(
+    attempted: attempted ?? this.attempted,
+    accepted: accepted ?? this.accepted,
+    rejected: rejected ?? this.rejected,
+    failed: failed ?? this.failed,
+    authExpired: authExpired,
+    offline: offline,
+  );
 
   static const offlineReport = SyncReport(offline: true, authExpired: false);
 }
@@ -59,10 +65,10 @@ class SubmissionSyncService {
     this.maxAttemptsPerItem = 3,
     this.baseBackoff = const Duration(milliseconds: 400),
     Future<void> Function(Duration)? delay,
-  })  : _lms = lmsClient,
-        _submissions = submissions,
-        _connectivity = connectivity,
-        _delay = delay ?? Future<void>.delayed;
+  }) : _lms = lmsClient,
+       _submissions = submissions,
+       _connectivity = connectivity,
+       _delay = delay ?? Future<void>.delayed;
 
   final LmsClient _lms;
   final SubmissionRepository _submissions;
@@ -107,7 +113,9 @@ class SubmissionSyncService {
   }
 
   Future<_Outcome> _syncOne(Submission submission) async {
-    await _submissions.update(submission.copyWith(syncState: SubmissionSyncState.syncing));
+    await _submissions.update(
+      submission.copyWith(syncState: SubmissionSyncState.syncing),
+    );
 
     final wasAttempted = submission.attemptCount;
     var attempt = wasAttempted;
@@ -118,22 +126,28 @@ class SubmissionSyncService {
       try {
         final receipt = await _lms.submitSolution(submission);
         final accepted = receipt.verdict == GradeVerdict.accepted;
-        await _submissions.update(submission.copyWith(
-          syncState: accepted ? SubmissionSyncState.accepted : SubmissionSyncState.rejected,
-          attemptCount: attempt,
-          lastAttemptAt: DateTime.now(),
-          serverResponseRef: receipt.serverRef,
-          serverStatus: receipt.verdict.name,
-          lastError: null,
-        ));
+        await _submissions.update(
+          submission.copyWith(
+            syncState: accepted
+                ? SubmissionSyncState.accepted
+                : SubmissionSyncState.rejected,
+            attemptCount: attempt,
+            lastAttemptAt: DateTime.now(),
+            serverResponseRef: receipt.serverRef,
+            serverStatus: receipt.verdict.name,
+            lastError: null,
+          ),
+        );
         return accepted ? _Outcome.accepted : _Outcome.rejected;
       } on AuthenticationException catch (e) {
-        await _submissions.update(submission.copyWith(
-          syncState: SubmissionSyncState.failed,
-          attemptCount: attempt,
-          lastAttemptAt: DateTime.now(),
-          lastError: e.userMessage,
-        ));
+        await _submissions.update(
+          submission.copyWith(
+            syncState: SubmissionSyncState.failed,
+            attemptCount: attempt,
+            lastAttemptAt: DateTime.now(),
+            lastError: e.userMessage,
+          ),
+        );
         return _Outcome.authExpired;
       } on NetworkException catch (e) {
         lastError = e;
@@ -143,13 +157,15 @@ class SubmissionSyncService {
         }
       } on LmsException catch (e) {
         // Permanent server-side rejection: do not keep retrying.
-        await _submissions.update(submission.copyWith(
-          syncState: SubmissionSyncState.rejected,
-          attemptCount: attempt,
-          lastAttemptAt: DateTime.now(),
-          serverStatus: 'rejected',
-          lastError: e.userMessage,
-        ));
+        await _submissions.update(
+          submission.copyWith(
+            syncState: SubmissionSyncState.rejected,
+            attemptCount: attempt,
+            lastAttemptAt: DateTime.now(),
+            serverStatus: 'rejected',
+            lastError: e.userMessage,
+          ),
+        );
         return _Outcome.rejected;
       } on AppException catch (e) {
         lastError = e;
@@ -157,12 +173,16 @@ class SubmissionSyncService {
     }
 
     // Exhausted this pass without success; keep it queued for a later pass.
-    await _submissions.update(submission.copyWith(
-      syncState: SubmissionSyncState.failed,
-      attemptCount: attempt,
-      lastAttemptAt: DateTime.now(),
-      lastError: lastError?.toString() ?? 'Will retry when the network is available.',
-    ));
+    await _submissions.update(
+      submission.copyWith(
+        syncState: SubmissionSyncState.failed,
+        attemptCount: attempt,
+        lastAttemptAt: DateTime.now(),
+        lastError:
+            lastError?.toString() ??
+            'Will retry when the network is available.',
+      ),
+    );
     return _Outcome.failed;
   }
 

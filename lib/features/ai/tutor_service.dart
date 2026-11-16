@@ -15,9 +15,9 @@ class TutorService {
     TutorStudentContext? studentContext,
     TutorToolRegistry? tools,
     this.teachingStyle = const TutorTeachingStyle(),
-  })  : _random = random ?? Random(),
-        _studentContext = studentContext ?? TutorStudentContext.empty,
-        _tools = tools;
+  }) : _random = random ?? Random(),
+       _studentContext = studentContext ?? TutorStudentContext.empty,
+       _tools = tools; // ignore: prefer_initializing_formals
 
   final Random _random;
   TutorStudentContext _studentContext;
@@ -38,22 +38,27 @@ class TutorService {
 
   static const _quiz = <_QuizQuestion>[
     _QuizQuestion(
-      question: 'Quick check 1/3: which loop keeps running while a condition '
+      question:
+          'Quick check 1/3: which loop keeps running while a condition '
           'is true?',
       options: ['for', 'while', 'print'],
       answerIndex: 1,
-      afterCorrect: 'Exactly — while is the condition loop. It re-checks the '
+      afterCorrect:
+          'Exactly — while is the condition loop. It re-checks the '
           'test on every pass and stops the moment it turns false.',
-      afterWrong: 'The answer is B) while. A for loop walks over a sequence; '
+      afterWrong:
+          'The answer is B) while. A for loop walks over a sequence; '
           'while only cares whether its condition is still true.',
     ),
     _QuizQuestion(
       question: 'Quick check 2/3: what does len("code") return?',
       options: ['4', '"code"', 'an error'],
       answerIndex: 0,
-      afterCorrect: 'Right — len() counts the characters, and "code" has '
+      afterCorrect:
+          'Right — len() counts the characters, and "code" has '
           'four: c, o, d, e.',
-      afterWrong: 'The answer is A) 4. len() returns the number of items — '
+      afterWrong:
+          'The answer is A) 4. len() returns the number of items — '
           'characters in a string, elements in a list.',
     ),
     _QuizQuestion(
@@ -61,7 +66,8 @@ class TutorService {
       options: ['func', 'def', 'define'],
       answerIndex: 1,
       afterCorrect: 'Yes — def marks the start of a function. Nice run!',
-      afterWrong: 'The answer is B) def. Python defines functions with '
+      afterWrong:
+          'The answer is B) def. Python defines functions with '
           'def name(parameters): followed by an indented body.',
     ),
   ];
@@ -91,7 +97,9 @@ class TutorService {
           'error text here and I can explain it now.';
     }
 
-    if ((m.contains('web') || m.contains('latest') || m.contains('search') ||
+    if ((m.contains('web') ||
+            m.contains('latest') ||
+            m.contains('search') ||
             m.contains('look up')) &&
         _tools?.canLookupWeb == true) {
       final result = await _tools!.lookupWeb(message.trim());
@@ -154,13 +162,15 @@ class TutorService {
           'I can also use your progress to target practice.';
     }
 
-    if (m.contains('my progress') || m.contains('my points') ||
-        m.contains('weak point') || m.contains('weakness')) {
+    if (m.contains('my progress') ||
+        m.contains('my points') ||
+        m.contains('weak point') ||
+        m.contains('weakness')) {
       _clearQuiz();
       final weak = _studentContext.weakPoints.isEmpty
           ? 'You do not have a flagged weak point yet.'
           : 'The best places to practise next are: '
-              '${_studentContext.weakPoints.join(', ')}.';
+                '${_studentContext.weakPoints.join(', ')}.';
       return '${_studentContext.learnerName}, you have '
           '${_studentContext.totalPoints} points and have completed '
           '${_studentContext.progressLabel}. $weak\n\n'
@@ -172,7 +182,8 @@ class TutorService {
       return _nextQuiz();
     }
 
-    if (m.contains('challenge') || m.contains('task of the day') ||
+    if (m.contains('challenge') ||
+        m.contains('task of the day') ||
         m.contains('exercise for')) {
       _clearQuiz();
       return 'Today\u2019s challenge: FizzBuzz.\n\n'
@@ -187,7 +198,9 @@ class TutorService {
           'Run it in the editor and tell me your output — I will review it.';
     }
 
-    if (m.contains('loop') || m.contains('loops') || m.contains('iterate') ||
+    if (m.contains('loop') ||
+        m.contains('loops') ||
+        m.contains('iterate') ||
         m.contains('iteration')) {
       _clearQuiz();
       return 'Two kinds of loop in Python: for and while.\n\n'
@@ -209,7 +222,8 @@ class TutorService {
           'changes that condition, or it never stops.';
     }
 
-    if (m.contains('function') || m.contains('functions') ||
+    if (m.contains('function') ||
+        m.contains('functions') ||
         m.startsWith('def')) {
       _clearQuiz();
       return 'A function is a named block of code you can run again and '
@@ -226,8 +240,10 @@ class TutorService {
           'are easy to test and reuse.';
     }
 
-    if (m.contains('string') || m.contains('strings') ||
-        m.contains('f-string') || m.contains('quote')) {
+    if (m.contains('string') ||
+        m.contains('strings') ||
+        m.contains('f-string') ||
+        m.contains('quote')) {
       _clearQuiz();
       return 'Text lives in strings — quotes make one. Strings slice, count '
           'and transform, and f-strings embed variables directly.\n\n'
@@ -242,7 +258,9 @@ class TutorService {
           'text. Indexes start at 0, so greeting[0] is the H.';
     }
 
-    if (m.contains('list') || m.contains('lists') || m.contains('append') ||
+    if (m.contains('list') ||
+        m.contains('lists') ||
+        m.contains('append') ||
         m.contains('array')) {
       _clearQuiz();
       return 'A list is an ordered collection you can grow and shrink.\n\n'
@@ -258,8 +276,10 @@ class TutorService {
           'for loop walks every item in order.';
     }
 
-    if (m.contains('dict') || m.contains('dictionary') ||
-        m.contains('key-value') || m.contains('key value')) {
+    if (m.contains('dict') ||
+        m.contains('dictionary') ||
+        m.contains('key-value') ||
+        m.contains('key value')) {
       _clearQuiz();
       return 'A dictionary stores pairs: a key that points to a value.\n\n'
           '```python\n'
@@ -273,9 +293,12 @@ class TutorService {
           'be missing, and .items() to loop over the pairs.';
     }
 
-    if (m.contains('if statement') || m.contains('condition') ||
-        m.contains('conditions') || m.contains('else') ||
-        m.contains('boolean') || m.contains('compare')) {
+    if (m.contains('if statement') ||
+        m.contains('condition') ||
+        m.contains('conditions') ||
+        m.contains('else') ||
+        m.contains('boolean') ||
+        m.contains('compare')) {
       _clearQuiz();
       return 'Conditions let your program choose a path with if / elif / '
           'else. Python compares with ==, !=, <, >, <=, >= and combines with '
@@ -293,9 +316,12 @@ class TutorService {
           'runs when the condition is true.';
     }
 
-    if (m.contains('variable') || m.contains('variables') ||
-        m.contains('assign') || m.contains('datatype') ||
-        RegExp(r'\bint\b').hasMatch(m) || RegExp(r'\bfloat\b').hasMatch(m)) {
+    if (m.contains('variable') ||
+        m.contains('variables') ||
+        m.contains('assign') ||
+        m.contains('datatype') ||
+        RegExp(r'\bint\b').hasMatch(m) ||
+        RegExp(r'\bfloat\b').hasMatch(m)) {
       _clearQuiz();
       return 'A variable is a name for a value. Python infers the type from '
           'what you assign — no declaration needed.\n\n'
@@ -310,7 +336,8 @@ class TutorService {
           'def.';
     }
 
-    if (m.contains('input(') || m.contains('user input') ||
+    if (m.contains('input(') ||
+        m.contains('user input') ||
         m.contains('read input')) {
       _clearQuiz();
       return 'input() pauses the program, reads a line from the user, and '
@@ -328,14 +355,14 @@ class TutorService {
     _clearQuiz();
     const fallbacks = <String>[
       'I can help with Python fundamentals — loops, strings, functions, '
-      'lists, dictionaries, conditions and debugging errors. Try one of the '
-      'starter cards, ask something specific, or say "quiz me".',
+          'lists, dictionaries, conditions and debugging errors. Try one of the '
+          'starter cards, ask something specific, or say "quiz me".',
       'That one is outside my offline brain for now. I am strongest on the '
-      'basics: loops, strings, functions, lists, dictionaries, conditions '
-      'and fixing errors. Which of those do you want to work through?',
+          'basics: loops, strings, functions, lists, dictionaries, conditions '
+          'and fixing errors. Which of those do you want to work through?',
       'Hmm, I do not have a prepared answer for that yet. Ask me about loops, '
-      'strings, functions, lists, dictionaries or errors — or say "quiz me" '
-      'for a quick check.',
+          'strings, functions, lists, dictionaries or errors — or say "quiz me" '
+          'for a quick check.',
     ];
     return fallbacks[_random.nextInt(fallbacks.length)];
   }

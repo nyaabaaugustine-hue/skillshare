@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:js_interop';
 
@@ -14,11 +14,10 @@ import 'python_runtime.dart';
 ///
 /// Override per build with `--dart-define=SB_PYODIDE_INDEX_URL=...` when the
 /// distribution is vendored next to the app.
-const String defaultPyodideIndexURL =
-    String.fromEnvironment(
-      'SB_PYODIDE_INDEX_URL',
-      defaultValue: 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/',
-    );
+const String defaultPyodideIndexURL = String.fromEnvironment(
+  'SB_PYODIDE_INDEX_URL',
+  defaultValue: 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/',
+);
 
 /// Executes learner code with a **real** CPython interpreter compiled to
 /// WebAssembly (Pyodide), running inside a dedicated Web Worker.
@@ -60,8 +59,8 @@ class PyodidePythonRuntime implements PythonRuntime {
     this.defaultTimeout = const Duration(seconds: 10),
     this.defaultMaxOutputChars = 200000,
     this.initTimeout = const Duration(minutes: 3),
-  })  : workerURL = workerURL ?? _resolveWorkerURL(),
-        indexURL = indexURL ?? defaultPyodideIndexURL;
+  }) : workerURL = workerURL ?? _resolveWorkerURL(),
+       indexURL = indexURL ?? defaultPyodideIndexURL;
 
   /// URL of the worker script, resolved against the app's base URL.
   final String workerURL;
@@ -156,11 +155,7 @@ class PyodidePythonRuntime implements PythonRuntime {
       source = null;
     }
     if (_disposed || _worker == null) return;
-    _post({
-      'type': 'init',
-      'indexURL': indexURL,
-      'executorSource': source,
-    });
+    _post({'type': 'init', 'indexURL': indexURL, 'executorSource': source});
   }
 
   @override
@@ -313,8 +308,9 @@ class PyodidePythonRuntime implements PythonRuntime {
 
   void _onWorkerError(JSObject event) {
     final detail = _ErrorEventJS(event).message?.dartify();
-    final text =
-        detail is String && detail.isNotEmpty ? detail : 'unknown error';
+    final text = detail is String && detail.isNotEmpty
+        ? detail
+        : 'unknown error';
 
     if (_initCompleter != null) {
       _initTimer?.cancel();

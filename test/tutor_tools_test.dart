@@ -47,26 +47,29 @@ void main() {
     expect(answer, contains('https://docs.python.org/'));
   });
 
-  test('screenshot is rejected clearly when offline analysis is disabled', () async {
-    final service = TutorService(
-      studentContext: context,
-      tools: const TutorToolRegistry(studentContext: context),
-    );
+  test(
+    'screenshot is rejected clearly when offline analysis is disabled',
+    () async {
+      final service = TutorService(
+        studentContext: context,
+        tools: const TutorToolRegistry(studentContext: context),
+      );
 
-    final answer = await service.ask(
-      'Please explain this error',
-      attachments: <TutorAttachment>[
-        TutorAttachment(
-          name: 'traceback.png',
-          mimeType: 'image/png',
-          bytes: Uint8List.fromList(<int>[1, 2, 3]),
-        ),
-      ],
-    );
+      final answer = await service.ask(
+        'Please explain this error',
+        attachments: <TutorAttachment>[
+          TutorAttachment(
+            name: 'traceback.png',
+            mimeType: 'image/png',
+            bytes: Uint8List.fromList(<int>[1, 2, 3]),
+          ),
+        ],
+      );
 
-    expect(answer, contains('screenshot'));
-    expect(answer, contains('offline mode'));
-  });
+      expect(answer, contains('screenshot'));
+      expect(answer, contains('offline mode'));
+    },
+  );
 
   test('screenshot is passed to an injected analysis tool', () async {
     var called = false;

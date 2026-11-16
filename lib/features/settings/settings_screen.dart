@@ -319,6 +319,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
+              const _SectionHeader('Reminders'),
+              Entrance(
+                index: 5,
+                child: _Group(
+                  children: [
+                    SwitchListTile(
+                      secondary: const IconBadge(
+                        icon: Icons.notifications_active_rounded,
+                        colors: IconBadge.purple,
+                        size: 38,
+                        glow: false,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                      ),
+                      title: const Text(
+                        'Learning reminders',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      subtitle: const Text(
+                        'A chime if you have not learned today, and a nudge '
+                        'when you stop a lesson halfway',
+                      ),
+                      value: settings.reminderEnabled,
+                      onChanged: (value) async {
+                        await settings.setReminderEnabled(value);
+                        if (!context.mounted) return;
+                        await context
+                            .read<AppDependencies>()
+                            .reminders
+                            .setEnabled(value);
+                      },
+                    ),
+                    _SettingTile(
+                      icon: Icons.alarm_rounded,
+                      colors: IconBadge.teal,
+                      title: 'Reminder time',
+                      subtitle: settings.reminderEnabled
+                          ? 'Daily nudge at ${_formatReminderTime(settings)}'
+                          : 'Turn reminders on to choose a time',
+                      trailing: TextButton(
+                        onPressed: settings.reminderEnabled
+                            ? () => _pickReminderTime(context, settings)
+                            : null,
+                        child: Text(_formatReminderTime(settings)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const _SectionHeader('Offline storage'),
               Entrance(
                 index: 4,
@@ -659,5 +709,35 @@ class _SectionHeader extends StatelessWidget {
         color: Theme.of(context).colorScheme.primary,
       ),
     ),
+  );
+}
+
+/// Time-of-day label for the reminder row ("6:00 PM").
+String _formatReminderTime(SettingsController settings) {
+  final hour = settings.reminderHour % 24;
+  final suffix = hour < 12 ? 'AM' : 'PM';
+  final twelve = hour % 12 == 0 ? 12 : hour % 12;
+  return '$twelve:${settings.reminderMinute.toString().padLeft(2, '0')} $suffix';
+}
+
+/// Lets the learner choose when the daily chime arrives, then re-schedules it.
+Future<void> _pickReminderTime(
+  BuildContext context,
+  SettingsController settings,
+) async {
+  final picked = await showTimePicker(
+    context: context,
+    initialTime: TimeOfDay(
+      hour: settings.reminderHour,
+      minute: settings.reminderMinute,
+    ),
+    helpText: 'When should we remind you?',
+  );
+  if (picked == null) return;
+  await settings.setReminderTime(hour: picked.hour, minute: picked.minute);
+  if (!context.mounted) return;
+  await context.read<AppDependencies>().reminders.setTime(
+    hour: picked.hour,
+    minute: picked.minute,
   );
 }

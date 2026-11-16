@@ -45,10 +45,10 @@ class ShortcutBar extends StatelessWidget {
     return Material(
       color: theme.colorScheme.surfaceContainerHighest,
       child: SizedBox(
-        height: 52,
+        height: 46,
         child: ListView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           children: [
             _key(context, '(', () => _insert('()', caret: 1)),
             _key(context, ')', () => _insert(')')),
@@ -74,7 +74,11 @@ class ShortcutBar extends StatelessWidget {
             _chip(context, 'range', () => _insert('range()', caret: 6)),
             _chip(context, 'if', () => _insert('if :\n', caret: 3)),
             _chip(context, 'else', () => _insert('else:\n')),
-            _chip(context, 'for', () => _insert('for i in range():\n', caret: 15)),
+            _chip(
+              context,
+              'for',
+              () => _insert('for i in range():\n', caret: 15),
+            ),
             _chip(context, 'while', () => _insert('while :\n', caret: 6)),
             _chip(context, 'def', () => _insert('def name():\n', caret: 4)),
             _chip(context, 'return', () => _insert('return ')),
@@ -91,20 +95,29 @@ class ShortcutBar extends StatelessWidget {
     );
   }
 
-  Widget _key(BuildContext context, String label, VoidCallback onTap, {String? tooltip}) {
+  Widget _key(
+    BuildContext context,
+    String label,
+    VoidCallback onTap, {
+    String? tooltip,
+  }) {
     final child = SizedBox(
       width: 44,
-      height: 40,
+      height: 38,
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           padding: EdgeInsets.zero,
-          minimumSize: const Size(44, 40),
+          minimumSize: const Size(44, 38),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         child: Text(
           label,
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 16, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -118,7 +131,10 @@ class ShortcutBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
       child: ActionChip(
-        label: Text(label, style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
+        label: Text(
+          label,
+          style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+        ),
         onPressed: onTap,
         visualDensity: VisualDensity.compact,
       ),
@@ -131,7 +147,7 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-        child: VerticalDivider(width: 1),
-      );
+    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+    child: VerticalDivider(width: 1),
+  );
 }

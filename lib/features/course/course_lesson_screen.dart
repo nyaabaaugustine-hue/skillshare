@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:skillbridge_python_lab/app/theme.dart';
 import 'package:skillbridge_python_lab/features/exercises/exercise.dart';
+import 'package:skillbridge_python_lab/features/course/practice_checks.dart';
 import 'package:skillbridge_python_lab/shared/widgets/premium_button.dart';
 
 import 'course_models.dart';
@@ -24,6 +25,7 @@ class _CourseLessonScreenState extends State<CourseLessonScreen> {
   int _index = 0;
   bool _satisfied = false;
   int _pendingScore = 100;
+  int _hintLevel = 0;
   final List<int> _scores = <int>[];
 
   List<CourseBlock> get _blocks => widget.step.blocks;
@@ -40,7 +42,14 @@ class _CourseLessonScreenState extends State<CourseLessonScreen> {
   void _resetForCurrentBlock() {
     _satisfied = _blocks.isEmpty || _autoSatisfied(_blocks[_index]);
     _pendingScore = 100;
+    _hintLevel = 0;
   }
+
+  List<String> _hintsFor(CourseBlock block) => switch (block) {
+    CodeBlock b => b.hints,
+    PromptBlock b => b.hints,
+    _ => const <String>[],
+  };
 
   void _satisfy(int score) {
     final clamped = score.clamp(0, 100);
@@ -76,6 +85,7 @@ class _CourseLessonScreenState extends State<CourseLessonScreen> {
     final total = _blocks.length;
     final isLast = _index >= total - 1;
     final progress = total == 0 ? 1.0 : (_index + 1) / total;
+    final currentBlock = _blocks.isEmpty ? null : _blocks[_index];
 
     return Scaffold(
       appBar: AppBar(
@@ -121,7 +131,7 @@ class _CourseLessonScreenState extends State<CourseLessonScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: [
-                  if (_blocks.isEmpty)
+                  if (currentBlock == null)
                     const _BlockCard(
                       title: 'Nothing to study yet',
                       child: Text(
@@ -129,8 +139,35 @@ class _CourseLessonScreenState extends State<CourseLessonScreen> {
                         style: TextStyle(color: SkillBridgeColors.textMuted),
                       ),
                     )
-                  else
-                    _blockView(_blocks[_index]),
+                  else ...[
+                    _BlockCard(
+                      title: "What you'll learn",
+                      child: Text(
+                        '${widget.step.title}: ${widget.step.subtitle}',
+                        style: const TextStyle(
+                          color: SkillBridgeColors.textPrimary,
+                          fontSize: 14,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _blockView(currentBlock),
+                  ],
+                  if (currentBlock != null &&
+                      _hintsFor(currentBlock).isNotEmpty)
+                    _ProgressiveHint(
+                      hints: _hintsFor(currentBlock),
+                      revealed: _hintLevel,
+                      onReveal: () => setState(() {
+                        _hintLevel = (_hintLevel + 1).clamp(
+                          0,
+                          _hintsFor(currentBlock).length,
+                        );
+                      }),
+                    ),
+                  if (_satisfied && currentBlock is CodeBlock)
+                    _CompletionSummary(block: currentBlock),
                 ],
               ),
             ),
@@ -155,7 +192,11 @@ class _CourseLessonScreenState extends State<CourseLessonScreen> {
     return switch (block) {
       ReadingBlock b => _ReadingView(block: b),
       VideoBlock b => _VideoView(block: b, onWatched: () => _satisfy(100)),
-      CodeBlock b => _CodeView(block: b, onOpened: () => _satisfy(100)),
+      CodeBlock b => _CodeView(
+        block: b,
+        exerciseId: widget.step.id,
+        onCompleted: _satisfy,
+      ),
       QuizBlock b => _QuizView(block: b, onAnswered: _satisfy),
       PromptBlock b => _PromptView(block: b, onSatisfied: _satisfy),
       ApiBlock b => _ApiView(block: b, onSatisfied: _satisfy),
@@ -193,6 +234,85 @@ class _BlockCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           child,
+        ],
+      ),
+    );
+  }
+}
+
+class _ProgressiveHint extends StatelessWidget {
+  const _ProgressiveHint({
+    required this.hints,
+    required this.revealed,
+    required this.onReveal,
+  });
+
+  final List<String> hints;
+  final int revealed;
+  final VoidCallback onReveal;
+
+  @override
+  Widget build(BuildContext context) {
+    final complete = revealed >= hints.length;
+    return Container(
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: SkillBridgeColors.surfaceHigh,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: SkillBridgeColors.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.auto_awesome_rounded,
+                size: 18,
+                color: SkillBridgeColors.accent,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Need a nudge?',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: SkillBridgeColors.textPrimary,
+                  ),
+                ),
+              ),
+              Text(
+                '$revealed/${hints.length}',
+                style: const TextStyle(
+                  color: SkillBridgeColors.textMuted,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          if (revealed > 0) ...[
+            const SizedBox(height: 8),
+            for (final hint in hints.take(revealed))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '• $hint',
+                  style: const TextStyle(
+                    color: SkillBridgeColors.textMuted,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+          ],
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: complete ? null : onReveal,
+            icon: Icon(
+              complete ? Icons.check_rounded : Icons.lightbulb_outline,
+            ),
+            label: Text(complete ? 'All hints shown' : 'Show next hint'),
+          ),
         ],
       ),
     );
@@ -337,13 +457,18 @@ class _VideoView extends StatelessWidget {
 }
 
 class _CodeView extends StatelessWidget {
-  const _CodeView({required this.block, required this.onOpened});
+  const _CodeView({
+    required this.block,
+    required this.exerciseId,
+    required this.onCompleted,
+  });
 
   final CodeBlock block;
-  final VoidCallback onOpened;
+  final String exerciseId;
+  final ValueChanged<int> onCompleted;
 
   Exercise _exercise() => Exercise(
-    id: 'course-code',
+    id: exerciseId,
     title: block.heading,
     instructions: block.brief,
     starterCode: block.starterCode,
@@ -359,6 +484,7 @@ class _CodeView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const _SectionLabel('Short explanation'),
           Text(
             block.brief,
             style: const TextStyle(
@@ -367,7 +493,21 @@ class _CodeView extends StatelessWidget {
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 14),
+          if (block.workedExample != null) ...[
+            const SizedBox(height: 16),
+            const _SectionLabel('Worked example'),
+            _CodePreview(code: block.workedExample!),
+          ],
+          const SizedBox(height: 16),
+          const _SectionLabel('Try it'),
+          Text(
+            'Use the starter code to complete this task:',
+            style: const TextStyle(
+              color: SkillBridgeColors.textMuted,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 10),
           _CodePreview(code: block.starterCode),
           const SizedBox(height: 14),
           const Text(
@@ -420,14 +560,90 @@ class _CodeView extends StatelessWidget {
           const SizedBox(height: 16),
           PremiumButton(
             icon: Icons.code_rounded,
-            label: 'OPEN IN CODE EDITOR',
+            label: 'TRY IT IN THE CODE EDITOR',
             onPressed: () async {
-              onOpened();
-              await Navigator.of(context)
-                  .pushNamed('/editor', arguments: _exercise());
+              await Navigator.of(context).pushNamed(
+                '/editor',
+                arguments: <String, dynamic>{
+                  'exercise': _exercise(),
+                  'practice': PracticeSession(
+                    block: block,
+                    onCompleted: onCompleted,
+                  ),
+                },
+              );
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: SkillBridgeColors.textMuted,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _CompletionSummary extends StatelessWidget {
+  const _CompletionSummary({required this.block});
+
+  final CodeBlock block;
+
+  @override
+  Widget build(BuildContext context) {
+    final whyItWorks = block.whyItWorks;
+    final takeaway = block.takeaway;
+    if (whyItWorks == null && takeaway == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: _BlockCard(
+        title: 'Nice work!',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (whyItWorks != null) ...[
+              const _SectionLabel('Why this works'),
+              Text(
+                whyItWorks,
+                style: const TextStyle(
+                  color: SkillBridgeColors.textPrimary,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+            ],
+            if (takeaway != null) ...[
+              if (whyItWorks != null) const SizedBox(height: 14),
+              const _SectionLabel('What you can now do'),
+              Text(
+                takeaway,
+                style: const TextStyle(
+                  color: SkillBridgeColors.textPrimary,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

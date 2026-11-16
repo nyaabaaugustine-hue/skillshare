@@ -39,7 +39,9 @@ class _PremiumButtonState extends State<PremiumButton> {
         // Deep enough for white label text to stay legible (AA), unlike the
         // previous #3FA0FF top step.
         : const [Color(0xFF2270D6), Color(0xFF0A57B8)];
-    final glow = widget.gold ? const Color(0xFFF2A81D) : SkillBridgeColors.primary;
+    final glow = widget.gold
+        ? const Color(0xFFF2A81D)
+        : SkillBridgeColors.primary;
     final fg = widget.gold ? const Color(0xFF2A1D00) : Colors.white;
 
     return Semantics(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -69,6 +71,9 @@ class _BootstrapAppState extends State<BootstrapApp> {
       // Shared accounts (same login on phone and web) when this build was
       // given Supabase credentials; otherwise the offline accounts stay.
       await _auth.initCloudAuth();
+      // Schedules the daily nudge (and asks for notification permission the
+      // first time). Never blocks the first frame.
+      unawaited(deps.reminders.bootstrap());
       setState(() {
         _deps = deps;
         _error = null;

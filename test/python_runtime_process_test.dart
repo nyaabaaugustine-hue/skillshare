@@ -14,7 +14,8 @@ import 'package:skillbridge_python_lab/features/python_runtime/python_runtime.da
 /// The tests are skipped (not silently passed) when no interpreter is
 /// available; the interpreter can be overridden with `SB_TEST_PYTHON`.
 void main() {
-  final python = Platform.environment['SB_TEST_PYTHON'] ??
+  final python =
+      Platform.environment['SB_TEST_PYTHON'] ??
       (Platform.isWindows ? 'python' : 'python3');
   final harnessPath = ProcessPythonRuntime.resolveHarnessPath();
 
@@ -23,18 +24,17 @@ void main() {
   String interpreterVersion = '';
 
   ProcessPythonRuntime runtime() => ProcessPythonRuntime(
-        pythonExecutable: python,
-        harnessPath: harnessPath,
-        defaultTimeout: const Duration(seconds: 20),
-      );
+    pythonExecutable: python,
+    harnessPath: harnessPath,
+    defaultTimeout: const Duration(seconds: 20),
+  );
 
   setUpAll(() async {
     harnessAvailable = File(harnessPath).existsSync();
     try {
       final probe = await Process.run(python, ['--version']);
       pythonAvailable = probe.exitCode == 0;
-      interpreterVersion =
-          ('${probe.stdout}${probe.stderr}').trim();
+      interpreterVersion = ('${probe.stdout}${probe.stderr}').trim();
     } on ProcessException {
       pythonAvailable = false;
     }
@@ -72,9 +72,9 @@ void main() {
       final rt = runtime();
       addTearDown(rt.dispose);
 
-      final result = await rt.execute(const ExecutionRequest(
-        code: 'print("Hello, World!")\n',
-      ));
+      final result = await rt.execute(
+        const ExecutionRequest(code: 'print("Hello, World!")\n'),
+      );
 
       expect(result.status, ExecutionStatus.success);
       expect(result.stdout, 'Hello, World!\n');
@@ -90,13 +90,16 @@ void main() {
       final rt = runtime();
       addTearDown(rt.dispose);
 
-      final result = await rt.execute(const ExecutionRequest(
-        code: "name = input('What is your name? ')\n"
-            "age = int(input('How old are you? '))\n"
-            "print('Hello', name)\n"
-            "print('Next year you will be', age + 1)\n",
-        stdinLines: ['Ama', '13'],
-      ));
+      final result = await rt.execute(
+        const ExecutionRequest(
+          code:
+              "name = input('What is your name? ')\n"
+              "age = int(input('How old are you? '))\n"
+              "print('Hello', name)\n"
+              "print('Next year you will be', age + 1)\n",
+          stdinLines: ['Ama', '13'],
+        ),
+      );
 
       expect(result.status, ExecutionStatus.success);
       expect(result.stdout, contains('What is your name? '));
@@ -109,10 +112,12 @@ void main() {
       final rt = runtime();
       addTearDown(rt.dispose);
 
-      final result = await rt.execute(const ExecutionRequest(
-        code: 'first = input()\nsecond = input()\n',
-        stdinLines: ['only-one'],
-      ));
+      final result = await rt.execute(
+        const ExecutionRequest(
+          code: 'first = input()\nsecond = input()\n',
+          stdinLines: ['only-one'],
+        ),
+      );
 
       expect(result.status, ExecutionStatus.error);
       expect(result.exception!.type, 'EOFError');
@@ -124,18 +129,21 @@ void main() {
       final rt = runtime();
       addTearDown(rt.dispose);
 
-      final result = await rt.execute(const ExecutionRequest(
-        code: 'total = 0\n'
-            'for i in range(1, 6):\n'
-            '    total += i\n'
-            'def square(n):\n'
-            '    return n * n\n'
-            'fruits = ["mango", "banana"]\n'
-            'print(total)\n'
-            'print(square(4))\n'
-            'for f in fruits:\n'
-            '    print(f)\n',
-      ));
+      final result = await rt.execute(
+        const ExecutionRequest(
+          code:
+              'total = 0\n'
+              'for i in range(1, 6):\n'
+              '    total += i\n'
+              'def square(n):\n'
+              '    return n * n\n'
+              'fruits = ["mango", "banana"]\n'
+              'print(total)\n'
+              'print(square(4))\n'
+              'for f in fruits:\n'
+              '    print(f)\n',
+        ),
+      );
 
       expect(result.status, ExecutionStatus.success);
       expect(result.stdout, '15\n16\nmango\nbanana\n');
@@ -146,19 +154,25 @@ void main() {
       final rt = runtime();
       addTearDown(rt.dispose);
 
-      final result = await rt.execute(const ExecutionRequest(
-        code: 'print("hello")\ndef broken(:\n    pass\n',
-      ));
+      final result = await rt.execute(
+        const ExecutionRequest(
+          code: 'print("hello")\ndef broken(:\n    pass\n',
+        ),
+      );
 
       expect(result.status, ExecutionStatus.error);
       expect(result.exception!.type, 'SyntaxError');
       expect(result.exception!.line, greaterThan(0));
       expect(result.exception!.message, contains('Syntax error on line'));
-      expect(result.exception!.friendlyLabel, startsWith('There is a spelling'));
+      expect(
+        result.exception!.friendlyLabel,
+        startsWith('There is a spelling'),
+      );
       expect(
         result.stdout,
         isEmpty,
-        reason: 'Python compiles the whole program before running any of it, '
+        reason:
+            'Python compiles the whole program before running any of it, '
             'so a syntax error means nothing was executed.',
       );
       expect(result.exception!.traceback, contains('def broken(:'));
@@ -169,16 +183,21 @@ void main() {
       final rt = runtime();
       addTearDown(rt.dispose);
 
-      final result = await rt.execute(const ExecutionRequest(
-        code: 'items = [1, 2, 3]\nprint(items[99])\n',
-      ));
+      final result = await rt.execute(
+        const ExecutionRequest(code: 'items = [1, 2, 3]\nprint(items[99])\n'),
+      );
 
       expect(result.status, ExecutionStatus.error);
       expect(result.exception!.type, 'IndexError');
-      expect(result.exception!.friendlyLabel,
-          'You asked for an item that is outside the list.');
+      expect(
+        result.exception!.friendlyLabel,
+        'You asked for an item that is outside the list.',
+      );
       expect(result.exception!.traceback, contains('items[99]'));
-      expect(result.exception!.traceback, isNot(contains('skillbridge_exec.py')));
+      expect(
+        result.exception!.traceback,
+        isNot(contains('skillbridge_exec.py')),
+      );
     });
 
     test('reports ZeroDivisionError', () async {
@@ -186,8 +205,9 @@ void main() {
       final rt = runtime();
       addTearDown(rt.dispose);
 
-      final result =
-          await rt.execute(const ExecutionRequest(code: 'print(10 / 0)\n'));
+      final result = await rt.execute(
+        const ExecutionRequest(code: 'print(10 / 0)\n'),
+      );
 
       expect(result.status, ExecutionStatus.error);
       expect(result.exception!.type, 'ZeroDivisionError');
@@ -198,10 +218,9 @@ void main() {
       final rt = runtime();
       addTearDown(rt.dispose);
 
-      final result = await rt.execute(const ExecutionRequest(
-        code: "print('x' * 5000)\n",
-        maxOutputChars: 64,
-      ));
+      final result = await rt.execute(
+        const ExecutionRequest(code: "print('x' * 5000)\n", maxOutputChars: 64),
+      );
 
       expect(result.status, ExecutionStatus.success);
       expect(result.stdoutTruncated, isTrue);
@@ -214,10 +233,9 @@ void main() {
       final rt = runtime();
       addTearDown(rt.dispose);
 
-      final result = await rt.execute(const ExecutionRequest(
-        code: "print('short')\n",
-        maxOutputChars: 1000,
-      ));
+      final result = await rt.execute(
+        const ExecutionRequest(code: "print('short')\n", maxOutputChars: 1000),
+      );
 
       expect(result.stdoutTruncated, isFalse);
       expect(result.stdout, 'short\n');
@@ -229,10 +247,12 @@ void main() {
       addTearDown(rt.dispose);
 
       final sw = Stopwatch()..start();
-      final result = await rt.execute(const ExecutionRequest(
-        code: 'while True:\n    pass\n',
-        timeout: Duration(seconds: 3),
-      ));
+      final result = await rt.execute(
+        const ExecutionRequest(
+          code: 'while True:\n    pass\n',
+          timeout: Duration(seconds: 3),
+        ),
+      );
       sw.stop();
 
       expect(result.status, ExecutionStatus.timeout);
@@ -246,10 +266,12 @@ void main() {
       final rt = runtime();
       addTearDown(rt.dispose);
 
-      final execution = rt.execute(const ExecutionRequest(
-        code: 'import time\ntime.sleep(20)\nprint("never")\n',
-        timeout: Duration(seconds: 30),
-      ));
+      final execution = rt.execute(
+        const ExecutionRequest(
+          code: 'import time\ntime.sleep(20)\nprint("never")\n',
+          timeout: Duration(seconds: 30),
+        ),
+      );
 
       await Future<void>.delayed(const Duration(milliseconds: 700));
       await rt.cancel();
@@ -265,10 +287,12 @@ void main() {
       final rt = runtime();
       addTearDown(rt.dispose);
 
-      final first =
-          await rt.execute(const ExecutionRequest(code: 'print("one")\n'));
-      final second =
-          await rt.execute(const ExecutionRequest(code: 'print("two")\n'));
+      final first = await rt.execute(
+        const ExecutionRequest(code: 'print("one")\n'),
+      );
+      final second = await rt.execute(
+        const ExecutionRequest(code: 'print("two")\n'),
+      );
 
       expect(first.stdout, 'one\n');
       expect(second.stdout, 'two\n');
@@ -276,23 +300,22 @@ void main() {
       expect(second.status, ExecutionStatus.success);
     });
 
-    test('a missing harness fails loudly instead of pretending to run',
-        () async {
-      if (!pythonAvailable) {
-        markTestSkipped('Skipped: no interpreter "$python".');
-        return;
-      }
-      final rt = ProcessPythonRuntime(
-        pythonExecutable: python,
-        harnessPath: 'definitely/not/a/real/harness.py',
-      );
-      addTearDown(rt.dispose);
+    test(
+      'a missing harness fails loudly instead of pretending to run',
+      () async {
+        if (!pythonAvailable) {
+          markTestSkipped('Skipped: no interpreter "$python".');
+          return;
+        }
+        final rt = ProcessPythonRuntime(
+          pythonExecutable: python,
+          harnessPath: 'definitely/not/a/real/harness.py',
+        );
+        addTearDown(rt.dispose);
 
-      expect(
-        () => rt.prepare(),
-        throwsA(isA<Exception>()),
-      );
-      expect(rt.isReady, isFalse);
-    });
+        expect(() => rt.prepare(), throwsA(isA<Exception>()));
+        expect(rt.isReady, isFalse);
+      },
+    );
   });
 }

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:serious_python/serious_python.dart';
 
 import 'package:skillbridge_python_lab/core/errors/app_exception.dart';
+
 import 'execution_result.dart';
 import 'python_runtime.dart';
 
@@ -35,8 +36,8 @@ class SeriousPythonRuntime implements PythonRuntime {
     this.defaultMaxOutputChars = 200000,
     http.Client? httpClient,
     Future<void> Function()? startHook,
-  })  : _http = httpClient ?? http.Client(),
-        _startHookOverride = startHook;
+  }) : _http = httpClient ?? http.Client(),
+       _startHookOverride = startHook;
 
   final int port;
   final Duration defaultTimeout;
@@ -86,15 +87,17 @@ class SeriousPythonRuntime implements PythonRuntime {
     // program never completes, so `_runDone` stays false on success.
     unawaited(
       SeriousPython.run(
-        appFileName: 'main.py',
-        environmentVariables: {'SKILLBRIDGE_PORT': '$port'},
-      ).then((result) {
-        _runResult = result;
-        _runDone = true;
-      }).catchError((Object e) {
-        _runError = e;
-        _runDone = true;
-      }),
+            appFileName: 'main.py',
+            environmentVariables: {'SKILLBRIDGE_PORT': '$port'},
+          )
+          .then((result) {
+            _runResult = result;
+            _runDone = true;
+          })
+          .catchError((Object e) {
+            _runError = e;
+            _runDone = true;
+          }),
     );
   }
 
@@ -123,12 +126,17 @@ class SeriousPythonRuntime implements PythonRuntime {
         // full diagnostics instead of a fire-and-forget call.
         await (_startHookOverride ?? _startWithDiagnostics)();
       } catch (e) {
-        throw RuntimeException('Could not start the embedded Python runtime.', cause: e);
+        throw RuntimeException(
+          'Could not start the embedded Python runtime.',
+          cause: e,
+        );
       }
     }
 
     // Poll the health endpoint until the interpreter is accepting requests.
-    final deadline = DateTime.now().add(const Duration(seconds: 30));
+    // First launch on a phone unpacks the stdlib and boots CPython, which can
+    // take well over 30 s on low-end hardware, so allow a generous window.
+    final deadline = DateTime.now().add(const Duration(seconds: 60));
     while (DateTime.now().isBefore(deadline)) {
       try {
         final response = await _http
@@ -144,9 +152,13 @@ class SeriousPythonRuntime implements PythonRuntime {
       } catch (_) {
         // Not up yet; keep polling.
       }
-      // Fail fast when the program has already terminated: polling a dead
-      // process for the full 30 s only delays a clear error.
-      if (_runDone) {
+      // Fail fast only when the plugin reported a *real* failure. `run()` can
+      // resolve with `null` as soon as the interpreter has been launched on its
+      // own thread (it does not wait for a long-lived server), so "run
+      // finished with no message" must NOT be treated as "the process died" -
+      // that made every Run fail instantly while CPython was still booting.
+      // A null result simply means keep polling /health.
+      if (_runError != null || (_runDone && _runResult != null)) {
         throw RuntimeException(
           'The embedded Python runtime stopped before it was ready. '
           '${_failureDetail()}',

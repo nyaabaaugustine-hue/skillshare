@@ -15,7 +15,7 @@ abstract class ConnectivityService {
 
 class ConnectivityPlusService implements ConnectivityService {
   ConnectivityPlusService({Connectivity? connectivity})
-      : _connectivity = connectivity ?? Connectivity() {
+    : _connectivity = connectivity ?? Connectivity() {
     _subscription = _connectivity.onConnectivityChanged.listen(_emit);
     unawaited(refresh());
   }

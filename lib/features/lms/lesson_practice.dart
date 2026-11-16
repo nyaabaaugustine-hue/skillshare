@@ -194,10 +194,7 @@ final Map<String, LessonPractice> lessonPractice = <String, LessonPractice>{
           '# Task: calculate 12 * 7 and print the result\n'
           '\n'
           '# Write your code below:\n',
-      requirements: <String>[
-        'Multiply 12 by 7 with *',
-        'Print the result',
-      ],
+      requirements: <String>['Multiply 12 by 7 with *', 'Print the result'],
       hints: <String>['print(12 * 7) calculates first, then shows the answer.'],
       outputContains: <String>['84'],
       codeContains: <String>['print(', '*'],
@@ -220,12 +217,9 @@ final Map<String, LessonPractice> lessonPractice = <String, LessonPractice>{
     lessonTitle: 'Setting up your Python environment',
     codeLab: _courseBlock('py-practice-setup'),
     quickCheck: const QuickCheck(
-      question: 'Which command shows the installed Python version in a terminal?',
-      options: <String>[
-        'python --version',
-        'python --delete',
-        'print version',
-      ],
+      question:
+          'Which command shows the installed Python version in a terminal?',
+      options: <String>['python --version', 'python --delete', 'print version'],
       correctIndex: 0,
       explanation:
           'Running python --version (python3 --version on some systems) '

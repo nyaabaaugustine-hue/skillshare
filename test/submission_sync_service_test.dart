@@ -24,8 +24,10 @@ void main() {
   setUpAll(sqfliteFfiInit);
 
   setUp(() async {
-    dbPath = p.join(Directory.systemTemp.path,
-        'sb_sync_${DateTime.now().microsecondsSinceEpoch}.db');
+    dbPath = p.join(
+      Directory.systemTemp.path,
+      'sb_sync_${DateTime.now().microsecondsSinceEpoch}.db',
+    );
     // In-process FFI: see app_database.dart for why the isolate-backed factory
     // is not usable inside `testWidgets`.
     database = AppDatabase(factory: databaseFactoryFfiNoIsolate, path: dbPath);
@@ -46,58 +48,58 @@ void main() {
     String id = 'sub-1',
     String code = 'print("hello")',
     DateTime? createdAt,
-  }) =>
-      Submission(
-        id: id,
-        learnerRef: learner,
-        exerciseId: 'ex-hello-world',
-        exerciseVersion: 1,
-        code: code,
-        createdAt: createdAt ?? DateTime(2026, 1, 1),
-      );
+  }) => Submission(
+    id: id,
+    learnerRef: learner,
+    exerciseId: 'ex-hello-world',
+    exerciseVersion: 1,
+    code: code,
+    createdAt: createdAt ?? DateTime(2026, 1, 1),
+  );
 
   SubmissionSyncService buildService({
     required MockLmsClient lms,
     ConnectivityService? connectivity,
     int maxAttemptsPerItem = 3,
     List<Duration>? recordedDelays,
-  }) =>
-      SubmissionSyncService(
-        lmsClient: lms,
-        submissions: repository,
-        connectivity: connectivity ?? FakeConnectivityService(),
-        maxAttemptsPerItem: maxAttemptsPerItem,
-        baseBackoff: baseBackoff,
-        delay: recordedDelays == null
-            ? null
-            : (duration) async {
-                recordedDelays.add(duration);
-              },
-      );
+  }) => SubmissionSyncService(
+    lmsClient: lms,
+    submissions: repository,
+    connectivity: connectivity ?? FakeConnectivityService(),
+    maxAttemptsPerItem: maxAttemptsPerItem,
+    baseBackoff: baseBackoff,
+    delay: recordedDelays == null
+        ? null
+        : (duration) async {
+            recordedDelays.add(duration);
+          },
+  );
 
   group('happy path', () {
-    test('an accepted submission leaves the queue and keeps its receipt',
-        () async {
-      await repository.enqueue(submission());
-      final lms = MockLmsClient();
-      final service = buildService(lms: lms);
+    test(
+      'an accepted submission leaves the queue and keeps its receipt',
+      () async {
+        await repository.enqueue(submission());
+        final lms = MockLmsClient();
+        final service = buildService(lms: lms);
 
-      final report = await service.syncPending(learner);
+        final report = await service.syncPending(learner);
 
-      expect(report.attempted, 1);
-      expect(report.accepted, 1);
-      expect(report.failed, 0);
-      expect(report.rejected, 0);
-      expect(report.authExpired, isFalse);
+        expect(report.attempted, 1);
+        expect(report.accepted, 1);
+        expect(report.failed, 0);
+        expect(report.rejected, 0);
+        expect(report.authExpired, isFalse);
 
-      final stored = await repository.findById('sub-1');
-      expect(stored!.syncState, SubmissionSyncState.accepted);
-      expect(stored.attemptCount, 1);
-      expect(stored.serverResponseRef, startsWith('SRV-'));
-      expect(stored.lastError, isNull);
-      expect(await repository.pending(learner), isEmpty);
-      expect(await repository.pendingCount(learner), 0);
-    });
+        final stored = await repository.findById('sub-1');
+        expect(stored!.syncState, SubmissionSyncState.accepted);
+        expect(stored.attemptCount, 1);
+        expect(stored.serverResponseRef, startsWith('SRV-'));
+        expect(stored.lastError, isNull);
+        expect(await repository.pending(learner), isEmpty);
+        expect(await repository.pendingCount(learner), 0);
+      },
+    );
 
     test('a second pass after success does no work', () async {
       await repository.enqueue(submission());
@@ -113,36 +115,38 @@ void main() {
   });
 
   group('transient failure and backoff', () {
-    test('retries with bounded exponential backoff and never discards the item',
-        () async {
-      await repository.enqueue(submission());
-      final delays = <Duration>[];
-      final lms = MockLmsClient(failNetworkTimes: 3);
-      final service = buildService(
-        lms: lms,
-        maxAttemptsPerItem: 3,
-        recordedDelays: delays,
-      );
+    test(
+      'retries with bounded exponential backoff and never discards the item',
+      () async {
+        await repository.enqueue(submission());
+        final delays = <Duration>[];
+        final lms = MockLmsClient(failNetworkTimes: 3);
+        final service = buildService(
+          lms: lms,
+          maxAttemptsPerItem: 3,
+          recordedDelays: delays,
+        );
 
-      final report = await service.syncPending(learner);
+        final report = await service.syncPending(learner);
 
-      expect(report.attempted, 1);
-      expect(report.failed, 1);
-      expect(report.accepted, 0);
-      expect(report.rejected, 0);
+        expect(report.attempted, 1);
+        expect(report.failed, 1);
+        expect(report.accepted, 0);
+        expect(report.rejected, 0);
 
-      // Backoff doubles per attempt inside a pass: 1x then 2x base.
-      expect(delays, [baseBackoff, baseBackoff * 2]);
+        // Backoff doubles per attempt inside a pass: 1x then 2x base.
+        expect(delays, [baseBackoff, baseBackoff * 2]);
 
-      // The submission is still queued (transient `failed`), not thrown away.
-      final stored = await repository.findById('sub-1');
-      expect(stored, isNotNull);
-      expect(stored!.syncState, SubmissionSyncState.failed);
-      expect(stored.attemptCount, 3);
-      expect(stored.lastError, isNotEmpty);
-      expect(await repository.pending(learner), hasLength(1));
-      expect(await repository.pendingCount(learner), 1);
-    });
+        // The submission is still queued (transient `failed`), not thrown away.
+        final stored = await repository.findById('sub-1');
+        expect(stored, isNotNull);
+        expect(stored!.syncState, SubmissionSyncState.failed);
+        expect(stored.attemptCount, 3);
+        expect(stored.lastError, isNotEmpty);
+        expect(await repository.pending(learner), hasLength(1));
+        expect(await repository.pendingCount(learner), 1);
+      },
+    );
 
     test('succeeds on a later pass once the network recovers', () async {
       await repository.enqueue(submission());
@@ -156,8 +160,10 @@ void main() {
       final second = await service.syncPending(learner);
       expect(second.accepted, 1);
       expect(await repository.pendingCount(learner), 0);
-      expect((await repository.findById('sub-1'))!.syncState,
-          SubmissionSyncState.accepted);
+      expect(
+        (await repository.findById('sub-1'))!.syncState,
+        SubmissionSyncState.accepted,
+      );
     });
 
     test('the backoff exponent is capped', () async {
@@ -208,19 +214,22 @@ void main() {
       expect(await repository.pending(learner), isEmpty);
     });
 
-    test('a rejected verdict is recorded as a terminal rejected state', () async {
-      await repository.enqueue(submission(code: 'TODO: finish me'));
-      final lms = MockLmsClient();
-      final service = buildService(lms: lms);
+    test(
+      'a rejected verdict is recorded as a terminal rejected state',
+      () async {
+        await repository.enqueue(submission(code: 'TODO: finish me'));
+        final lms = MockLmsClient();
+        final service = buildService(lms: lms);
 
-      final report = await service.syncPending(learner);
+        final report = await service.syncPending(learner);
 
-      expect(report.rejected, 1);
-      final stored = await repository.findById('sub-1');
-      expect(stored!.syncState, SubmissionSyncState.rejected);
-      expect(stored.serverStatus, 'rejected');
-      expect(await repository.pending(learner), isEmpty);
-    });
+        expect(report.rejected, 1);
+        final stored = await repository.findById('sub-1');
+        expect(stored!.syncState, SubmissionSyncState.rejected);
+        expect(stored.serverStatus, 'rejected');
+        expect(await repository.pending(learner), isEmpty);
+      },
+    );
   });
 
   group('offline', () {
@@ -247,7 +256,8 @@ void main() {
     test('stops the pass and preserves the queue', () async {
       await repository.enqueue(submission(id: 'first'));
       await repository.enqueue(
-          submission(id: 'second', createdAt: DateTime(2026, 1, 2)));
+        submission(id: 'second', createdAt: DateTime(2026, 1, 2)),
+      );
       final lms = MockLmsClient(failAuthenticationTimes: 1);
       final service = buildService(lms: lms);
 
@@ -261,8 +271,11 @@ void main() {
       final second = await repository.findById('second');
       expect(first!.syncState, SubmissionSyncState.failed);
       expect(first.lastError, isNotEmpty);
-      expect(second!.syncState, SubmissionSyncState.pending,
-          reason: 'the queue must not be flushed by an auth error');
+      expect(
+        second!.syncState,
+        SubmissionSyncState.pending,
+        reason: 'the queue must not be flushed by an auth error',
+      );
       expect(await repository.pendingCount(learner), 2);
     });
   });
@@ -285,41 +298,51 @@ void main() {
       expect(progress.completedChallenges, 1);
     });
 
-    test('a retry of an already-accepted submission awards nothing extra',
-        () async {
-      await repository.enqueue(submission());
-      final lms = MockLmsClient();
-      final service = buildService(lms: lms);
+    test(
+      'a retry of an already-accepted submission awards nothing extra',
+      () async {
+        await repository.enqueue(submission());
+        final lms = MockLmsClient();
+        final service = buildService(lms: lms);
 
-      await service.syncPending(learner);
+        await service.syncPending(learner);
 
-      // Force the row back into the queue to model a client-side re-sync bug.
-      final stored = await repository.findById('sub-1');
-      await repository.update(stored!
-          .copyWith(syncState: SubmissionSyncState.pending));
+        // Force the row back into the queue to model a client-side re-sync bug.
+        final stored = await repository.findById('sub-1');
+        await repository.update(
+          stored!.copyWith(syncState: SubmissionSyncState.pending),
+        );
 
-      final report = await service.syncPending(learner);
-      expect(report.accepted, 1);
+        final report = await service.syncPending(learner);
+        expect(report.accepted, 1);
 
-      final progress = await lms.fetchProgress();
-      expect(lms.gradeCount, 1, reason: 'the LMS deduplicates by submission id');
-      expect(progress.totalPoints, 10);
-    });
+        final progress = await lms.fetchProgress();
+        expect(
+          lms.gradeCount,
+          1,
+          reason: 'the LMS deduplicates by submission id',
+        );
+        expect(progress.totalPoints, 10);
+      },
+    );
   });
 
   group('report', () {
-    test('allSettled is true only when every item reached a terminal state',
-        () async {
-      await repository.enqueue(submission(id: 'ok'));
-      await repository.enqueue(
-          submission(id: 'bad', code: 'TODO', createdAt: DateTime(2026, 1, 2)));
-      final service = buildService(lms: MockLmsClient());
+    test(
+      'allSettled is true only when every item reached a terminal state',
+      () async {
+        await repository.enqueue(submission(id: 'ok'));
+        await repository.enqueue(
+          submission(id: 'bad', code: 'TODO', createdAt: DateTime(2026, 1, 2)),
+        );
+        final service = buildService(lms: MockLmsClient());
 
-      final report = await service.syncPending(learner);
-      expect(report.attempted, 2);
-      expect(report.accepted, 1);
-      expect(report.rejected, 1);
-      expect(report.allSettled, isTrue);
-    });
+        final report = await service.syncPending(learner);
+        expect(report.attempted, 2);
+        expect(report.accepted, 1);
+        expect(report.rejected, 1);
+        expect(report.allSettled, isTrue);
+      },
+    );
   });
 }

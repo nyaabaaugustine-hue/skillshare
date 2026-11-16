@@ -29,14 +29,18 @@ class AchievementsController extends ChangeNotifier {
     try {
       _progress = await _deps.lmsClient.fetchProgress();
       _achievements = await _deps.lmsClient.fetchAchievements();
-      final submissions = await _deps.submissions.listForLearner(_deps.learnerRef);
+      final submissions = await _deps.submissions.listForLearner(
+        _deps.learnerRef,
+      );
       _recent = submissions
-          .map((s) => SubmissionSummary(
-                exerciseId: s.exerciseId,
-                state: s.syncState.name,
-                createdAt: s.createdAt,
-                serverStatus: s.serverStatus,
-              ))
+          .map(
+            (s) => SubmissionSummary(
+              exerciseId: s.exerciseId,
+              state: s.syncState.name,
+              createdAt: s.createdAt,
+              serverStatus: s.serverStatus,
+            ),
+          )
           .toList(growable: false);
     } catch (_) {
       _error = 'Could not refresh your progress right now.';

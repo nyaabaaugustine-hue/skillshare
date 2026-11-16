@@ -36,8 +36,9 @@ class AppRouter {
         // Either a bare Exercise (practice tab) or a map carrying the exercise
         // plus a course PracticeSession (practice step on the course path).
         final editorArgs = settings.arguments;
-        final exercise =
-            editorArgs is Map ? editorArgs['exercise'] : editorArgs;
+        final exercise = editorArgs is Map
+            ? editorArgs['exercise']
+            : editorArgs;
         if (exercise is! Exercise) return _home(settings);
         final practice = editorArgs is Map ? editorArgs['practice'] : null;
         return MaterialPageRoute(

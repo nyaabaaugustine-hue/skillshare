@@ -301,13 +301,15 @@ class _QuizStepViewState extends State<QuizStepView> {
   }
 
   void _retry() => setState(() {
-        _checked = false;
-        _selected = null;
-      });
+    _checked = false;
+    _selected = null;
+  });
 
   Widget _option(int i) {
     final selected = _selected == i;
-    var border = selected ? SkillBridgeColors.primary : SkillBridgeColors.surfaceHigh;
+    var border = selected
+        ? SkillBridgeColors.primary
+        : SkillBridgeColors.surfaceHigh;
     if (_checked && selected) {
       border = _isCorrect ? SkillBridgeColors.success : SkillBridgeColors.error;
     }
@@ -341,7 +343,9 @@ class _QuizStepViewState extends State<QuizStepView> {
               ),
               if (_checked && selected)
                 Icon(
-                  _isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                  _isCorrect
+                      ? Icons.check_circle_rounded
+                      : Icons.cancel_rounded,
                   color: border,
                 ),
             ],
@@ -374,7 +378,9 @@ class _QuizStepViewState extends State<QuizStepView> {
   }
 
   Widget _banner() {
-    final color = _isCorrect ? SkillBridgeColors.success : SkillBridgeColors.error;
+    final color = _isCorrect
+        ? SkillBridgeColors.success
+        : SkillBridgeColors.error;
     return Container(
       key: ValueKey('banner$_isCorrect'),
       width: double.infinity,
@@ -454,13 +460,12 @@ class _QuizStepViewState extends State<QuizStepView> {
               child: child,
             ),
           ),
-          child: _checked ? _banner() : const SizedBox.shrink(key: ValueKey('none')),
+          child: _checked
+              ? _banner()
+              : const SizedBox.shrink(key: ValueKey('none')),
         ),
         ChunkyButton(label: label, onPressed: action),
       ],
     );
   }
 }
-
-
-

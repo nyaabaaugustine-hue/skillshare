@@ -6,9 +6,9 @@ import 'package:skillbridge_python_lab/features/editor/widgets/python_input_form
 /// Mirrors what the editing pipeline hands the formatter: the value before the
 /// keystroke and the value after the raw text change.
 TextEditingValue _collapsed(String text, int offset) => TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: offset),
-    );
+  text: text,
+  selection: TextSelection.collapsed(offset: offset),
+);
 
 void main() {
   late PythonInputFormatter formatter;
@@ -25,7 +25,11 @@ void main() {
 
   /// Types [opener] while [before] has [start, end] selected.
   TextEditingValue typeWithSelection(
-      String before, int start, int end, String opener) {
+    String before,
+    int start,
+    int end,
+    String opener,
+  ) {
     final old = TextEditingValue(
       text: before,
       selection: TextSelection(baseOffset: start, extentOffset: end),
@@ -81,13 +85,15 @@ void main() {
   });
 
   group('skip over an existing quote', () {
-    test('a second " steps over the auto-inserted one instead of doubling it',
-        () {
-      // After auto-close the buffer holds `""` with the caret between them.
-      final result = typeAt('name = ""', 8, '"');
-      expect(result.text, 'name = ""');
-      expect(result.selection.extentOffset, 9);
-    });
+    test(
+      'a second " steps over the auto-inserted one instead of doubling it',
+      () {
+        // After auto-close the buffer holds `""` with the caret between them.
+        final result = typeAt('name = ""', 8, '"');
+        expect(result.text, 'name = ""');
+        expect(result.selection.extentOffset, 9);
+      },
+    );
 
     test("works for single quotes", () {
       final result = typeAt("s = ''", 5, "'");

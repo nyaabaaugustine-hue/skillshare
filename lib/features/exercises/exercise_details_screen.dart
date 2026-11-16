@@ -30,9 +30,12 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
   Future<void> _loadStatus() async {
     final deps = context.read<AppDependencies>();
     try {
-      final submissions = await deps.submissions.listForLearner(deps.learnerRef);
-      final mine =
-          submissions.where((s) => s.exerciseId == widget.exercise.id).toList();
+      final submissions = await deps.submissions.listForLearner(
+        deps.learnerRef,
+      );
+      final mine = submissions
+          .where((s) => s.exerciseId == widget.exercise.id)
+          .toList();
       if (mounted) {
         setState(() {
           _latest = mine.isEmpty ? null : mine.first;
@@ -91,16 +94,27 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
             ),
             child: Text(
               exercise.starterCode.isEmpty ? '(empty)' : exercise.starterCode,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 13, color: Color(0xFFE6EAF0)),
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 13,
+                color: Color(0xFFE6EAF0),
+              ),
             ),
           ),
           if (exercise.hints.isNotEmpty) ...[
             const SizedBox(height: 20),
             _Heading('Hints'),
-            for (var i = 0; i < _revealedHints && i < exercise.hints.length; i++)
+            for (
+              var i = 0;
+              i < _revealedHints && i < exercise.hints.length;
+              i++
+            )
               Card(
                 child: ListTile(
-                  leading: const Icon(Icons.lightbulb_outline, color: Colors.orange),
+                  leading: const Icon(
+                    Icons.lightbulb_outline,
+                    color: Colors.orange,
+                  ),
                   title: Text(exercise.hints[i]),
                 ),
               ),
@@ -108,14 +122,20 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
               OutlinedButton.icon(
                 onPressed: () => setState(() => _revealedHints++),
                 icon: const Icon(Icons.visibility_outlined),
-                label: Text('Show hint ${_revealedHints + 1} of ${exercise.hints.length}'),
+                label: Text(
+                  'Show hint ${_revealedHints + 1} of ${exercise.hints.length}',
+                ),
               ),
           ],
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: () => _start(),
-            icon: Icon(exercise.hasLesson ? Icons.menu_book_outlined : Icons.code),
-            label: Text(exercise.hasLesson ? 'Start with a quick lesson' : 'Start coding'),
+            icon: Icon(
+              exercise.hasLesson ? Icons.menu_book_outlined : Icons.code,
+            ),
+            label: Text(
+              exercise.hasLesson ? 'Start with a quick lesson' : 'Start coding',
+            ),
           ),
           const SizedBox(height: 40),
         ],
@@ -140,8 +160,8 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
           'onFinished': () {
             // Replace rather than push so Back from the editor does not
             // re-enter the lesson the learner has already completed.
-            Navigator.of(context).pushReplacementNamed('/editor',
-                arguments: exercise);
+            Navigator.of(context)
+                .pushReplacementNamed('/editor', arguments: exercise);
           },
         },
       );
@@ -201,7 +221,12 @@ class _StatusChip extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 18),
           const SizedBox(width: 8),
-          Expanded(child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600))),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: color, fontWeight: FontWeight.w600),
+            ),
+          ),
         ],
       ),
     );
@@ -214,9 +239,12 @@ class _Heading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-      );
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(
+      text,
+      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+    ),
+  );
 }
 
 class _Bullet extends StatelessWidget {
@@ -226,16 +254,14 @@ class _Bullet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 8),
-            Expanded(child: Text(text)),
-          ],
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text)),
+      ],
+    ),
+  );
 }
-
-

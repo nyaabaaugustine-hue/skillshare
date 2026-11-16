@@ -114,6 +114,20 @@ class CourseController extends ChangeNotifier {
 
   int get coinsEarned => completedCount * 25;
 
+  AttemptRecord? get latestAttempt => _history.isEmpty ? null : _history.last;
+
+  bool get isCourseComplete => totalSteps > 0 && completedCount == totalSteps;
+
+  String get learnerPrompt {
+    if (isCourseComplete) {
+      return 'Certificate unlocked — you finished the path.';
+    }
+    final next = nextStep;
+    if (next == null) return 'Your learning path is ready.';
+    if (completedCount == 0) return 'Start with one small step today.';
+    return 'Next up: ${next.title}';
+  }
+
   /// Consecutive days of activity ending today (or yesterday, so a streak is
   /// not lost until a day is missed).
   int get streak {

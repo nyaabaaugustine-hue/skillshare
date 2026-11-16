@@ -51,8 +51,10 @@ class _LearningPathViewState extends State<LearningPathView> {
       final progress = await deps.lmsClient.fetchProgress();
       if (!mounted) return;
       setState(() {
-        _completed =
-            progress.completedChallenges.clamp(0, learningPlaces.length);
+        _completed = progress.completedChallenges.clamp(
+          0,
+          learningPlaces.length,
+        );
       });
     } catch (_) {
       // Keep the first place as the starting point when offline.

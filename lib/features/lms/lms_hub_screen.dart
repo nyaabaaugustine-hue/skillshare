@@ -228,9 +228,7 @@ class _NavPill extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  color: active
-                      ? Colors.white
-                      : SkillBridgeColors.textPrimary,
+                  color: active ? Colors.white : SkillBridgeColors.textPrimary,
                   fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                   fontSize: 13,
                   letterSpacing: 0.1,
@@ -275,6 +273,7 @@ class _CoursesSection extends StatelessWidget {
     );
   }
 }
+
 class _CourseJourneyMap extends StatefulWidget {
   const _CourseJourneyMap();
 
@@ -283,7 +282,6 @@ class _CourseJourneyMap extends StatefulWidget {
 }
 
 class _CourseJourneyMapState extends State<_CourseJourneyMap> {
-
   /// How many places on the map the learner has already finished. 0 means the
   /// learner is standing on the first place.
   int _completed = 0;
@@ -304,8 +302,10 @@ class _CourseJourneyMapState extends State<_CourseJourneyMap> {
       final progress = await deps.lmsClient.fetchProgress();
       if (!mounted) return;
       setState(() {
-        _completed = progress.completedChallenges
-            .clamp(0, learningPlaces.length);
+        _completed = progress.completedChallenges.clamp(
+          0,
+          learningPlaces.length,
+        );
       });
     } catch (_) {
       // Keep the default starting position when progress is unavailable.
@@ -736,7 +736,9 @@ class _HeroCard extends StatelessWidget {
                         color: SkillBridgeColors.accent.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(9),
                         border: Border.all(
-                          color: SkillBridgeColors.accent.withValues(alpha: 0.4),
+                          color: SkillBridgeColors.accent.withValues(
+                            alpha: 0.4,
+                          ),
                         ),
                       ),
                       child: const Text(
@@ -803,10 +805,7 @@ class _HeroCard extends StatelessWidget {
                           : 'Start a streak',
                     ),
                     const SizedBox(width: 8),
-                    _HeroStat(
-                      icon: Icons.bolt_rounded,
-                      label: '$xp XP earned',
-                    ),
+                    _HeroStat(icon: Icons.bolt_rounded, label: '$xp XP earned'),
                   ],
                 ),
               ],
@@ -1015,11 +1014,7 @@ class _LessonTile extends StatelessWidget {
       }
       Navigator.of(context).pushNamed(
         '/lms-video',
-        arguments: {
-          'title': title,
-          'subtitle': duration,
-          'publicId': publicId,
-        },
+        arguments: {'title': title, 'subtitle': duration, 'publicId': publicId},
       );
     }
 
@@ -1545,9 +1540,8 @@ class _CertificateSectionState extends State<_CertificateSection> {
   }
 
   void _toast(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -1590,8 +1584,7 @@ class _CertificateSectionState extends State<_CertificateSection> {
             const SizedBox(height: 20),
             if (complete)
               FilledButton.icon(
-                onPressed:
-                    _downloading ? null : () => _download(learnerName),
+                onPressed: _downloading ? null : () => _download(learnerName),
                 icon: _downloading
                     ? const SizedBox(
                         width: 18,
@@ -1721,10 +1714,7 @@ class _StatusBanner extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 9,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(8),
@@ -1822,7 +1812,9 @@ class _LockedPreview extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.fromLTRB(26, 22, 26, 22),
                   decoration: BoxDecoration(
-                    color: SkillBridgeColors.surfaceHigh.withValues(alpha: 0.94),
+                    color: SkillBridgeColors.surfaceHigh.withValues(
+                      alpha: 0.94,
+                    ),
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.10),
@@ -1889,10 +1881,7 @@ class _LockedPreview extends StatelessWidget {
 }
 
 class _LockedAction extends StatelessWidget {
-  const _LockedAction({
-    required this.completedCount,
-    required this.totalSteps,
-  });
+  const _LockedAction({required this.completedCount, required this.totalSteps});
 
   final int completedCount;
   final int totalSteps;

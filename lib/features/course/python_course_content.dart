@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:skillbridge_python_lab/features/lms/learning_map.dart';
 
 import 'course_models.dart';
@@ -23,15 +25,40 @@ CourseStep _video(int index) {
   );
 }
 
+/// The numbers behind the "Storing Data" practice.
+///
+/// They are chosen once per launch, so a learner who copies the answer from a
+/// previous session (or types it as text) fails: the total they must print is
+/// different, and [CodeBlock.forbiddenLiterals] rejects the literal outright.
+class _PracticeValues {
+  const _PracticeValues({required this.price, required this.quantity});
+
+  final int price;
+  final int quantity;
+
+  int get total => price * quantity;
+
+  static _PracticeValues pick({Random? random}) {
+    final rng = random ?? Random();
+    var price = 11 + rng.nextInt(9); // 11..19
+    final quantity = 3 + rng.nextInt(5); // 3..7
+    if (price == quantity) price += 1;
+    return _PracticeValues(price: price, quantity: quantity);
+  }
+}
+
+final _PracticeValues _practice = _PracticeValues.pick();
+
 /// Python Kickstart: the real lesson videos from the learning map, with a short
 /// hands-on practice after the lessons that teach a new skill. Finishing a
 /// video or a practice unlocks the next node on the Home path.
-final CourseUnit pythonKickstartCourse = CourseUnit(
+final CourseUnit pythonKickstartCourse = _buildCourse();
+
+CourseUnit _buildCourse() => CourseUnit(
   id: 'python-kickstart',
   sectionLabel: 'SECTION FOUNDATIONS',
   title: 'Unit 1: Python Kickstart',
-  subtitle:
-      'Watch each lesson, then practise it. Finish a step to open the next one.',
+  subtitle: 'Watch each lesson, then practise it. Finish a step to open the next one.',
   steps: <CourseStep>[
     _video(0),
     _video(1),
@@ -47,6 +74,11 @@ final CourseUnit pythonKickstartCourse = CourseUnit(
         CodeBlock(
           heading: 'Your First Output',
           brief: 'Use print() to show a message and a number on screen.',
+          workedExample: 'print("Hello, Ama!")\nprint(12)',
+          whyItWorks:
+              'Each print() call displays its value and starts a new line. '
+              'Text needs quotes; numbers do not.',
+          takeaway: 'Show text and numbers in the output with print().',
           starterCode:
               '# Task: print a greeting that includes your name,\n'
               '# then print your age on its own line.\n'
@@ -79,6 +111,12 @@ final CourseUnit pythonKickstartCourse = CourseUnit(
         CodeBlock(
           heading: 'Check Your Setup',
           brief: 'Run a script to prove your Python environment works.',
+          workedExample:
+              'import sys\nprint("Python is ready!")\nprint(sys.version)',
+          whyItWorks:
+              'Importing sys makes Python version information available as '
+              'sys.version, which print() can display.',
+          takeaway: 'Run a script and inspect the Python version.',
           starterCode:
               'import sys\n'
               '\n'
@@ -110,6 +148,12 @@ final CourseUnit pythonKickstartCourse = CourseUnit(
         CodeBlock(
           heading: 'Types of Data',
           brief: 'Print the type of a whole number, a decimal and some text.',
+          workedExample: 'print(type(10))',
+          whyItWorks:
+              'type() reports what kind of value it receives. The same call '
+              'works with numbers and text.',
+          takeaway:
+              'Use type() to check whether a value is an int, float or str.',
           starterCode:
               '# Task: print the type of each value below using type()\n'
               '#   10        a whole number\n'
@@ -132,7 +176,7 @@ final CourseUnit pythonKickstartCourse = CourseUnit(
       ],
     ),
     _video(7),
-    const CourseStep(
+    CourseStep(
       id: 'py-practice-variables',
       title: 'Practice: Storing Data',
       subtitle: 'Use variables',
@@ -143,27 +187,40 @@ final CourseUnit pythonKickstartCourse = CourseUnit(
         CodeBlock(
           heading: 'Storing Data',
           brief:
-              'Store a name and two numbers in variables, then print a sentence.',
+              'Ama buys ${_practice.quantity} items at ${_practice.price} cedis '
+              'each. Work the total out from the variables, then print who owes '
+              'how much — for example "Ama owes 48".',
+          workedExample:
+              'price = 12\nquantity = 3\ntotal = price * quantity\n'
+              'print("Ama owes", total)',
+          whyItWorks:
+              'Variables keep values so you can calculate with them later. '
+              'The * operator multiplies the two numbers before print() shows '
+              'the result.',
+          takeaway: 'Store values, calculate from them and print the result.',
           starterCode:
               'name = "Ama"\n'
-              'price = 12\n'
-              'quantity = 3\n'
+              'price = ${_practice.price}\n'
+              'quantity = ${_practice.quantity}\n'
               '\n'
-              '# Task: print a sentence that says who owes how much,\n'
-              '# for example:  Ama owes 36\n'
-              '# Work the total out from the variables above.\n'
+              '# Task: print a sentence that says who owes how much.\n'
+              '# Work the total out from the variables above —\n'
+              '# do not type the answer as text.\n'
               '\n'
               '# Write your code below:\n',
           requirements: <String>[
             'Use the three variables',
-            'Print a result calculated from your variables',
+            'Print a total worked out in code from price and quantity',
           ],
           hints: <String>[
             'You can print several values at once: print(name, "owes", total).',
-            'Multiply with *.',
+            'Multiply with * and store the result in a variable called total.',
           ],
-          outputContains: <String>['Ama', '36'],
+          // The expected total is generated per launch, so it cannot be copied
+          // from the brief, a previous session, or the worked example.
+          outputContains: <String>['Ama', '${_practice.total}'],
           codeContains: <String>['print(', '*'],
+          forbiddenLiterals: <String>['${_practice.total}'],
         ),
       ],
     ),

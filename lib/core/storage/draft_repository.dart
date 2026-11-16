@@ -19,12 +19,14 @@ class Draft {
   final DateTime updatedAt;
 
   factory Draft.fromDbMap(Map<String, Object?> map) => Draft(
-        learnerRef: map['learner_ref'] as String,
-        exerciseId: map['exercise_id'] as String,
-        exerciseVersion: (map['exercise_version'] as num).toInt(),
-        code: map['code'] as String,
-        updatedAt: DateTime.fromMillisecondsSinceEpoch((map['updated_at'] as num).toInt()),
-      );
+    learnerRef: map['learner_ref'] as String,
+    exerciseId: map['exercise_id'] as String,
+    exerciseVersion: (map['exercise_version'] as num).toInt(),
+    code: map['code'] as String,
+    updatedAt: DateTime.fromMillisecondsSinceEpoch(
+      (map['updated_at'] as num).toInt(),
+    ),
+  );
 }
 
 /// Stores the current working copy of each exercise's code, per learner.
@@ -43,17 +45,13 @@ class DraftRepository {
     required String code,
     DateTime? updatedAt,
   }) async {
-    await _db.insert(
-      'drafts',
-      {
-        'learner_ref': learnerRef,
-        'exercise_id': exerciseId,
-        'exercise_version': exerciseVersion,
-        'code': code,
-        'updated_at': (updatedAt ?? DateTime.now()).millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await _db.insert('drafts', {
+      'learner_ref': learnerRef,
+      'exercise_id': exerciseId,
+      'exercise_version': exerciseVersion,
+      'code': code,
+      'updated_at': (updatedAt ?? DateTime.now()).millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<Draft?> find(String learnerRef, String exerciseId) async {
@@ -88,6 +86,10 @@ class DraftRepository {
 
   /// Privacy control: remove every local draft for a learner.
   Future<void> deleteAllFor(String learnerRef) async {
-    await _db.delete('drafts', where: 'learner_ref = ?', whereArgs: [learnerRef]);
+    await _db.delete(
+      'drafts',
+      where: 'learner_ref = ?',
+      whereArgs: [learnerRef],
+    );
   }
 }

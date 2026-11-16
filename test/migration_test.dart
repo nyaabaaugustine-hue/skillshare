@@ -44,7 +44,8 @@ Future<void> _createV1Schema(Database db) async {
     )
   ''');
   batch.execute(
-      'CREATE INDEX idx_submissions_state ON submissions(sync_state)');
+    'CREATE INDEX idx_submissions_state ON submissions(sync_state)',
+  );
   batch.execute('''
     CREATE TABLE exercises (
       exercise_id TEXT PRIMARY KEY,
@@ -231,7 +232,10 @@ void main() {
           isA<StateError>().having(
             (e) => e.message,
             'message',
-            allOf(contains('No migration registered'), contains('[$unregistered]')),
+            allOf(
+              contains('No migration registered'),
+              contains('[$unregistered]'),
+            ),
           ),
         ),
       );
@@ -253,7 +257,10 @@ void main() {
     test('is a no-op when already at the target version', () async {
       final db = await databaseFactoryFfiNoIsolate.openDatabase(
         dbPath,
-        options: OpenDatabaseOptions(version: 1, onCreate: (db, _) => _createV1Schema(db)),
+        options: OpenDatabaseOptions(
+          version: 1,
+          onCreate: (db, _) => _createV1Schema(db),
+        ),
       );
       // Must not throw and must not touch the tables.
       await runMigrations(db, from: 1, to: 1);
@@ -266,9 +273,13 @@ void main() {
 
     test('every registered step is numbered consecutively from 2', () {
       final versions = kMigrations.map((s) => s.version).toList();
-      expect(versions, List.generate(versions.length, (i) => i + 2),
-          reason: 'kMigrations must cover 2..$kSchemaVersion with no gaps, '
-              'or runMigrations will refuse to open an existing install.');
+      expect(
+        versions,
+        List.generate(versions.length, (i) => i + 2),
+        reason:
+            'kMigrations must cover 2..$kSchemaVersion with no gaps, '
+            'or runMigrations will refuse to open an existing install.',
+      );
       expect(AppDatabase.schemaVersion, kSchemaVersion);
     });
 
@@ -276,7 +287,10 @@ void main() {
       // Learner work in a v1 database.
       final db = await databaseFactoryFfiNoIsolate.openDatabase(
         dbPath,
-        options: OpenDatabaseOptions(version: 1, onCreate: (db, _) => _createV1Schema(db)),
+        options: OpenDatabaseOptions(
+          version: 1,
+          onCreate: (db, _) => _createV1Schema(db),
+        ),
       );
       await db.insert('drafts', {
         'learner_ref': 'learner-1',
@@ -323,8 +337,11 @@ void main() {
         throwsA(anything),
       );
 
-      expect(ranSecondStep, isTrue,
-          reason: 'the failing step should actually have run');
+      expect(
+        ranSecondStep,
+        isTrue,
+        reason: 'the failing step should actually have run',
+      );
 
       // The database must still be usable and still hold the learner's code.
       final reopened = await databaseFactoryFfiNoIsolate.openDatabase(
@@ -340,105 +357,119 @@ void main() {
         "SELECT name FROM sqlite_master WHERE type = 'index' "
         "AND name = 'idx_probe'",
       );
-      expect(indexes, isEmpty,
-          reason: 'a failed upgrade must leave the database exactly as it '
-              'found it, not half-migrated.');
+      expect(
+        indexes,
+        isEmpty,
+        reason:
+            'a failed upgrade must leave the database exactly as it '
+            'found it, not half-migrated.',
+      );
       await reopened.close();
     });
   });
 
   group('upgrading a real v1 database to $kSchemaVersion', () {
-    test('preserves every learner draft, submission and cached exercise',
-        () async {
-      await seedV1Database();
+    test(
+      'preserves every learner draft, submission and cached exercise',
+      () async {
+        await seedV1Database();
 
-      final database =
-          AppDatabase(factory: databaseFactoryFfiNoIsolate, path: dbPath);
-      await database.open();
-      addTearDown(database.close);
+        final database = AppDatabase(
+          factory: databaseFactoryFfiNoIsolate,
+          path: dbPath,
+        );
+        await database.open();
+        addTearDown(database.close);
 
-      final drafts = DraftRepository(database);
-      final submissions = SubmissionRepository(database);
-      final exercises = ExerciseRepository(database);
+        final drafts = DraftRepository(database);
+        final submissions = SubmissionRepository(database);
+        final exercises = ExerciseRepository(database);
 
-      final mine = await drafts.listFor('learner-1');
-      expect(mine.map((d) => d.exerciseId).toSet(),
-          {'ex-loops', 'ex-functions'});
-      expect(
-        mine.firstWhere((d) => d.exerciseId == 'ex-loops').code,
-        'for i in range(5):\n    print(i)\n',
-      );
+        final mine = await drafts.listFor('learner-1');
+        expect(mine.map((d) => d.exerciseId).toSet(), {
+          'ex-loops',
+          'ex-functions',
+        });
+        expect(
+          mine.firstWhere((d) => d.exerciseId == 'ex-loops').code,
+          'for i in range(5):\n    print(i)\n',
+        );
 
-      // Other learners' work is untouched.
-      expect(await drafts.listFor('learner-2'), hasLength(1));
+        // Other learners' work is untouched.
+        expect(await drafts.listFor('learner-2'), hasLength(1));
 
-      // All five queue states survive the rebuild-free upgrade.
-      final history = await submissions.listForLearner('learner-1');
-      expect(history, hasLength(5));
-      expect(
-        history.map((s) => s.syncState).toSet(),
-        {
+        // All five queue states survive the rebuild-free upgrade.
+        final history = await submissions.listForLearner('learner-1');
+        expect(history, hasLength(5));
+        expect(history.map((s) => s.syncState).toSet(), {
           SubmissionSyncState.pending,
           SubmissionSyncState.failed,
           SubmissionSyncState.syncing,
           SubmissionSyncState.accepted,
           SubmissionSyncState.rejected,
-        },
-      );
-      expect(history.firstWhere((s) => s.id == 'sub-accepted').serverResponseRef,
-          'SRV-sub-accepted');
+        });
+        expect(
+          history.firstWhere((s) => s.id == 'sub-accepted').serverResponseRef,
+          'SRV-sub-accepted',
+        );
 
-      // Exactly the retryable ones are still queued.
-      expect(await submissions.pendingCount('learner-1'), 2);
+        // Exactly the retryable ones are still queued.
+        expect(await submissions.pendingCount('learner-1'), 2);
 
-      final cached = await exercises.findById('ex-loops');
-      expect(cached, isNotNull);
-      expect(cached!.hints, ['range(5)', 'indent the body']);
-      expect(cached.objectives, ['understand for', 'use range']);
-    });
+        final cached = await exercises.findById('ex-loops');
+        expect(cached, isNotNull);
+        expect(cached!.hints, ['range(5)', 'indent the body']);
+        expect(cached.objectives, ['understand for', 'use range']);
+      },
+    );
 
     test('the queue still behaves after the migration', () async {
       await seedV1Database();
 
-      final database =
-          AppDatabase(factory: databaseFactoryFfiNoIsolate, path: dbPath);
+      final database = AppDatabase(
+        factory: databaseFactoryFfiNoIsolate,
+        path: dbPath,
+      );
       await database.open();
       addTearDown(database.close);
 
       final submissions = SubmissionRepository(database);
       // FIFO order must still hold: the v1 rows share a created_at, so add a
       // new one and check it lands last.
-      await submissions.enqueue(Submission(
-        id: 'sub-new',
-        learnerRef: 'learner-1',
-        exerciseId: 'ex-loops',
-        exerciseVersion: 3,
-        code: 'print("new")',
-        createdAt: DateTime(2026, 3, 1),
-      ));
+      await submissions.enqueue(
+        Submission(
+          id: 'sub-new',
+          learnerRef: 'learner-1',
+          exerciseId: 'ex-loops',
+          exerciseVersion: 3,
+          code: 'print("new")',
+          createdAt: DateTime(2026, 3, 1),
+        ),
+      );
 
       final pending = await submissions.pending('learner-1');
       expect(pending.last.id, 'sub-new');
 
       // And accepting it must still clear it from the queue.
       final loaded = await submissions.findById('sub-new');
-      await submissions.update(loaded!.copyWith(
-        syncState: SubmissionSyncState.accepted,
-        serverResponseRef: 'SRV-new',
-        lastError: null,
-      ));
-      expect(
-        (await submissions.findById('sub-new'))!.serverStatus,
-        isNull,
+      await submissions.update(
+        loaded!.copyWith(
+          syncState: SubmissionSyncState.accepted,
+          serverResponseRef: 'SRV-new',
+          lastError: null,
+        ),
       );
+      expect((await submissions.findById('sub-new'))!.serverStatus, isNull);
       expect(await submissions.pendingCount('learner-1'), 2);
     });
 
     test('the new indexes are actually created', () async {
       await seedV1Database();
 
-      final database =
-          AppDatabase(factory: databaseFactoryFfiNoIsolate, path: dbPath);
+      final database = AppDatabase(
+        factory: databaseFactoryFfiNoIsolate,
+        path: dbPath,
+      );
       await database.open();
       addTearDown(database.close);
 
@@ -460,16 +491,22 @@ void main() {
     test('a second open does not re-run the migration', () async {
       await seedV1Database();
 
-      final first =
-          AppDatabase(factory: databaseFactoryFfiNoIsolate, path: dbPath);
+      final first = AppDatabase(
+        factory: databaseFactoryFfiNoIsolate,
+        path: dbPath,
+      );
       await first.open();
-      final before =
-          (await first.db.rawQuery('PRAGMA user_version')).first.values.first;
+      final before = (await first.db.rawQuery('PRAGMA user_version'))
+          .first
+          .values
+          .first;
       await first.close();
       expect(before, kSchemaVersion);
 
-      final second =
-          AppDatabase(factory: databaseFactoryFfiNoIsolate, path: dbPath);
+      final second = AppDatabase(
+        factory: databaseFactoryFfiNoIsolate,
+        path: dbPath,
+      );
       await second.open();
       addTearDown(second.close);
       expect(
@@ -508,10 +545,14 @@ void main() {
       final upgradedSignature = await _schemaSignature(upgraded);
       await upgraded.close();
 
-      expect(upgradedSignature, equals(freshSignature),
-          reason: 'A learner who upgraded must end up with the same schema as '
-              'a learner who installed fresh. If these differ, the two paths '
-              'have drifted and one of them is wrong.');
+      expect(
+        upgradedSignature,
+        equals(freshSignature),
+        reason:
+            'A learner who upgraded must end up with the same schema as '
+            'a learner who installed fresh. If these differ, the two paths '
+            'have drifted and one of them is wrong.',
+      );
       expect(freshSignature, isNotEmpty);
     });
   });
@@ -520,7 +561,10 @@ void main() {
     test('columnExists reports present and absent columns', () async {
       final db = await databaseFactoryFfiNoIsolate.openDatabase(
         dbPath,
-        options: OpenDatabaseOptions(version: 1, onCreate: (db, _) => _createV1Schema(db)),
+        options: OpenDatabaseOptions(
+          version: 1,
+          onCreate: (db, _) => _createV1Schema(db),
+        ),
       );
 
       expect(await columnExists(db, 'drafts', 'code'), isTrue);
@@ -533,7 +577,10 @@ void main() {
     test('rebuildTable adds a constrained column and keeps the data', () async {
       final db = await databaseFactoryFfiNoIsolate.openDatabase(
         dbPath,
-        options: OpenDatabaseOptions(version: 1, onCreate: (db, _) => _createV1Schema(db)),
+        options: OpenDatabaseOptions(
+          version: 1,
+          onCreate: (db, _) => _createV1Schema(db),
+        ),
       );
       await db.insert('drafts', {
         'learner_ref': 'learner-1',
@@ -577,21 +624,28 @@ void main() {
       final rows = await db.query('drafts');
       expect(rows, hasLength(1));
       expect(rows.first['code'], 'print(1)');
-      expect(rows.first['run_count'], 0,
-          reason: 'the backfill default must be applied to existing rows');
+      expect(
+        rows.first['run_count'],
+        0,
+        reason: 'the backfill default must be applied to existing rows',
+      );
 
       expect(await columnExists(db, 'drafts', 'run_count'), isTrue);
       expect(
-        await db.rawQuery("SELECT name FROM sqlite_master "
-            "WHERE type = 'table' AND name = 'drafts_migrating'"),
+        await db.rawQuery(
+          "SELECT name FROM sqlite_master "
+          "WHERE type = 'table' AND name = 'drafts_migrating'",
+        ),
         isEmpty,
         reason: 'the old table must be dropped, not left behind as clutter',
       );
 
       // The rebuild drops the old indexes with the old table, so the calling
       // migration has to re-create them; verify it can.
-      final indexes = await db.rawQuery("SELECT name FROM sqlite_master "
-          "WHERE type = 'index' AND name = 'idx_drafts_learner_updated'");
+      final indexes = await db.rawQuery(
+        "SELECT name FROM sqlite_master "
+        "WHERE type = 'index' AND name = 'idx_drafts_learner_updated'",
+      );
       expect(indexes, hasLength(1));
 
       // And the new column is writable, proving it is a real NOT NULL column.

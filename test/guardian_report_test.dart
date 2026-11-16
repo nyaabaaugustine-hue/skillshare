@@ -4,19 +4,19 @@ import 'package:skillbridge_python_lab/features/course/course_progress_repositor
 import 'package:skillbridge_python_lab/features/course/guardian_report.dart';
 
 CourseStep _step(String id, CourseStepKind kind) => CourseStep(
-      id: id,
-      title: 'Step $id',
-      subtitle: '',
-      kind: kind,
-      xp: 10,
-      blocks: const <CourseBlock>[],
-    );
+  id: id,
+  title: 'Step $id',
+  subtitle: '',
+  kind: kind,
+  xp: 10,
+  blocks: const <CourseBlock>[],
+);
 
 AttemptRecord _try(String id, int score, int minute) => AttemptRecord(
-      stepId: id,
-      score: score,
-      at: DateTime(2026, 10, 19, 9, minute),
-    );
+  stepId: id,
+  score: score,
+  at: DateTime(2026, 10, 19, 9, minute),
+);
 
 void main() {
   final course = CourseUnit(
@@ -97,11 +97,7 @@ void main() {
     test('average uses each step\'s latest score and follows course order', () {
       final report = GuardianReport.build(
         course: course,
-        history: [
-          _try('c', 70, 1),
-          _try('a', 100, 2),
-          _try('a', 90, 3),
-        ],
+        history: [_try('c', 70, 1), _try('a', 100, 2), _try('a', 90, 3)],
       );
       expect(report.results.map((r) => r.step.id), ['a', 'c']);
       expect(report.averageScore, 80); // (90 + 70) / 2

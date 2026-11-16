@@ -277,9 +277,7 @@ class _SplashScreenState extends State<SplashScreen>
                               parent: _entrance,
                               curve: const Interval(0.0, 0.35),
                             ),
-                            child: _LogoMark(
-                              size: 190 + pulse.value * 4,
-                            ),
+                            child: _LogoMark(size: 190 + pulse.value * 4),
                           ),
                         ),
                       ),
@@ -459,7 +457,9 @@ class _OrbitLayer extends StatelessWidget {
       final fan = Curves.easeOutBack.transform(stagger);
       final radius = 150 * fan + breathe * 2.5;
       final scale =
-          (0.45 + 0.55 * enter) * (0.78 + 0.30 * depth) * (0.97 + 0.03 * breathe);
+          (0.45 + 0.55 * enter) *
+          (0.78 + 0.30 * depth) *
+          (0.97 + 0.03 * breathe);
       final opacity = enter * (0.58 + 0.42 * depth);
       final badge = _icons[i];
 
@@ -521,10 +521,11 @@ class _OrbitLayer extends StatelessWidget {
                 height: i.isEven ? 7 : 5,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: (i.isEven
-                          ? SkillBridgeColors.primary
-                          : SkillBridgeColors.accent)
-                      .withValues(alpha: 0.85),
+                  color:
+                      (i.isEven
+                              ? SkillBridgeColors.primary
+                              : SkillBridgeColors.accent)
+                          .withValues(alpha: 0.85),
                   boxShadow: [
                     BoxShadow(
                       color: SkillBridgeColors.primary.withValues(alpha: 0.28),

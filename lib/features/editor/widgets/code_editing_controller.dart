@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:skillbridge_python_lab/app/theme.dart';
+
 import 'python_highlighter.dart';
 
 /// Colour mapping for Python tokens. Kept separate from the highlighter so the
@@ -12,12 +13,17 @@ class CodeEditorPalette {
 
   final Color onCodeSurface;
 
-  static const CodeEditorPalette dark = CodeEditorPalette(onCodeSurface: Color(0xFFD7DAE0));
+  static const CodeEditorPalette dark = CodeEditorPalette(
+    onCodeSurface: Color(0xFFD7DAE0),
+  );
 
   TextStyle? styleFor(CodeTokenType type, TextStyle? base) {
     switch (type) {
       case CodeTokenType.keyword:
-        return base?.copyWith(color: AppTheme.tokenKeyword, fontWeight: FontWeight.w600);
+        return base?.copyWith(
+          color: AppTheme.tokenKeyword,
+          fontWeight: FontWeight.w600,
+        );
       case CodeTokenType.builtin:
         return base?.copyWith(color: AppTheme.tokenBuiltin);
       case CodeTokenType.string:
@@ -25,7 +31,10 @@ class CodeEditorPalette {
       case CodeTokenType.number:
         return base?.copyWith(color: AppTheme.tokenNumber);
       case CodeTokenType.comment:
-        return base?.copyWith(color: AppTheme.tokenComment, fontStyle: FontStyle.italic);
+        return base?.copyWith(
+          color: AppTheme.tokenComment,
+          fontStyle: FontStyle.italic,
+        );
       case CodeTokenType.operator:
         return base?.copyWith(color: AppTheme.tokenOperator);
       case CodeTokenType.identifier:
@@ -70,7 +79,12 @@ class CodeEditingController extends TextEditingController {
     ];
 
     if (source.isEmpty || source.endsWith('\n')) {
-      children.add(TextSpan(text: ' ', style: palette.styleFor(CodeTokenType.plain, style)));
+      children.add(
+        TextSpan(
+          text: ' ',
+          style: palette.styleFor(CodeTokenType.plain, style),
+        ),
+      );
     }
 
     return TextSpan(style: style, children: children);

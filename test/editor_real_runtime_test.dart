@@ -28,7 +28,8 @@ import 'support/test_dependencies.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final python = Platform.environment['SB_TEST_PYTHON'] ??
+  final python =
+      Platform.environment['SB_TEST_PYTHON'] ??
       (Platform.isWindows ? 'python' : 'python3');
   final harnessPath = ProcessPythonRuntime.resolveHarnessPath();
 
@@ -94,7 +95,8 @@ void main() {
   Future<void> pumpFrames(WidgetTester tester, {int count = 10}) async {
     for (var i = 0; i < count; i++) {
       await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 30)));
+        () => Future<void>.delayed(const Duration(milliseconds: 30)),
+      );
       await tester.pump(const Duration(milliseconds: 60));
     }
   }
@@ -135,8 +137,11 @@ void main() {
       await tester.drag(scrollable, Offset(0, -extent));
       await pumpFrames(tester, count: 2);
     }
-    expect(target, findsOneWidget,
-        reason: 'never became visible after $maxDrags drags');
+    expect(
+      target,
+      findsOneWidget,
+      reason: 'never became visible after $maxDrags drags',
+    );
   }
 
   /// Drives Home -> exercise details -> lesson -> editor.
@@ -150,8 +155,10 @@ void main() {
     await tester.tap(find.text('Hello, World!'));
     await pumpFrames(tester);
 
-    final startButton =
-        find.widgetWithText(FilledButton, 'Start with a quick lesson');
+    final startButton = find.widgetWithText(
+      FilledButton,
+      'Start with a quick lesson',
+    );
     await scrollTo(tester, startButton);
 
     await tester.tap(startButton);
@@ -166,8 +173,11 @@ void main() {
       await tester.tap(next);
       await pumpFrames(tester);
     }
-    expect(find.text('Run'), findsOneWidget,
-        reason: 'the lesson never handed off to the editor');
+    expect(
+      find.text('Run'),
+      findsOneWidget,
+      reason: 'the lesson never handed off to the editor',
+    );
   }
 
   /// Everything the output console is showing.
@@ -197,8 +207,9 @@ void main() {
   }
 
   group('editor with a real interpreter', () {
-    testWidgets('typed code is executed by CPython and its stdout is shown',
-        (tester) async {
+    testWidgets('typed code is executed by CPython and its stdout is shown', (
+      tester,
+    ) async {
       if (skipWithoutInterpreter()) return;
 
       await pumpApp(tester);
@@ -218,20 +229,30 @@ void main() {
       // Real execution: wait for the interpreter, not for pumped frames.
       await pumpUntil(tester, find.text('Finished successfully'));
 
-      expect(find.text('Finished successfully'), findsOneWidget,
-          reason: 'the real runtime never reported success');
+      expect(
+        find.text('Finished successfully'),
+        findsOneWidget,
+        reason: 'the real runtime never reported success',
+      );
 
       final data = consoleText(tester);
-      expect(data, contains('Hello, World!'),
-          reason: 'stdout did not reach the console: "$data"');
-      expect(data, contains('minor'),
-          reason: 'a real interpreter must import sys; got "$data"');
+      expect(
+        data,
+        contains('Hello, World!'),
+        reason: 'stdout did not reach the console: "$data"',
+      );
+      expect(
+        data,
+        contains('minor'),
+        reason: 'a real interpreter must import sys; got "$data"',
+      );
 
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('a syntax error surfaces as a Python exception, not a crash',
-        (tester) async {
+    testWidgets('a syntax error surfaces as a Python exception, not a crash', (
+      tester,
+    ) async {
       if (skipWithoutInterpreter()) return;
 
       await pumpApp(tester);
@@ -244,17 +265,20 @@ void main() {
       await pumpFrames(tester, count: 3);
 
       await tester.tap(find.text('Run'));
-      await pumpUntil(
-        tester,
-        find.textContaining('SyntaxError'),
+      await pumpUntil(tester, find.textContaining('SyntaxError'));
+
+      expect(
+        find.text('Stopped with an error'),
+        findsOneWidget,
+        reason: 'the real runtime never reported the failure',
       );
 
-      expect(find.text('Stopped with an error'), findsOneWidget,
-          reason: 'the real runtime never reported the failure');
-
       final data = consoleText(tester);
-      expect(data, contains('SyntaxError'),
-          reason: 'expected a real Python SyntaxError; got "$data"');
+      expect(
+        data,
+        contains('SyntaxError'),
+        reason: 'expected a real Python SyntaxError; got "$data"',
+      );
       // The app must survive it: the Run button is still there.
       expect(find.text('Run'), findsOneWidget);
 

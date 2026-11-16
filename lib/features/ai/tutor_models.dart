@@ -33,7 +33,8 @@ class TutorStudentContext {
           '${result.step.title} (${result.latestScore}%)',
       ],
       recentScores: {
-        for (final result in report.results) result.step.title: result.latestScore,
+        for (final result in report.results)
+          result.step.title: result.latestScore,
       },
     );
   }
@@ -45,16 +46,17 @@ class TutorStudentContext {
   final List<String> weakPoints;
   final Map<String, int> recentScores;
 
-  String get progressLabel => '$completedChallenges of $totalChallenges challenges';
+  String get progressLabel =>
+      '$completedChallenges of $totalChallenges challenges';
 
   Map<String, Object?> toPromptData() => <String, Object?>{
-        'studentName': learnerName,
-        'totalPoints': totalPoints,
-        'completedChallenges': completedChallenges,
-        'totalChallenges': totalChallenges,
-        'weakPoints': weakPoints,
-        'recentScores': recentScores,
-      };
+    'studentName': learnerName,
+    'totalPoints': totalPoints,
+    'completedChallenges': completedChallenges,
+    'totalChallenges': totalChallenges,
+    'weakPoints': weakPoints,
+    'recentScores': recentScores,
+  };
 
   static const empty = TutorStudentContext(
     learnerName: 'Learner',
@@ -79,10 +81,10 @@ class TutorAttachment {
   final Uint8List bytes;
 
   Map<String, Object?> toPromptData() => <String, Object?>{
-        'name': name,
-        'mimeType': mimeType,
-        'byteLength': bytes.length,
-      };
+    'name': name,
+    'mimeType': mimeType,
+    'byteLength': bytes.length,
+  };
 }
 
 class TutorToolResult {
@@ -98,8 +100,9 @@ class TutorToolResult {
 }
 
 typedef TutorWebLookup = Future<TutorToolResult> Function(String query);
-typedef TutorScreenshotAnalysis =
-    Future<TutorToolResult> Function(TutorAttachment attachment);
+typedef TutorScreenshotAnalysis = Future<TutorToolResult> Function(
+  TutorAttachment attachment,
+);
 
 /// Optional capabilities supplied by an online tutor adapter.
 ///
@@ -157,9 +160,9 @@ class TutorTeachingStyle {
   final bool encourageWithoutInflatingScores;
 
   Map<String, bool> toPromptData() => <String, bool>{
-        'showWorkedExamples': showWorkedExamples,
-        'useSocraticQuestions': useSocraticQuestions,
-        'explainInSmallSteps': explainInSmallSteps,
-        'encourageWithoutInflatingScores': encourageWithoutInflatingScores,
-      };
+    'showWorkedExamples': showWorkedExamples,
+    'useSocraticQuestions': useSocraticQuestions,
+    'explainInSmallSteps': explainInSmallSteps,
+    'encourageWithoutInflatingScores': encourageWithoutInflatingScores,
+  };
 }

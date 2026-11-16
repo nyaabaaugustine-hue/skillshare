@@ -1,3 +1,9 @@
+import 'package:skillbridge_python_lab/core/di/app_dependencies.dart';
+
+import 'dart:async';
+
+import 'package:provider/provider.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:skillbridge_python_lab/app/theme.dart';
 import 'package:skillbridge_python_lab/features/course/course_controller.dart';
 import 'package:skillbridge_python_lab/features/course/course_models.dart';
-import 'package:skillbridge_python_lab/features/course/practice_checks.dart';
+import 'package:skillbridge_python_lab/features/home/review_plan.dart';
 import 'package:skillbridge_python_lab/shared/widgets/code_buddy.dart';
 import 'package:skillbridge_python_lab/shared/widgets/premium_button.dart';
 
@@ -45,26 +51,11 @@ class CoursePathScreen extends StatelessWidget {
     }
     final step = controller.course.steps[index];
 
-    // Hands-on practice: go straight into the IDE. The learner's real run is
-    // checked against the step's requirements, and the step is only marked
-    // complete (with a score) once those checks pass.
-    final practiceBlock = practiceBlockOf(step);
-    if (practiceBlock != null) {
-      await Navigator.of(context).pushNamed(
-        '/editor',
-        arguments: <String, dynamic>{
-          'exercise': exerciseForPractice(step, practiceBlock),
-          'practice': PracticeSession(
-            block: practiceBlock,
-            onCompleted: (int score) async {
-              await controller.markCompleted(step, score: score);
-              await onStepCompleted?.call(step, score);
-            },
-          ),
-        },
-      );
-      return;
-    }
+    // If the learner stops halfway, the reminder at +3h is already armed; it is
+    // cancelled below as soon as the step is finished.
+    unawaited(
+      context.read<AppDependencies>().reminders.onLessonOpened(step.title),
+    );
 
     await Navigator.of(context).pushNamed(
       '/course-lesson',
@@ -72,10 +63,20 @@ class CoursePathScreen extends StatelessWidget {
         'step': step,
         'onCompleted': (int score) async {
           await controller.markCompleted(step, score: score);
+          if (context.mounted) {
+            unawaited(
+              context.read<AppDependencies>().reminders.onStepCompleted(),
+            );
+          }
           await onStepCompleted?.call(step, score);
         },
       },
     );
+  }
+
+  Future<void> _openStepById(BuildContext context, CourseStep step) async {
+    final index = controller.course.steps.indexWhere((s) => s.id == step.id);
+    if (index >= 0) await _openStep(context, index);
   }
 
   @override
@@ -104,6 +105,18 @@ class CoursePathScreen extends StatelessWidget {
                           ? null
                           : () => _openStep(context, controller.currentIndex),
                     ),
+                    if (!controller.isLoading && controller.error == null)
+                      _ReviewCard(
+                        items: buildReviewPlan(
+                          course: controller.course,
+                          history: controller.history,
+                          completed: <String>{
+                            for (final step in controller.course.steps)
+                              if (controller.isCompleted(step.id)) step.id,
+                          },
+                        ),
+                        onOpen: (step) => _openStepById(context, step),
+                      ),
                     const _StartDivider(),
                     if (controller.isLoading)
                       const Padding(
@@ -165,30 +178,41 @@ class _CourseStatusBar extends StatelessWidget {
               tooltip: 'Open menu',
             ),
           const CodeBuddy(size: 64, mood: BuddyMood.happy),
-          const Spacer(),
-          if (onLeaderboardTap != null)
-            IconButton(
-              onPressed: onLeaderboardTap,
-              icon: const Icon(Icons.emoji_events_rounded),
-              color: SkillBridgeColors.accent,
-              tooltip: 'Leaderboard',
+          const SizedBox(width: 8),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              reverse: true,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (onLeaderboardTap != null)
+                    IconButton(
+                      onPressed: onLeaderboardTap,
+                      icon: const Icon(Icons.emoji_events_rounded),
+                      color: SkillBridgeColors.accent,
+                      tooltip: 'Leaderboard',
+                    ),
+                  _StatPill(
+                    icon: Icons.local_fire_department_rounded,
+                    color: const Color(0xFFFF7A45),
+                    value: '${controller.streak}',
+                  ),
+                  const SizedBox(width: 8),
+                  _StatPill(
+                    icon: Icons.bolt_rounded,
+                    color: SkillBridgeColors.accent,
+                    value: '${controller.xpEarned}',
+                  ),
+                  const SizedBox(width: 8),
+                  _StatPill(
+                    icon: Icons.diamond_rounded,
+                    color: const Color(0xFF5EC8FF),
+                    value: '${controller.coinsEarned}',
+                  ),
+                ],
+              ),
             ),
-          _StatPill(
-            icon: Icons.local_fire_department_rounded,
-            color: const Color(0xFFFF7A45),
-            value: '${controller.streak}',
-          ),
-          const SizedBox(width: 8),
-          _StatPill(
-            icon: Icons.bolt_rounded,
-            color: SkillBridgeColors.accent,
-            value: '${controller.xpEarned}',
-          ),
-          const SizedBox(width: 8),
-          _StatPill(
-            icon: Icons.diamond_rounded,
-            color: const Color(0xFF5EC8FF),
-            value: '${controller.coinsEarned}',
           ),
         ],
       ),
@@ -911,4 +935,120 @@ class _PathPainter extends CustomPainter {
   bool shouldRepaint(covariant _PathPainter oldDelegate) =>
       oldDelegate.centers != centers ||
       oldDelegate.segmentColors != segmentColors;
+}
+
+/// Short daily review: the steps the learner scored lowest on, plus the next
+/// unfinished step, so Home always offers a two-minute reason to come back.
+///
+/// Renders nothing until there is something honest to review.
+class _ReviewCard extends StatelessWidget {
+  const _ReviewCard({required this.items, required this.onOpen});
+
+  final List<ReviewItem> items;
+  final void Function(CourseStep step) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+        decoration: BoxDecoration(
+          color: SkillBridgeColors.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: SkillBridgeColors.accent.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.bolt_rounded,
+                  size: 18,
+                  color: SkillBridgeColors.accent,
+                ),
+                const SizedBox(width: 6),
+                const Expanded(
+                  child: Text(
+                    "Today's review",
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                  ),
+                ),
+                Text(
+                  '${items.length} min',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: SkillBridgeColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+            const Padding(
+              padding: EdgeInsets.only(top: 2, bottom: 6),
+              child: Text(
+                'A short pass over what you missed — finish these and you are done '
+                'for today.',
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.35,
+                  color: SkillBridgeColors.textMuted,
+                ),
+              ),
+            ),
+            for (final item in items)
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => onOpen(item.step),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      Icon(
+                        item.step.kind.icon,
+                        size: 17,
+                        color: SkillBridgeColors.primaryDeep,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.step.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              item.reason,
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                color: SkillBridgeColors.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: SkillBridgeColors.textMuted,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }

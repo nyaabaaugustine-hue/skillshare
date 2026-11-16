@@ -354,15 +354,21 @@ void main() {
         await pumpFrames(tester, count: 3);
 
         // Focus mode: header gone, console reduced, editor still on screen.
-        expect(brief, findsNothing,
-            reason: 'the instructions panel should hide while typing');
+        expect(
+          brief,
+          findsNothing,
+          reason: 'the instructions panel should hide while typing',
+        );
         expect(
           tester.getSize(find.byType(OutputConsole)).height,
           lessThanOrEqualTo(90),
           reason: 'the console should shrink to a strip while typing',
         );
-        expect(find.byType(TextField), findsOneWidget,
-            reason: 'the code editor must remain visible above the keyboard');
+        expect(
+          find.byType(TextField),
+          findsOneWidget,
+          reason: 'the code editor must remain visible above the keyboard',
+        );
         expect(tester.takeException(), isNull);
 
         // Releasing the keyboard restores the full layout.

@@ -114,23 +114,27 @@ const String _createSyncMetaTable = '''
 /// does **not** replace `indexSubmissionsState` — an index on
 /// `(learner_ref, sync_state)` cannot answer a query filtering on
 /// `sync_state` alone.
-const String indexSubmissionsState = 'CREATE INDEX IF NOT EXISTS '
+const String indexSubmissionsState =
+    'CREATE INDEX IF NOT EXISTS '
     'idx_submissions_state ON submissions(sync_state)';
 
 /// Serves `SubmissionRepository.pending()` and `pendingCount()`, which both
 /// filter on `learner_ref` and `sync_state` together and are the queries that
 /// run on every app resume.
-const String indexSubmissionsLearnerState = 'CREATE INDEX IF NOT EXISTS '
+const String indexSubmissionsLearnerState =
+    'CREATE INDEX IF NOT EXISTS '
     'idx_submissions_learner_state ON submissions(learner_ref, sync_state)';
 
 /// Serves `SubmissionRepository.listForLearner`, which orders by
 /// `created_at DESC` for one learner.
-const String indexSubmissionsLearnerCreated = 'CREATE INDEX IF NOT EXISTS '
+const String indexSubmissionsLearnerCreated =
+    'CREATE INDEX IF NOT EXISTS '
     'idx_submissions_learner_created ON submissions(learner_ref, created_at DESC)';
 
 /// Serves `DraftRepository.listFor`, the "continue where you left off" list:
 /// one learner's drafts, newest first.
-const String indexDraftsLearnerUpdated = 'CREATE INDEX IF NOT EXISTS '
+const String indexDraftsLearnerUpdated =
+    'CREATE INDEX IF NOT EXISTS '
     'idx_drafts_learner_updated ON drafts(learner_ref, updated_at DESC)';
 
 const List<String> _allIndexes = [
@@ -237,15 +241,11 @@ Future<void> runMigrations(
       from,
       'from',
       'Downgrading from schema $from to $to is not supported. Ship a rollback '
-      'step or clear the local database.',
+          'step or clear the local database.',
     );
   }
   if (from < 1) {
-    throw ArgumentError.value(
-      from,
-      'from',
-      'Schema versions start at 1.',
-    );
+    throw ArgumentError.value(from, 'from', 'Schema versions start at 1.');
   }
 
   final byVersion = {for (final step in migrations) step.version: step};

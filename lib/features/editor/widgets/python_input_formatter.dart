@@ -22,7 +22,10 @@ class PythonInputFormatter extends TextInputFormatter {
   };
 
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     final oldText = oldValue.text;
     final newText = newValue.text;
 
@@ -52,10 +55,16 @@ class PythonInputFormatter extends TextInputFormatter {
         oldValue.selection.end,
       );
       final closing = _pairs[inserted]!;
-      final text = newText.replaceRange(prefix, suffixNew, '$inserted$selected$closing');
+      final text = newText.replaceRange(
+        prefix,
+        suffixNew,
+        '$inserted$selected$closing',
+      );
       return TextEditingValue(
         text: text,
-        selection: TextSelection.collapsed(offset: prefix + 1 + selected.length),
+        selection: TextSelection.collapsed(
+          offset: prefix + 1 + selected.length,
+        ),
       );
     }
 
@@ -108,8 +117,9 @@ class PythonInputFormatter extends TextInputFormatter {
     if (char == '\n') {
       // `lastIndexOf` rejects a negative start index, so a newline typed at the
       // very beginning of the buffer (including an empty one) is special-cased.
-      final lineStart =
-          prefix == 0 ? 0 : newText.lastIndexOf('\n', prefix - 1) + 1;
+      final lineStart = prefix == 0
+          ? 0
+          : newText.lastIndexOf('\n', prefix - 1) + 1;
       final currentLine = newText.substring(lineStart, prefix);
       final leading = _leadingWhitespace(currentLine);
       var indent = leading;

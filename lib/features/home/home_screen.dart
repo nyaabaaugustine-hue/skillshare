@@ -87,9 +87,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openLeaderboard() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const LeaderboardScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const LeaderboardScreen()));
   }
 
   /// Emails the Parent / Guardian a progress report after a finished step.
@@ -99,15 +99,12 @@ class _HomeScreenState extends State<HomeScreen> {
   /// so this is safe to fire after every completion.
   Future<void> _afterStepCompleted(CourseStep step, int score) async {
     final deps = context.read<AppDependencies>();
-    final session = context.read<AuthController>().session;
+    final session = context.read<AuthController?>()?.session;
 
     // Publish the new totals to the shared ranking in the background: the
     // learner moves on immediately, and a slow network never blocks a lesson.
     unawaited(
-      LeaderboardSync.push(
-        deps: deps,
-        name: session?.displayName ?? 'Learner',
-      ),
+      LeaderboardSync.push(deps: deps, name: session?.displayName ?? 'Learner'),
     );
 
     try {
@@ -363,6 +360,7 @@ class _ProgressTab extends StatelessWidget {
             _LearnerGreeting(progress: home.progress),
             _ProgressCard(progress: home.progress),
             _CourseProgressCard(course: course, onOpenPath: onOpenPath),
+            _CourseMomentumCard(course: course),
             const _BadgeRow(),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -453,6 +451,41 @@ class _CourseProgressCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CourseMomentumCard extends StatelessWidget {
+  const _CourseMomentumCard({required this.course});
+
+  final CourseController course;
+
+  @override
+  Widget build(BuildContext context) {
+    final latest = course.latestAttempt;
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: ListTile(
+        leading: Icon(
+          course.isCourseComplete
+              ? Icons.workspace_premium_rounded
+              : Icons.flag_rounded,
+          color: course.isCourseComplete
+              ? SkillBridgeColors.accent
+              : SkillBridgeColors.primary,
+        ),
+        title: Text(
+          course.isCourseComplete
+              ? 'Certificate unlocked'
+              : 'Keep your momentum',
+        ),
+        subtitle: Text(
+          latest == null
+              ? course.learnerPrompt
+              : '${course.learnerPrompt}  •  Last result ${latest.score}%',
+        ),
+        isThreeLine: latest != null,
       ),
     );
   }

@@ -85,15 +85,15 @@ class FamilyLink {
   }
 
   Map<String, Object?> toJson() => <String, Object?>{
-        'studentName': studentName,
-        'studentEmail': studentEmail,
-        'guardianName': guardianName,
-        'guardianEmail': guardianEmail,
-        'guardianLogin': guardianLogin,
-        'learnerRef': learnerRef,
-        'passwordSalt': passwordSalt,
-        'passwordHash': passwordHash,
-      };
+    'studentName': studentName,
+    'studentEmail': studentEmail,
+    'guardianName': guardianName,
+    'guardianEmail': guardianEmail,
+    'guardianLogin': guardianLogin,
+    'learnerRef': learnerRef,
+    'passwordSalt': passwordSalt,
+    'passwordHash': passwordHash,
+  };
 
   bool matchesLogin(String identifier) =>
       guardianLogin.toLowerCase() == identifier.trim().toLowerCase();
@@ -144,9 +144,10 @@ class FamilyLink {
 
   static String newSalt([Random? random]) {
     final rng = random ?? Random.secure();
-    return List<int>.generate(16, (_) => rng.nextInt(16))
-        .map((n) => n.toRadixString(16))
-        .join();
+    return List<int>.generate(
+      16,
+      (_) => rng.nextInt(16),
+    ).map((n) => n.toRadixString(16)).join();
   }
 
   static const List<String> _passwordWords = <String>[
@@ -208,7 +209,8 @@ class FamilyLinkStore {
     final kept = existing.where(
       (l) =>
           !l.matchesLogin(link.guardianLogin) &&
-          !(link.studentEmail.isNotEmpty && l.matchesStudentEmail(link.studentEmail)),
+          !(link.studentEmail.isNotEmpty &&
+              l.matchesStudentEmail(link.studentEmail)),
     );
     await _write(<FamilyLink>[link, ...kept]);
   }

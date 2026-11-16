@@ -18,7 +18,10 @@ sealed class AppException implements Exception {
 
 /// The device appears to be offline and the operation required the network.
 class OfflineException extends AppException {
-  const OfflineException([super.userMessage = "You're offline. Your work is saved and will sync later."]);
+  const OfflineException([
+    super.userMessage =
+        "You're offline. Your work is saved and will sync later.",
+  ]);
 }
 
 /// A network request failed or timed out.
@@ -28,7 +31,9 @@ class NetworkException extends AppException {
 
 /// The LMS rejected our credentials / the session has expired.
 class AuthenticationException extends AppException {
-  const AuthenticationException([super.userMessage = 'Your session has expired. Please sign in again.']);
+  const AuthenticationException([
+    super.userMessage = 'Your session has expired. Please sign in again.',
+  ]);
 }
 
 /// The LMS returned an error we could not classify.

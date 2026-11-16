@@ -44,7 +44,9 @@ class SubmissionRepository {
   }) async {
     final rows = await _db.query(
       'submissions',
-      where: state == null ? 'learner_ref = ?' : 'learner_ref = ? AND sync_state = ?',
+      where: state == null
+          ? 'learner_ref = ?'
+          : 'learner_ref = ? AND sync_state = ?',
       whereArgs: state == null ? [learnerRef] : [learnerRef, state.name],
       orderBy: 'created_at DESC',
       limit: limit,
@@ -81,10 +83,18 @@ class SubmissionRepository {
   }
 
   Future<void> delete(String id) async {
-    await _db.delete('submissions', where: 'submission_id = ?', whereArgs: [id]);
+    await _db.delete(
+      'submissions',
+      where: 'submission_id = ?',
+      whereArgs: [id],
+    );
   }
 
   Future<void> deleteAllFor(String learnerRef) async {
-    await _db.delete('submissions', where: 'learner_ref = ?', whereArgs: [learnerRef]);
+    await _db.delete(
+      'submissions',
+      where: 'learner_ref = ?',
+      whereArgs: [learnerRef],
+    );
   }
 }

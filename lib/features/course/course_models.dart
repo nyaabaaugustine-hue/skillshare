@@ -88,8 +88,12 @@ class CodeBlock extends CourseBlock {
     required this.requirements,
     this.expectedOutput,
     this.hints = const [],
+    this.workedExample,
+    this.whyItWorks,
+    this.takeaway,
     this.outputContains = const [],
     this.codeContains = const [],
+    this.forbiddenLiterals = const [],
     this.minOutputLines = 0,
   });
 
@@ -102,12 +106,29 @@ class CodeBlock extends CourseBlock {
   final String? expectedOutput;
   final List<String> hints;
 
+  /// A small, complete example learners can study before trying the task.
+  final String? workedExample;
+
+  /// The idea demonstrated by [workedExample].
+  final String? whyItWorks;
+
+  /// The skill the learner should be able to use after passing the checks.
+  final String? takeaway;
+
   /// Text the program's real output must contain (all of it, case-sensitive).
   final List<String> outputContains;
 
   /// Text the learner's own source must contain (comments are ignored), used
   /// to make sure a concept was actually used, e.g. `print(` or `*`.
   final List<String> codeContains;
+
+  /// Answers the learner must produce by computing, never by typing.
+  ///
+  /// Used with randomised practice values: the expected total changes on every
+  /// launch, and if it appears anywhere in the learner's source the step fails
+  /// with "worked out in code, not typed as text". Typing the number is not
+  /// the skill being taught.
+  final List<String> forbiddenLiterals;
 
   /// The program must print at least this many non-empty lines.
   final int minOutputLines;
@@ -180,6 +201,7 @@ class ProjectBlock extends CourseBlock {
     required this.brief,
     required this.checklist,
     this.starterCode,
+    this.options = const [],
   });
 
   @override
@@ -188,6 +210,19 @@ class ProjectBlock extends CourseBlock {
   final String brief;
   final List<String> checklist;
   final String? starterCode;
+  final List<ProjectOption> options;
+}
+
+class ProjectOption {
+  const ProjectOption({
+    required this.title,
+    required this.description,
+    required this.prompt,
+  });
+
+  final String title;
+  final String description;
+  final String prompt;
 }
 
 class AssessmentQuestion {

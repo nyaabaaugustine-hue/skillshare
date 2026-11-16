@@ -38,8 +38,7 @@ void main() {
     ];
 
     for (final sample in samples) {
-      test(
-          'tokens concatenate back to the exact source '
+      test('tokens concatenate back to the exact source '
           '(${sample.replaceAll('\n', r'\n')})', () {
         final tokens = highlighter.tokenize(sample);
         expect(reassembled(tokens), sample);
@@ -102,8 +101,12 @@ void main() {
       expect(typeOf("s = 'a'", "'a'"), CodeTokenType.string);
       expect(typeOf('s = "a"', '"a"'), CodeTokenType.string);
       final triple = highlighter.tokenize('s = """a\nb"""');
-      expect(triple.any((t) => t.type == CodeTokenType.string && t.text.contains('\n')),
-          isTrue);
+      expect(
+        triple.any(
+          (t) => t.type == CodeTokenType.string && t.text.contains('\n'),
+        ),
+        isTrue,
+      );
     });
 
     test('keeps an escaped quote inside the string token', () {

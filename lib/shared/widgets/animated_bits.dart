@@ -32,10 +32,7 @@ class AnimatedProgressBar extends StatelessWidget {
                     height: 14,
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          SkillBridgeColors.primary,
-                          Color(0xFF5EEAD4),
-                        ],
+                        colors: [SkillBridgeColors.primary, Color(0xFF5EEAD4)],
                       ),
                     ),
                   ),
@@ -68,7 +65,10 @@ class FadeSlideIn extends StatelessWidget {
       curve: Curves.easeOutCubic,
       builder: (context, t, child) => Opacity(
         opacity: t,
-        child: Transform.translate(offset: Offset(0, 16 * (1 - t)), child: child),
+        child: Transform.translate(
+          offset: Offset(0, 16 * (1 - t)),
+          child: child,
+        ),
       ),
       child: child,
     );

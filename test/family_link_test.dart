@@ -137,51 +137,60 @@ void main() {
   });
 
   group('FamilyLinkStore', () {
-    test('saves and finds a link by guardian login and student email', () async {
-      final store = FamilyLinkStore();
-      final link = FamilyLink.create(
-        studentName: 'Ama Mensah',
-        studentEmail: 'ama@academy.test',
-        guardianName: 'Kofi Mensah',
-        guardianEmail: 'kofi@academy.test',
-        guardianLogin: 'kofi@academy.test',
-        password: 'secret123',
-        random: Random(12),
-      );
-      await store.save(link);
+    test(
+      'saves and finds a link by guardian login and student email',
+      () async {
+        final store = FamilyLinkStore();
+        final link = FamilyLink.create(
+          studentName: 'Ama Mensah',
+          studentEmail: 'ama@academy.test',
+          guardianName: 'Kofi Mensah',
+          guardianEmail: 'kofi@academy.test',
+          guardianLogin: 'kofi@academy.test',
+          password: 'secret123',
+          random: Random(12),
+        );
+        await store.save(link);
 
-      expect((await store.findByLogin('kofi@academy.test'))?.studentName,
-          'Ama Mensah');
-      expect((await store.findByStudentEmail('ama@academy.test'))?.guardianLogin,
-          'kofi@academy.test');
-      expect(await store.findByLogin('unknown'), isNull);
-    });
+        expect(
+          (await store.findByLogin('kofi@academy.test'))?.studentName,
+          'Ama Mensah',
+        );
+        expect(
+          (await store.findByStudentEmail('ama@academy.test'))?.guardianLogin,
+          'kofi@academy.test',
+        );
+        expect(await store.findByLogin('unknown'), isNull);
+      },
+    );
 
-    test('saving a second link for the same guardian replaces the first',
-        () async {
-      final store = FamilyLinkStore();
-      FamilyLink make(String student) => FamilyLink.create(
-            studentName: student,
-            studentEmail: '$student@x.test',
-            guardianName: 'Kofi',
-            guardianEmail: 'kofi@x.test',
-            guardianLogin: 'kofi@x.test',
-            password: 'pw',
-            random: Random(student.length),
-          );
+    test(
+      'saving a second link for the same guardian replaces the first',
+      () async {
+        final store = FamilyLinkStore();
+        FamilyLink make(String student) => FamilyLink.create(
+          studentName: student,
+          studentEmail: '$student@x.test',
+          guardianName: 'Kofi',
+          guardianEmail: 'kofi@x.test',
+          guardianLogin: 'kofi@x.test',
+          password: 'pw',
+          random: Random(student.length),
+        );
 
-      await store.save(make('first'));
-      await store.save(make('second'));
+        await store.save(make('first'));
+        await store.save(make('second'));
 
-      final all = await store.all();
-      expect(all.length, 1);
-      expect(all.single.studentName, 'second');
-    });
+        final all = await store.all();
+        expect(all.length, 1);
+        expect(all.single.studentName, 'second');
+      },
+    );
 
     test('survives a corrupt stored entry', () async {
-      SharedPreferences.setMockInitialValues(
-        <String, Object>{'family.links': 'not-json'},
-      );
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'family.links': 'not-json',
+      });
       final store = FamilyLinkStore();
       expect(await store.all(), isEmpty);
     });

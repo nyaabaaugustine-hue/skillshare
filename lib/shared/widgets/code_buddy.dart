@@ -218,9 +218,16 @@ class _BuddyPainter extends CustomPainter {
     canvas.drawCircle(
       const Offset(100, 14),
       11,
-      Paint()..color = SkillBridgeColors.accent.withValues(alpha: 0.12 + glow * 0.30),
+      Paint()
+        ..color = SkillBridgeColors.accent.withValues(
+          alpha: 0.12 + glow * 0.30,
+        ),
     );
-    canvas.drawCircle(const Offset(100, 14), 6.5, Paint()..color = SkillBridgeColors.accent);
+    canvas.drawCircle(
+      const Offset(100, 14),
+      6.5,
+      Paint()..color = SkillBridgeColors.accent,
+    );
 
     // Ears.
     for (final x in const [32.0, 168.0]) {
@@ -273,7 +280,11 @@ class _BuddyPainter extends CustomPainter {
           ..quadraticBezierTo(c.dx, c.dy - 9, c.dx + 9, c.dy + 5);
         canvas.drawPath(path, mintStroke);
       } else if (blinking) {
-        canvas.drawLine(Offset(c.dx - 8, c.dy), Offset(c.dx + 8, c.dy), mintStroke);
+        canvas.drawLine(
+          Offset(c.dx - 8, c.dy),
+          Offset(c.dx + 8, c.dy),
+          mintStroke,
+        );
       } else {
         final center = c + look;
         canvas.drawOval(
@@ -313,7 +324,11 @@ class _BuddyPainter extends CustomPainter {
           mintFill,
         );
       case BuddyMood.thinking:
-        canvas.drawLine(const Offset(90, 111), const Offset(108, 107), mintStroke);
+        canvas.drawLine(
+          const Offset(90, 111),
+          const Offset(108, 107),
+          mintStroke,
+        );
       case BuddyMood.oops:
         canvas.drawPath(
           Path()

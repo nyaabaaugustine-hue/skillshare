@@ -30,8 +30,8 @@ class Lesson {
   }
 
   Map<String, dynamic> toJson() => {
-        'steps': steps.map((s) => s.toJson()).toList(growable: false),
-      };
+    'steps': steps.map((s) => s.toJson()).toList(growable: false),
+  };
 
   /// True when there is nothing worth showing, so callers can skip straight to
   /// the exercise rather than presenting an empty screen.
@@ -64,7 +64,7 @@ class LessonStep {
   }
 
   Map<String, dynamic> toJson() => {
-        'prose': prose,
-        if (exampleCode != null) 'exampleCode': exampleCode,
-      };
+    'prose': prose,
+    if (exampleCode != null) 'exampleCode': exampleCode,
+  };
 }

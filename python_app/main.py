@@ -72,5 +72,15 @@ def main() -> None:
     server.serve_forever()
 
 
-if __name__ == "__main__":
+# Start unconditionally. Serious Python may execute this file with a
+# ``__name__`` other than ``"__main__"``; behind an ``if __name__ == ...``
+# guard the program would then exit at once without ever opening the port.
+# Nothing else imports this module, so there is no import-time side effect
+# to guard against.
+try:
     main()
+except BaseException:  # noqa: BLE001 - surface the reason to the Dart side
+    import traceback
+
+    traceback.print_exc()
+    raise

@@ -55,9 +55,7 @@ void main() {
             create: (_) => AuthController(),
           ),
         ],
-        child: const MaterialApp(
-          home: LmsHubScreen(initialSection: 3),
-        ),
+        child: const MaterialApp(home: LmsHubScreen(initialSection: 3)),
       ),
     );
     await pumpFrames(tester);

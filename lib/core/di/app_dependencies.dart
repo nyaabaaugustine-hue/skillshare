@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:skillbridge_python_lab/core/config/app_config.dart';
+import 'package:skillbridge_python_lab/core/notifications/reminder_service.dart';
+import 'package:skillbridge_python_lab/core/notifications/reminders.dart';
 import 'package:skillbridge_python_lab/core/security/id_generator.dart';
 import 'package:skillbridge_python_lab/core/storage/app_database.dart';
 import 'package:skillbridge_python_lab/core/storage/draft_repository.dart';
@@ -33,6 +35,7 @@ class AppDependencies {
     required this.syncService,
     required this.idGenerator,
     required this.learnerRef,
+    required this.reminders,
     this.ownsLmsClient = true,
     this.ownsRuntime = true,
   });
@@ -50,6 +53,9 @@ class AppDependencies {
   final SubmissionSyncService syncService;
   final IdGenerator idGenerator;
   final String learnerRef;
+
+  /// Daily + "you stopped halfway" reminders. A no-op on web.
+  final ReminderService reminders;
   final bool ownsLmsClient;
   final bool ownsRuntime;
 
@@ -103,6 +109,14 @@ class AppDependencies {
       ),
       idGenerator: IdGenerator(),
       learnerRef: learnerRef,
+      reminders: ReminderService(
+        gateway: await Reminders.create(),
+        settings: settings,
+        learnedToday: () => ReminderService.learnedOn(
+          courseProgress.activityDates(learnerRef),
+          DateTime.now(),
+        ),
+      ),
       ownsLmsClient: ownsLms,
       ownsRuntime: true,
     );

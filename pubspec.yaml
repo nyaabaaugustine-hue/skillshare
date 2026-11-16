@@ -40,6 +40,13 @@ dependencies:
   # See docs/ADR_001_PYTHON_RUNTIME.md for the evaluation and rationale.
   serious_python: ^5.0.0
   supabase_flutter: ^2.18.3
+  # Local learning reminders (daily + "you stopped halfway"). Pinned below the
+  # versions that require Android SDK 37, which this project does not target.
+  flutter_local_notifications: ^19.4.2
+  # Scheduling needs a TZDateTime. The local zone is derived from the device
+  # UTC offset in reminders_io.dart, which avoids a second plugin that clashed
+  # with this project's Java 11 target.
+  timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:

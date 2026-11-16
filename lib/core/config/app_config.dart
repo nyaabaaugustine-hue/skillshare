@@ -136,8 +136,9 @@ class AppConfig {
       supabaseUrl: _supabaseUrl,
       supabaseAnonKey: _supabaseAnonKey,
       // One server address is enough: the site serves the ranking API.
-      leaderboardUrl:
-          _leaderboardUrl.isNotEmpty ? _leaderboardUrl : _lmsBaseUrl,
+      leaderboardUrl: _leaderboardUrl.isNotEmpty
+          ? _leaderboardUrl
+          : _lmsBaseUrl,
     );
   }
 

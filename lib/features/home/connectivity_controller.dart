@@ -59,7 +59,8 @@ class ConnectivityController extends ChangeNotifier {
       if (report.authExpired) {
         _lastMessage = 'Please sign in again to sync your work.';
       } else if (report.didWork) {
-        _lastMessage = 'Synced ${report.accepted + report.rejected} of ${report.attempted} submissions.';
+        _lastMessage =
+            'Synced ${report.accepted + report.rejected} of ${report.attempted} submissions.';
       } else {
         _lastMessage = 'Everything is up to date.';
       }

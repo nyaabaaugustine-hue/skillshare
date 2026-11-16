@@ -15,7 +15,8 @@ class LearnerIdentity {
   final String displayName;
   final String? organisation;
 
-  factory LearnerIdentity.fromJson(Map<String, dynamic> json) => LearnerIdentity(
+  factory LearnerIdentity.fromJson(Map<String, dynamic> json) =>
+      LearnerIdentity(
         id: (json['id'] ?? json['learnerRef']) as String,
         displayName: (json['displayName'] as String?) ?? 'Learner',
         organisation: json['organisation'] as String?,
@@ -46,7 +47,8 @@ class SubmissionReceipt {
   /// re-award. Allows the client to display "already submitted" correctly.
   final bool duplicate;
 
-  factory SubmissionReceipt.fromJson(Map<String, dynamic> json) => SubmissionReceipt(
+  factory SubmissionReceipt.fromJson(Map<String, dynamic> json) =>
+      SubmissionReceipt(
         submissionId: (json['submissionId'] ?? '') as String,
         verdict: _verdictFromName(json['verdict'] as String?),
         serverRef: json['serverRef'] as String?,
@@ -84,13 +86,19 @@ class LearnerProgress {
   double get completionRatio =>
       totalChallenges == 0 ? 0 : completedChallenges / totalChallenges;
 
-  factory LearnerProgress.fromJson(Map<String, dynamic> json) => LearnerProgress(
+  factory LearnerProgress.fromJson(Map<String, dynamic> json) =>
+      LearnerProgress(
         totalPoints: (json['totalPoints'] as num?)?.toInt() ?? 0,
-        completedChallenges: (json['completedChallenges'] as num?)?.toInt() ?? 0,
+        completedChallenges:
+            (json['completedChallenges'] as num?)?.toInt() ?? 0,
         totalChallenges: (json['totalChallenges'] as num?)?.toInt() ?? 0,
       );
 
-  static const empty = LearnerProgress(totalPoints: 0, completedChallenges: 0, totalChallenges: 0);
+  static const empty = LearnerProgress(
+    totalPoints: 0,
+    completedChallenges: 0,
+    totalChallenges: 0,
+  );
 }
 
 /// A server-verified achievement. The app only *displays* these.
@@ -108,9 +116,9 @@ class Achievement {
   final int points;
 
   factory Achievement.fromJson(Map<String, dynamic> json) => Achievement(
-        id: json['id'] as String,
-        title: (json['title'] as String?) ?? 'Achievement',
-        description: (json['description'] as String?) ?? '',
-        points: (json['points'] as num?)?.toInt() ?? 0,
-      );
+    id: json['id'] as String,
+    title: (json['title'] as String?) ?? 'Achievement',
+    description: (json['description'] as String?) ?? '',
+    points: (json['points'] as num?)?.toInt() ?? 0,
+  );
 }

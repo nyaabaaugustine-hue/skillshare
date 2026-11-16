@@ -22,16 +22,16 @@ enum ResultBand {
   static const int developingAt = 70;
 
   String get label => switch (this) {
-        ResultBand.mastered => 'Mastered',
-        ResultBand.developing => 'Developing',
-        ResultBand.needsSupport => 'Needs support',
-      };
+    ResultBand.mastered => 'Mastered',
+    ResultBand.developing => 'Developing',
+    ResultBand.needsSupport => 'Needs support',
+  };
 }
 
 /// How one course step has gone for the learner: every score, oldest first.
 class StepResult {
   const StepResult({required this.step, required this.scores})
-      : assert(scores.length > 0);
+    : assert(scores.length > 0);
 
   final CourseStep step;
 
@@ -55,29 +55,24 @@ class StepResult {
 
   /// Short, parent-friendly suggestion for what to revisit.
   String get advice => switch (step.kind) {
-        CourseStepKind.quiz =>
-          'Re-read the lesson together, then retry the quiz.',
-        CourseStepKind.assessment =>
-          'Go over the questions that were missed, then run the review again.',
-        CourseStepKind.coding =>
-          'Practise writing and running this code a little each day.',
-        CourseStepKind.project =>
-          'Check the project checklist and finish any missing parts.',
-        CourseStepKind.prompt =>
-          'Practise writing clearer, more specific prompts.',
-        CourseStepKind.api =>
-          'Review how requests, endpoints and fields fit together.',
-        _ => 'Revisit this lesson and try it again.',
-      };
+    CourseStepKind.quiz => 'Re-read the lesson together, then retry the quiz.',
+    CourseStepKind.assessment =>
+      'Go over the questions that were missed, then run the review again.',
+    CourseStepKind.coding =>
+      'Practise writing and running this code a little each day.',
+    CourseStepKind.project =>
+      'Check the project checklist and finish any missing parts.',
+    CourseStepKind.prompt => 'Practise writing clearer, more specific prompts.',
+    CourseStepKind.api =>
+      'Review how requests, endpoints and fields fit together.',
+    _ => 'Revisit this lesson and try it again.',
+  };
 }
 
 /// Everything a parent / guardian sees: scores, weak points and retries.
 /// Nothing here is editable, and no lesson content or code is exposed.
 class GuardianReport {
-  const GuardianReport._({
-    required this.results,
-    required this.totalSteps,
-  });
+  const GuardianReport._({required this.results, required this.totalSteps});
 
   /// Builds the report for [course] from the learner's attempt [history].
   factory GuardianReport.build({

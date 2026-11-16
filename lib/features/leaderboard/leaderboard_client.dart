@@ -12,8 +12,8 @@ import 'leaderboard_models.dart';
 /// instead of failing silently.
 class LeaderboardClient {
   LeaderboardClient({required String baseUrl, http.Client? client})
-      : _base = baseUrl.trim().replaceAll(RegExp(r'/+$'), ''),
-        _http = client ?? http.Client();
+    : _base = baseUrl.trim().replaceAll(RegExp(r'/+$'), ''),
+      _http = client ?? http.Client();
 
   final String _base;
   final http.Client _http;

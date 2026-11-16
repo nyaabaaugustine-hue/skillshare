@@ -29,7 +29,11 @@ class PythonCompletion {
 
 /// A completion request resolved against a source buffer.
 class CompletionMatch {
-  const CompletionMatch({required this.start, required this.end, required this.items});
+  const CompletionMatch({
+    required this.start,
+    required this.end,
+    required this.items,
+  });
 
   /// Range of the partial word being typed, in source offsets.
   final int start;
@@ -68,8 +72,9 @@ class PythonCompletions {
     ).allMatches(source)) {
       add(match.group(1));
     }
-    for (final match
-        in RegExp(r'\bdef\s+([A-Za-z_][A-Za-z0-9_]*)').allMatches(source)) {
+    for (final match in RegExp(
+      r'\bdef\s+([A-Za-z_][A-Za-z0-9_]*)',
+    ).allMatches(source)) {
       add(match.group(1));
     }
     for (final match in RegExp(
@@ -102,7 +107,9 @@ class PythonCompletions {
   /// True when [cursor] sits inside a string literal or after a `#` comment on
   /// the same line, where identifier completion would only add noise.
   static bool inStringOrComment(String source, int cursor) {
-    final lineStart = cursor == 0 ? 0 : source.lastIndexOf('\n', cursor - 1) + 1;
+    final lineStart = cursor == 0
+        ? 0
+        : source.lastIndexOf('\n', cursor - 1) + 1;
     var quote = '';
     for (var i = lineStart; i < cursor; i++) {
       final ch = source[i];

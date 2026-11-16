@@ -23,9 +23,15 @@ class QuizScreen extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     // Chip colours inverted against the surface, matching InlineCodeText.
-    final chipBackground = isDark ? const Color(0xFFE8EDF4) : AppTheme.codeSurface;
-    final chipForeground = isDark ? const Color(0xFF111A26) : const Color(0xFFF2F5F9);
-    final chipBorder = isDark ? const Color(0xFFB9C4D2) : const Color(0xFF243447);
+    final chipBackground = isDark
+        ? const Color(0xFFE8EDF4)
+        : AppTheme.codeSurface;
+    final chipForeground = isDark
+        ? const Color(0xFF111A26)
+        : const Color(0xFFF2F5F9);
+    final chipBorder = isDark
+        ? const Color(0xFFB9C4D2)
+        : const Color(0xFF243447);
 
     // Render the prose (with possible `backtick` chips) at the top.
     final prose = InlineCodeText(

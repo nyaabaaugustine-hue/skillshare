@@ -64,9 +64,11 @@ class PythonErrorExplainer {
         return ErrorExplanation(
           line: line,
           headline: 'You divided by zero',
-          why: 'Python cannot split something into 0 pieces, so the program '
+          why:
+              'Python cannot split something into 0 pieces, so the program '
               'stops on the line with the / or // sign.',
-          nextStep: 'Check the value on the right of the division. If it comes '
+          nextStep:
+              'Check the value on the right of the division. If it comes '
               'from input() or a calculation, guard it with '
               '`if divisor != 0:` before dividing.',
         );
@@ -74,9 +76,11 @@ class PythonErrorExplainer {
         return ErrorExplanation(
           line: line,
           headline: 'You asked for an item that is not in the list',
-          why: 'Counting starts at 0, so a list with 3 items only has '
+          why:
+              'Counting starts at 0, so a list with 3 items only has '
               'positions 0, 1 and 2.',
-          nextStep: 'Print `len(your_list)` and compare it with the index you '
+          nextStep:
+              'Print `len(your_list)` and compare it with the index you '
               'asked for. Use `-1` for the last item instead of counting '
               'backwards by hand.',
         );
@@ -91,18 +95,22 @@ class PythonErrorExplainer {
         return ErrorExplanation(
           line: line,
           headline: 'Your program wanted more input',
-          why: 'input() asked for a value, but no more typed answers were '
+          why:
+              'input() asked for a value, but no more typed answers were '
               'waiting.',
-          nextStep: 'Add a sample input in the exercise’s Input panel, or '
+          nextStep:
+              'Add a sample input in the exercise’s Input panel, or '
               'test with a fixed value first, then swap input() back in.',
         );
       case 'RecursionError':
         return ErrorExplanation(
           line: line,
           headline: 'A function keeps calling itself',
-          why: 'The function calls itself without ever reaching a case that '
+          why:
+              'The function calls itself without ever reaching a case that '
               'stops it.',
-          nextStep: 'Add a stopping condition at the top of the function, for '
+          nextStep:
+              'Add a stopping condition at the top of the function, for '
               'example `if n <= 0: return`.',
         );
       case 'TimeoutError':
@@ -110,14 +118,16 @@ class PythonErrorExplainer {
           line: line,
           headline: 'Your program took too long',
           why: 'It was stopped so it could not freeze the editor.',
-          nextStep: 'Look for a loop whose condition never becomes false, and '
+          nextStep:
+              'Look for a loop whose condition never becomes false, and '
               'make sure the variable it checks is updated inside the loop.',
         );
       default:
         return ErrorExplanation(
           headline: 'Python stopped with a $type',
           why: message.isEmpty ? 'It did not give any more detail.' : message,
-          nextStep: 'Read the last line of the details below: it names the '
+          nextStep:
+              'Read the last line of the details below: it names the '
               'line and the value Python was unhappy with.',
           line: line,
         );
@@ -137,24 +147,29 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'A colon is missing',
-        why: 'Lines that open a block with if, for, while, def, class, else, '
+        why:
+            'Lines that open a block with if, for, while, def, class, else, '
             'elif, try or except must end with a colon (:).',
-        nextStep: 'Put `:` at the end of the line, for example '
+        nextStep:
+            'Put `:` at the end of the line, for example '
             '`if score > 10:`.',
       );
     }
 
     if (lower.contains('was never closed')) {
-      final opener = RegExp(r"'([\(\[\{])'").firstMatch(error.message)?.group(1);
+      final opener = RegExp(r"'([\(\[\{])'")
+          .firstMatch(error.message)
+          ?.group(1);
       return ErrorExplanation(
         line: line,
         headline: 'A bracket or quote was opened and never closed',
         why: opener == null
             ? 'Every ( [ { and every quote needs a matching partner on the '
-                'same statement.'
+                  'same statement.'
             : 'A `$opener` was opened here and Python reached the end of the '
-                'file without finding the closing partner.',
-        nextStep: 'Count the pairs on this line. The editor already closes '
+                  'file without finding the closing partner.',
+        nextStep:
+            'Count the pairs on this line. The editor already closes '
             'brackets for you, so the usual cause is deleting one half.',
       );
     }
@@ -164,9 +179,11 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'The file ended in the middle of a statement',
-        why: 'Python was still expecting more code — often an unclosed '
+        why:
+            'Python was still expecting more code — often an unclosed '
             'bracket, quote or block.',
-        nextStep: 'Check the last block you typed for a missing )(, quote or '
+        nextStep:
+            'Check the last block you typed for a missing )(, quote or '
             'colon, and that `if`/`for`/`def` blocks have an indented body.',
       );
     }
@@ -176,9 +193,11 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'A number is written in a way Python cannot read',
-        why: 'Whole numbers cannot start with an unnecessary 0 (write 7, not '
+        why:
+            'Whole numbers cannot start with an unnecessary 0 (write 7, not '
             '07), and a decimal point needs digits on both sides.',
-        nextStep: 'Rewriting the number without leading zeros usually fixes '
+        nextStep:
+            'Rewriting the number without leading zeros usually fixes '
             'this.',
       );
     }
@@ -196,31 +215,23 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'The try block is missing its except or finally',
-        why: 'A `try:` must be followed by at least one `except:` or a '
+        why:
+            'A `try:` must be followed by at least one `except:` or a '
             '`finally:`.',
-        nextStep: 'Add `except Exception as error:` under the try block, '
+        nextStep:
+            'Add `except Exception as error:` under the try block, '
             'indented to match.',
       );
     }
 
     // Generic syntax error: read the offending line for the usual suspects.
-    if (sourceLine.trimRight().endsWith(':')) {
-      return ErrorExplanation(
-        line: line,
-        headline: 'Python could not read this line',
-        why: 'The line opens a block, but what follows it is not valid.',
-        nextStep: 'Check the words after the colon — a block keyword needs a '
-            'condition or a name before the `:`.',
-      );
-    }
-
     final firstWord = sourceLine.trim().split(RegExp(r'\s+')).first;
-    if (pythonBlockKeywords.contains(firstWord) &&
-        !sourceLine.contains(':')) {
+    if (pythonBlockKeywords.contains(firstWord) && !sourceLine.contains(':')) {
       return ErrorExplanation(
         line: line,
         headline: 'A colon is missing',
-        why: '`$firstWord` starts a block, and every block header ends with '
+        why:
+            '`$firstWord` starts a block, and every block header ends with '
             'a colon.',
         nextStep: 'Add `:` at the end of the line.',
       );
@@ -230,9 +241,21 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'A comparison used a single =',
-        why: 'Inside `if`, `while` or `elif`, comparing needs `==`; one `=` '
+        why:
+            'Inside `if`, `while` or `elif`, comparing needs `==`; one `=` '
             'tries to store a value and Python will not allow that there.',
         nextStep: 'Change the single `=` to `==`.',
+      );
+    }
+
+    if (sourceLine.trimRight().endsWith(':')) {
+      return ErrorExplanation(
+        line: line,
+        headline: 'Python could not read this line',
+        why: 'The line opens a block, but what follows it is not valid.',
+        nextStep:
+            'Check the words after the colon — a block keyword needs a '
+            'condition or a name before the `:`.',
       );
     }
 
@@ -241,7 +264,8 @@ class PythonErrorExplainer {
         line: line,
         headline: 'A quote is opened and not closed',
         why: 'Text must start and end with the same quote character.',
-        nextStep: 'Close the piece of text with the same quote you opened it '
+        nextStep:
+            'Close the piece of text with the same quote you opened it '
             'with.',
       );
     }
@@ -252,7 +276,8 @@ class PythonErrorExplainer {
       why: error.message.isEmpty
           ? 'The line does not follow Python’s spelling rules.'
           : error.message,
-      nextStep: 'Check the end of the line for a missing colon, bracket or '
+      nextStep:
+          'Check the end of the line for a missing colon, bracket or '
           'quote, and look one line above too — an unclosed bracket on the '
           'line before shows up here.',
     );
@@ -267,9 +292,11 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'The block under this line needs to be indented',
-        why: 'After a line ending in `:`, Python expects the body to be '
+        why:
+            'After a line ending in `:`, Python expects the body to be '
             'pushed in by one level.',
-        nextStep: 'Indent the next line by 4 spaces (the editor does this '
+        nextStep:
+            'Indent the next line by 4 spaces (the editor does this '
             'automatically when you press Enter at the end of a `:` line).',
       );
     }
@@ -278,7 +305,8 @@ class PythonErrorExplainer {
         line: line,
         headline: 'This line is indented more than Python expects',
         why: 'The line is pushed in, but nothing above it opens a block.',
-        nextStep: 'Remove the leading spaces so the line starts at the same '
+        nextStep:
+            'Remove the leading spaces so the line starts at the same '
             'column as the code around it.',
       );
     }
@@ -286,9 +314,11 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'The indentation does not line up with the code above',
-        why: 'The spaces at the start of this line do not match any open '
+        why:
+            'The spaces at the start of this line do not match any open '
             'block.',
-        nextStep: 'Match the indentation exactly. Four spaces per level is '
+        nextStep:
+            'Match the indentation exactly. Four spaces per level is '
             'the convention, and mixing tabs with spaces causes this in ways '
             'you cannot see.',
       );
@@ -297,7 +327,8 @@ class PythonErrorExplainer {
       line: line,
       headline: 'The indentation is not correct',
       why: 'Python uses indentation to know which lines belong together.',
-      nextStep: 'Line this line up with the code it belongs to, using the '
+      nextStep:
+          'Line this line up with the code it belongs to, using the '
           'same number of spaces.',
     );
   }
@@ -338,9 +369,11 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: '“$name” is used before it is created',
-        why: 'The value is created further down, but Python reads from the '
+        why:
+            'The value is created further down, but Python reads from the '
             'top, so it does not exist yet at this point.',
-        nextStep: 'Move the line that creates `$name` above the line that '
+        nextStep:
+            'Move the line that creates `$name` above the line that '
             'uses it.',
       );
     }
@@ -348,9 +381,11 @@ class PythonErrorExplainer {
     return ErrorExplanation(
       line: line,
       headline: '“$name” does not exist yet',
-      why: 'Python has only the names you created with `=`, or the ones '
+      why:
+          'Python has only the names you created with `=`, or the ones '
           'built in, like print and len.',
-      nextStep: 'Create it first, for example `$name = 0`, and check that the '
+      nextStep:
+          'Create it first, for example `$name = 0`, and check that the '
           'spelling matches exactly everywhere it is used.',
     );
   }
@@ -362,12 +397,13 @@ class PythonErrorExplainer {
       headline: name == null
           ? 'A variable is used before it has a value'
           : '“$name” has no value at this point',
-      why: 'The function assigns it further down, so Python treats it as a '
+      why:
+          'The function assigns it further down, so Python treats it as a '
           'local name and it is empty on this line.',
       nextStep: name == null
           ? 'Give the variable a value before reading it.'
           : 'Give `$name` a starting value at the top of the function, or '
-              'pass it in as a parameter.',
+                'pass it in as a parameter.',
     );
   }
 
@@ -382,9 +418,11 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'Text and numbers cannot be added with +',
-        why: '`+` joins two pieces of text, but it will not glue a number '
+        why:
+            '`+` joins two pieces of text, but it will not glue a number '
             'onto text on its own.',
-        nextStep: 'Wrap the number: `print("Total: " + str(total))`. Using a '
+        nextStep:
+            'Wrap the number: `print("Total: " + str(total))`. Using a '
             'comma is shorter: `print("Total:", total)`.',
       );
     }
@@ -394,7 +432,8 @@ class PythonErrorExplainer {
         line: line,
         headline: 'These two values cannot be added',
         why: message,
-        nextStep: 'Convert one of them first: `int(value)` for whole '
+        nextStep:
+            'Convert one of them first: `int(value)` for whole '
             'numbers, `float(value)` for decimals, `str(value)` for text.',
       );
     }
@@ -403,9 +442,11 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'You used a value as if it were a function',
-        why: 'The name in front of the ( ) holds a number or text, not a '
+        why:
+            'The name in front of the ( ) holds a number or text, not a '
             'function.',
-        nextStep: 'If you meant to multiply, use `*`. Otherwise rename your '
+        nextStep:
+            'If you meant to multiply, use `*`. Otherwise rename your '
             'variable so it does not hide the function you wanted to call.',
       );
     }
@@ -415,7 +456,8 @@ class PythonErrorExplainer {
         line: line,
         headline: 'A function was given the wrong number of values',
         why: message,
-        nextStep: 'Count the items inside the ( ) and compare with the '
+        nextStep:
+            'Count the items inside the ( ) and compare with the '
             'parameters in the `def` line. Defaults in the definition make '
             'parameters optional.',
       );
@@ -425,9 +467,11 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'You used [ ] on something that is not a list or text',
-        why: 'Square brackets read an item from a list, tuple or string. '
+        why:
+            'Square brackets read an item from a list, tuple or string. '
             'Numbers and None cannot be indexed.',
-        nextStep: 'Check what the variable holds — `print(type(value))` — and '
+        nextStep:
+            'Check what the variable holds — `print(type(value))` — and '
             'make sure it is a list, tuple or string.',
       );
     }
@@ -435,9 +479,11 @@ class PythonErrorExplainer {
     if (lower.contains("'nonetype'") && lower.contains('not iterable')) {
       return ErrorExplanation(
         line: line,
-        headline: 'A function returned nothing, so there was nothing to loop over',
+        headline:
+            'A function returned nothing, so there was nothing to loop over',
         why: 'Functions return None unless they use `return`.',
-        nextStep: 'Add `return result` at the end of the function you are '
+        nextStep:
+            'Add `return result` at the end of the function you are '
             'calling.',
       );
     }
@@ -446,7 +492,8 @@ class PythonErrorExplainer {
       line: line,
       headline: 'Two values were used together in a way Python does not allow',
       why: message,
-      nextStep: 'Check the types with `print(type(value))` and convert the '
+      nextStep:
+          'Check the types with `print(type(value))` and convert the '
           'one that is wrong.',
     );
   }
@@ -457,10 +504,12 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'That text is not a whole number',
-        why: '`int()` only accepts digits. input() always gives you text, so '
+        why:
+            '`int()` only accepts digits. input() always gives you text, so '
             'typing anything else — or pressing Enter on an empty line — ends '
             'up here.',
-        nextStep: 'Convert only after checking, or use `float()` for '
+        nextStep:
+            'Convert only after checking, or use `float()` for '
             'decimals. For a safe conversion: `if answer.isdigit(): '
             'number = int(answer)`.',
       );
@@ -478,7 +527,8 @@ class PythonErrorExplainer {
         line: line,
         headline: 'There are more values than names to store them',
         why: message,
-        nextStep: 'Count the items and the names on the left of `=`, or '
+        nextStep:
+            'Count the items and the names on the left of `=`, or '
             'collect the extras with `*rest`.',
       );
     }
@@ -487,7 +537,8 @@ class PythonErrorExplainer {
         line: line,
         headline: 'There are fewer values than names to store them',
         why: message,
-        nextStep: 'Add the missing value, or remove a name from the left of '
+        nextStep:
+            'Add the missing value, or remove a name from the left of '
             '`=`.',
       );
     }
@@ -495,7 +546,8 @@ class PythonErrorExplainer {
       line: line,
       headline: 'A value had the right type but the wrong content',
       why: message,
-      nextStep: 'Print the value just before this line to see what it '
+      nextStep:
+          'Print the value just before this line to see what it '
           'actually holds.',
     );
   }
@@ -507,16 +559,18 @@ class PythonErrorExplainer {
       headline: key == null
           ? 'That key is not in the dictionary'
           : 'The dictionary has no key $key',
-      why: 'Looking up a key that was never stored returns an error rather '
+      why:
+          'Looking up a key that was never stored returns an error rather '
           'than a default value.',
-      nextStep: 'Use `.get(key, default)` if the key might be missing, or '
+      nextStep:
+          'Use `.get(key, default)` if the key might be missing, or '
           'print `list(dictionary.keys())` to see what is actually there.',
     );
   }
 
   ErrorExplanation _attribute(String message, int? line) {
-    final match =
-        RegExp(r"'(\w+)' object has no attribute '(\w+)'").firstMatch(message);
+    final match = RegExp(r"'(\w+)' object has no attribute '(\w+)'")
+        .firstMatch(message);
     final owner = match?.group(1);
     final attribute = match?.group(2);
 
@@ -524,9 +578,11 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'Text cannot be appended to like a list',
-        why: '`append` belongs to lists. A string is immutable, so it cannot '
+        why:
+            '`append` belongs to lists. A string is immutable, so it cannot '
             'grow in place.',
-        nextStep: 'Join with `+` or an f-string: `message = message + "!"`, '
+        nextStep:
+            'Join with `+` or an f-string: `message = message + "!"`, '
             'or collect pieces in a list and `"".join(pieces)` at the end.',
       );
     }
@@ -534,9 +590,11 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'That value is None, so it has no methods',
-        why: 'Usually a function did not return anything, or a search found '
+        why:
+            'Usually a function did not return anything, or a search found '
             'nothing.',
-        nextStep: 'Check the value with `print(value)` before using it, and '
+        nextStep:
+            'Check the value with `print(value)` before using it, and '
             'add a `return` in the function that produced it.',
       );
     }
@@ -544,9 +602,11 @@ class PythonErrorExplainer {
       return ErrorExplanation(
         line: line,
         headline: 'A $owner has no “$attribute”',
-        why: 'The name after the dot must be a method or property that '
+        why:
+            'The name after the dot must be a method or property that '
             'belongs to that type.',
-        nextStep: 'Check the spelling, and check that the variable really is '
+        nextStep:
+            'Check the spelling, and check that the variable really is '
             'a $owner — `print(type(value))` tells you.',
       );
     }
@@ -559,19 +619,21 @@ class PythonErrorExplainer {
   }
 
   ErrorExplanation _import(String message, int? line) {
-    final module =
-        RegExp(r"No module named '([^']+)'").firstMatch(message)?.group(1);
+    final module = RegExp(r"No module named '([^']+)'")
+        .firstMatch(message)
+        ?.group(1);
     return ErrorExplanation(
       line: line,
       headline: module == null
           ? 'That module could not be imported'
           : 'There is no module called “$module” here',
-      why: 'Only the standard library and the modules bundled with the app '
+      why:
+          'Only the standard library and the modules bundled with the app '
           'can be imported.',
       nextStep: module == null
           ? 'Check the spelling of the import.'
           : 'Check the spelling of `$module`, or use a standard module '
-              'instead.',
+                'instead.',
     );
   }
 
@@ -580,10 +642,7 @@ class PythonErrorExplainer {
   /// Suggests the closest name already known: something the learner defined, or
   /// a built-in whose spelling is one or two keystrokes away.
   static String? _didYouMean(String name, String source) {
-    final candidates = <String>[
-      ...bound(namesIn(source)),
-      ...pythonBuiltins,
-    ];
+    final candidates = <String>[...bound(namesIn(source)), ...pythonBuiltins];
     String? best;
     var bestScore = 1 << 30;
     for (final candidate in candidates) {
@@ -603,10 +662,10 @@ class PythonErrorExplainer {
   }
 
   static List<String> namesIn(String source) {
-    return RegExp(r'^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=', multiLine: true)
-        .allMatches(source)
-        .map((m) => m.group(1)!)
-        .toList(growable: false);
+    return RegExp(
+      r'^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=',
+      multiLine: true,
+    ).allMatches(source).map((m) => m.group(1)!).toList(growable: false);
   }
 
   static Iterable<String> bound(List<String> names) => names.toSet();

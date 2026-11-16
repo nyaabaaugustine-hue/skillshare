@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import 'package:skillbridge_python_lab/core/errors/app_exception.dart';
+
 import 'execution_result.dart';
 import 'python_runtime.dart';
 
@@ -86,18 +87,20 @@ class ProcessPythonRuntime implements PythonRuntime {
 
     final tempDir = await Directory.systemTemp.createTemp('sb_pyrun_');
     final jobFile = File(p.join(tempDir.path, 'job.json'));
-    await jobFile.writeAsString(jsonEncode({
-      'code': request.code,
-      'stdin': request.stdinLines,
-      'maxOutputChars': maxChars,
-    }));
+    await jobFile.writeAsString(
+      jsonEncode({
+        'code': request.code,
+        'stdin': request.stdinLines,
+        'maxOutputChars': maxChars,
+      }),
+    );
 
     final sw = Stopwatch()..start();
     try {
-      final process = await Process.start(
-        pythonExecutable,
-        [harnessPath, jobFile.path],
-      );
+      final process = await Process.start(pythonExecutable, [
+        harnessPath,
+        jobFile.path,
+      ]);
       _current = process;
 
       final stdoutFuture = process.stdout.transform(utf8.decoder).join();
@@ -134,10 +137,14 @@ class ProcessPythonRuntime implements PythonRuntime {
       // The harness never produced a result: surface the raw error.
       return ExecutionResult(
         status: ExecutionStatus.error,
-        stderr: stderr.isNotEmpty ? stderr : 'The Python runtime produced no result.',
+        stderr: stderr.isNotEmpty
+            ? stderr
+            : 'The Python runtime produced no result.',
         exception: ExecutionException(
           type: 'RuntimeError',
-          message: stderr.isNotEmpty ? stderr.trim() : 'No result from runtime (exit $exitCode).',
+          message: stderr.isNotEmpty
+              ? stderr.trim()
+              : 'No result from runtime (exit $exitCode).',
         ),
         durationMs: sw.elapsedMilliseconds,
       );
@@ -181,7 +188,9 @@ class ProcessPythonRuntime implements PythonRuntime {
     if (startIndex == -1 || endIndex == -1 || endIndex <= startIndex) {
       return null;
     }
-    final jsonText = stdout.substring(startIndex + start.length, endIndex).trim();
+    final jsonText = stdout
+        .substring(startIndex + start.length, endIndex)
+        .trim();
     try {
       final map = jsonDecode(jsonText) as Map<String, dynamic>;
       return ExecutionResult.fromJson(map);

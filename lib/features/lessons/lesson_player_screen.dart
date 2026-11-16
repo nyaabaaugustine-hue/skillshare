@@ -150,5 +150,3 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
     );
   }
 }
-
-

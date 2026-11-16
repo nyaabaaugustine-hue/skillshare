@@ -60,10 +60,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
-        MaterialApp(
-          theme: buildDarkTheme(),
-          home: const AiTutorScreen(),
-        ),
+        MaterialApp(theme: buildDarkTheme(), home: const AiTutorScreen()),
       );
       await tester.pump();
     }
@@ -93,8 +90,9 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('typing a question replies and clears the field',
-        (tester) async {
+    testWidgets('typing a question replies and clears the field', (
+      tester,
+    ) async {
       await pumpTutor(tester);
 
       await tester.enterText(find.byType(TextField), 'give me a challenge');
@@ -112,8 +110,9 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('quiz round-trip through the chat UI replies to an answer',
-        (tester) async {
+    testWidgets('quiz round-trip through the chat UI replies to an answer', (
+      tester,
+    ) async {
       await pumpTutor(tester);
 
       await tester.enterText(find.byType(TextField), 'Quiz me now');

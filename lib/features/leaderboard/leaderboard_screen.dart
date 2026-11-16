@@ -141,7 +141,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   void _notice(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   LeaderboardEntry? get _me {
@@ -162,7 +163,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         actions: [
           IconButton(
             tooltip: 'Choose profile photo',
-            onPressed: client?.configured == true && !_loading ? _pickPhoto : null,
+            onPressed: client?.configured == true && !_loading
+                ? _pickPhoto
+                : null,
             icon: const Icon(Icons.add_a_photo_outlined),
           ),
           IconButton(
@@ -192,7 +195,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     icon: Icons.cloud_off_rounded,
                     title: 'Ranking unavailable',
                     message: _error!,
-                    actionLabel: client?.configured == true ? 'Try again' : null,
+                    actionLabel: client?.configured == true
+                        ? 'Try again'
+                        : null,
                     onAction: client?.configured == true ? _load : null,
                   ),
                 ] else if (_entries.isEmpty) ...[
@@ -200,8 +205,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   const _MessageCard(
                     icon: Icons.emoji_events_outlined,
                     title: 'No scores yet',
-                    message:
-                        'Finish step 1 and you take the first spot on the board.',
+                    message: 'Finish step 1 and you take the first spot on the board.',
                   ),
                 ] else ...[
                   const SizedBox(height: 18),
@@ -279,8 +283,8 @@ class _HeaderCard extends StatelessWidget {
                   me == null
                       ? 'Finish a step to join the board.'
                       : '${me!.stepsCompleted} steps · '
-                          '${me!.practicesCompleted} practice · '
-                          '${me!.score} points · ${me!.average}% average',
+                            '${me!.practicesCompleted} practice · '
+                            '${me!.score} points · ${me!.average}% average',
                   style: const TextStyle(
                     color: SkillBridgeColors.textMuted,
                     fontSize: 12.5,
@@ -316,11 +320,11 @@ class _RankRow extends StatelessWidget {
   final String? avatarUrl;
 
   String get _medal => switch (entry.rank) {
-        1 => '🥇',
-        2 => '🥈',
-        3 => '🥉',
-        _ => '',
-      };
+    1 => '🥇',
+    2 => '🥈',
+    3 => '🥉',
+    _ => '',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -341,8 +345,8 @@ class _RankRow extends StatelessWidget {
             color: isMe
                 ? SkillBridgeColors.primary.withValues(alpha: 0.55)
                 : top
-                    ? SkillBridgeColors.accent.withValues(alpha: 0.35)
-                    : SkillBridgeColors.outline,
+                ? SkillBridgeColors.accent.withValues(alpha: 0.35)
+                : SkillBridgeColors.outline,
           ),
         ),
         child: Row(
@@ -517,9 +521,7 @@ class _MessageCard extends StatelessWidget {
             const SizedBox(height: 14),
             OutlinedButton(
               onPressed: onAction,
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(120, 46),
-              ),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(120, 46)),
               child: Text(actionLabel!),
             ),
           ],

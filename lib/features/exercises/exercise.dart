@@ -50,34 +50,34 @@ class Exercise {
   bool get hasLesson => lesson.isNotEmpty;
 
   factory Exercise.fromJson(Map<String, dynamic> json) => Exercise(
-        id: json['id'] as String,
-        lessonId: json['lessonId'] as String?,
-        title: (json['title'] as String?) ?? 'Untitled exercise',
-        instructions: (json['instructions'] as String?) ?? '',
-        starterCode: (json['starterCode'] as String?) ?? '',
-        objectives: _stringList(json['objectives']),
-        requirements: _stringList(json['requirements']),
-        hints: _stringList(json['hints']),
-        version: (json['version'] as num?)?.toInt() ?? 1,
-        sampleStdin: _stringList(json['sampleStdin']),
-        expectedOutput: json['expectedOutput'] as String?,
-        lesson: Lesson.fromJson(json['lesson']),
-      );
+    id: json['id'] as String,
+    lessonId: json['lessonId'] as String?,
+    title: (json['title'] as String?) ?? 'Untitled exercise',
+    instructions: (json['instructions'] as String?) ?? '',
+    starterCode: (json['starterCode'] as String?) ?? '',
+    objectives: _stringList(json['objectives']),
+    requirements: _stringList(json['requirements']),
+    hints: _stringList(json['hints']),
+    version: (json['version'] as num?)?.toInt() ?? 1,
+    sampleStdin: _stringList(json['sampleStdin']),
+    expectedOutput: json['expectedOutput'] as String?,
+    lesson: Lesson.fromJson(json['lesson']),
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'lessonId': lessonId,
-        'title': title,
-        'instructions': instructions,
-        'starterCode': starterCode,
-        'objectives': objectives,
-        'requirements': requirements,
-        'hints': hints,
-        'version': version,
-        'sampleStdin': sampleStdin,
-        'expectedOutput': expectedOutput,
-        if (lesson.isNotEmpty) 'lesson': lesson.toJson(),
-      };
+    'id': id,
+    'lessonId': lessonId,
+    'title': title,
+    'instructions': instructions,
+    'starterCode': starterCode,
+    'objectives': objectives,
+    'requirements': requirements,
+    'hints': hints,
+    'version': version,
+    'sampleStdin': sampleStdin,
+    'expectedOutput': expectedOutput,
+    if (lesson.isNotEmpty) 'lesson': lesson.toJson(),
+  };
 
   static List<String> _stringList(Object? value) {
     if (value is List) {

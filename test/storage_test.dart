@@ -26,8 +26,10 @@ void main() {
   setUpAll(sqfliteFfiInit);
 
   setUp(() async {
-    dbPath = p.join(Directory.systemTemp.path,
-        'sb_storage_${DateTime.now().microsecondsSinceEpoch}.db');
+    dbPath = p.join(
+      Directory.systemTemp.path,
+      'sb_storage_${DateTime.now().microsecondsSinceEpoch}.db',
+    );
     // In-process FFI: see app_database.dart for why the isolate-backed factory
     // is not usable inside `testWidgets`.
     database = AppDatabase(factory: databaseFactoryFfiNoIsolate, path: dbPath);
@@ -53,17 +55,16 @@ void main() {
     DateTime? createdAt,
     int attemptCount = 0,
     String? code = 'print("hi")',
-  }) =>
-      Submission(
-        id: id,
-        learnerRef: learner,
-        exerciseId: exerciseId,
-        exerciseVersion: 1,
-        code: code!,
-        createdAt: createdAt ?? DateTime.now(),
-        syncState: state,
-        attemptCount: attemptCount,
-      );
+  }) => Submission(
+    id: id,
+    learnerRef: learner,
+    exerciseId: exerciseId,
+    exerciseVersion: 1,
+    code: code!,
+    createdAt: createdAt ?? DateTime.now(),
+    syncState: state,
+    attemptCount: attemptCount,
+  );
 
   group('schema', () {
     test('opens and exposes a usable connection', () async {
@@ -93,19 +94,33 @@ void main() {
       expect(loaded!.code, 'print(1)');
       expect(loaded.exerciseId, 'ex-a');
       expect(loaded.exerciseVersion, 3);
-      expect(loaded.updatedAt.millisecondsSinceEpoch, when.millisecondsSinceEpoch);
+      expect(
+        loaded.updatedAt.millisecondsSinceEpoch,
+        when.millisecondsSinceEpoch,
+      );
     });
 
-    test('saving the same (learner, exercise) again replaces the row', () async {
-      await drafts.save(
-          learnerRef: learner, exerciseId: 'ex-a', exerciseVersion: 1, code: 'a');
-      await drafts.save(
-          learnerRef: learner, exerciseId: 'ex-a', exerciseVersion: 1, code: 'b');
+    test(
+      'saving the same (learner, exercise) again replaces the row',
+      () async {
+        await drafts.save(
+          learnerRef: learner,
+          exerciseId: 'ex-a',
+          exerciseVersion: 1,
+          code: 'a',
+        );
+        await drafts.save(
+          learnerRef: learner,
+          exerciseId: 'ex-a',
+          exerciseVersion: 1,
+          code: 'b',
+        );
 
-      final rows = await drafts.listFor(learner, limit: 100);
-      expect(rows, hasLength(1));
-      expect(rows.first.code, 'b');
-    });
+        final rows = await drafts.listFor(learner, limit: 100);
+        expect(rows, hasLength(1));
+        expect(rows.first.code, 'b');
+      },
+    );
 
     test('returns null for an unknown draft', () async {
       expect(await drafts.find(learner, 'nope'), isNull);
@@ -113,12 +128,17 @@ void main() {
 
     test('keeps learners isolated', () async {
       await drafts.save(
-          learnerRef: learner, exerciseId: 'ex-a', exerciseVersion: 1, code: 'mine');
+        learnerRef: learner,
+        exerciseId: 'ex-a',
+        exerciseVersion: 1,
+        code: 'mine',
+      );
       await drafts.save(
-          learnerRef: otherLearner,
-          exerciseId: 'ex-a',
-          exerciseVersion: 1,
-          code: 'theirs');
+        learnerRef: otherLearner,
+        exerciseId: 'ex-a',
+        exerciseVersion: 1,
+        code: 'theirs',
+      );
 
       expect((await drafts.find(learner, 'ex-a'))!.code, 'mine');
       expect((await drafts.find(otherLearner, 'ex-a'))!.code, 'theirs');
@@ -127,17 +147,19 @@ void main() {
 
     test('lists drafts newest first', () async {
       await drafts.save(
-          learnerRef: learner,
-          exerciseId: 'older',
-          exerciseVersion: 1,
-          code: '1',
-          updatedAt: DateTime(2026, 1, 1));
+        learnerRef: learner,
+        exerciseId: 'older',
+        exerciseVersion: 1,
+        code: '1',
+        updatedAt: DateTime(2026, 1, 1),
+      );
       await drafts.save(
-          learnerRef: learner,
-          exerciseId: 'newer',
-          exerciseVersion: 1,
-          code: '2',
-          updatedAt: DateTime(2026, 6, 1));
+        learnerRef: learner,
+        exerciseId: 'newer',
+        exerciseVersion: 1,
+        code: '2',
+        updatedAt: DateTime(2026, 6, 1),
+      );
 
       final rows = await drafts.listFor(learner);
       expect(rows.first.exerciseId, 'newer');
@@ -146,9 +168,17 @@ void main() {
 
     test('deleteAllFor removes only that learner (privacy control)', () async {
       await drafts.save(
-          learnerRef: learner, exerciseId: 'ex-a', exerciseVersion: 1, code: 'x');
+        learnerRef: learner,
+        exerciseId: 'ex-a',
+        exerciseVersion: 1,
+        code: 'x',
+      );
       await drafts.save(
-          learnerRef: otherLearner, exerciseId: 'ex-a', exerciseVersion: 1, code: 'y');
+        learnerRef: otherLearner,
+        exerciseId: 'ex-a',
+        exerciseVersion: 1,
+        code: 'y',
+      );
 
       await drafts.deleteAllFor(learner);
 
@@ -190,10 +220,14 @@ void main() {
       expect(loaded.serverResponseRef, 'SRV-1');
       expect(loaded.serverStatus, 'needs_work');
       expect(loaded.lastError, 'temporary');
-      expect(loaded.createdAt.millisecondsSinceEpoch,
-          created.millisecondsSinceEpoch);
-      expect(loaded.lastAttemptAt!.millisecondsSinceEpoch,
-          lastAttempt.millisecondsSinceEpoch);
+      expect(
+        loaded.createdAt.millisecondsSinceEpoch,
+        created.millisecondsSinceEpoch,
+      );
+      expect(
+        loaded.lastAttemptAt!.millisecondsSinceEpoch,
+        lastAttempt.millisecondsSinceEpoch,
+      );
     });
 
     test('enqueue refuses a duplicate submission id', () async {
@@ -206,27 +240,42 @@ void main() {
 
     test('pending() returns pending and failed items oldest first', () async {
       await submissions.enqueue(
-          submission(id: 'a', createdAt: DateTime(2026, 1, 3)));
+        submission(id: 'a', createdAt: DateTime(2026, 1, 3)),
+      );
       await submissions.enqueue(
-          submission(id: 'b', createdAt: DateTime(2026, 1, 1)));
+        submission(id: 'b', createdAt: DateTime(2026, 1, 1)),
+      );
       await submissions.enqueue(
-          submission(id: 'c', createdAt: DateTime(2026, 1, 2)));
-      await submissions.enqueue(submission(
-          id: 'done', createdAt: DateTime(2026, 1, 4),
-          state: SubmissionSyncState.accepted));
-      await submissions.enqueue(submission(
-          id: 'rej', createdAt: DateTime(2026, 1, 5),
-          state: SubmissionSyncState.rejected));
+        submission(id: 'c', createdAt: DateTime(2026, 1, 2)),
+      );
+      await submissions.enqueue(
+        submission(
+          id: 'done',
+          createdAt: DateTime(2026, 1, 4),
+          state: SubmissionSyncState.accepted,
+        ),
+      );
+      await submissions.enqueue(
+        submission(
+          id: 'rej',
+          createdAt: DateTime(2026, 1, 5),
+          state: SubmissionSyncState.rejected,
+        ),
+      );
 
       final pending = await submissions.pending(learner);
       expect(pending.map((s) => s.id).toList(), ['b', 'c', 'a']);
     });
 
-    test('pending() includes items left in the transient failed state', () async {
-      await submissions.enqueue(
-          submission(id: 'flaky', state: SubmissionSyncState.failed));
-      expect(await submissions.pending(learner), hasLength(1));
-    });
+    test(
+      'pending() includes items left in the transient failed state',
+      () async {
+        await submissions.enqueue(
+          submission(id: 'flaky', state: SubmissionSyncState.failed),
+        );
+        expect(await submissions.pending(learner), hasLength(1));
+      },
+    );
 
     test('pendingCount matches the queue', () async {
       expect(await submissions.pendingCount(learner), 0);
@@ -234,7 +283,8 @@ void main() {
       await submissions.enqueue(submission(id: 'p1'));
       await submissions.enqueue(submission(id: 'p2'));
       await submissions.enqueue(
-          submission(id: 'ok', state: SubmissionSyncState.accepted));
+        submission(id: 'ok', state: SubmissionSyncState.accepted),
+      );
 
       expect(await submissions.pendingCount(learner), 2);
       expect(await submissions.pendingCount(otherLearner), 0);
@@ -244,12 +294,14 @@ void main() {
       await submissions.enqueue(submission(id: 's1'));
       final loaded = await submissions.findById('s1');
 
-      await submissions.update(loaded!.copyWith(
-        syncState: SubmissionSyncState.accepted,
-        attemptCount: 1,
-        serverResponseRef: 'SRV-x',
-        lastError: null,
-      ));
+      await submissions.update(
+        loaded!.copyWith(
+          syncState: SubmissionSyncState.accepted,
+          attemptCount: 1,
+          serverResponseRef: 'SRV-x',
+          lastError: null,
+        ),
+      );
 
       final updated = await submissions.findById('s1');
       expect(updated!.syncState, SubmissionSyncState.accepted);
@@ -262,10 +314,13 @@ void main() {
     test('listForLearner can filter by state', () async {
       await submissions.enqueue(submission(id: 'p'));
       await submissions.enqueue(
-          submission(id: 'a', state: SubmissionSyncState.accepted));
+        submission(id: 'a', state: SubmissionSyncState.accepted),
+      );
 
-      final accepted = await submissions.listForLearner(learner,
-          state: SubmissionSyncState.accepted);
+      final accepted = await submissions.listForLearner(
+        learner,
+        state: SubmissionSyncState.accepted,
+      );
       expect(accepted.map((s) => s.id), ['a']);
     });
 
@@ -311,8 +366,14 @@ void main() {
     });
 
     test('fromName falls back to pending', () {
-      expect(SubmissionSyncState.fromName('accepted'), SubmissionSyncState.accepted);
-      expect(SubmissionSyncState.fromName('nonsense'), SubmissionSyncState.pending);
+      expect(
+        SubmissionSyncState.fromName('accepted'),
+        SubmissionSyncState.accepted,
+      );
+      expect(
+        SubmissionSyncState.fromName('nonsense'),
+        SubmissionSyncState.pending,
+      );
     });
   });
 

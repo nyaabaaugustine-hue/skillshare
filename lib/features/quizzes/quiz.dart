@@ -11,10 +11,13 @@ class Quiz {
 
   /// Unique identifier for idempotent caching.
   final String id;
+
   /// The question text, may contain `backticks` which render as code chips.
   final String prompt;
+
   /// Distinct answer options.  Exactly one is correct.
   final List<AnswerOption> options;
+
   /// Human-readable explanation shown after the question is solved.
   final String? explanation;
 
@@ -25,20 +28,20 @@ class Quiz {
   }
 
   factory Quiz.fromJson(Map<String, dynamic> json) => Quiz(
-        id: json['id'] as String,
-        prompt: json['prompt'] as String,
-        options: (json['options'] as List)
-            .map((o) => AnswerOption.fromJson(o as Map<String, dynamic>))
-            .toList(growable: false),
-        explanation: json['explanation'] as String?,
-      );
+    id: json['id'] as String,
+    prompt: json['prompt'] as String,
+    options: (json['options'] as List)
+        .map((o) => AnswerOption.fromJson(o as Map<String, dynamic>))
+        .toList(growable: false),
+    explanation: json['explanation'] as String?,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'prompt': prompt,
-        'options': options.map((o) => o.toJson()).toList(),
-        if (explanation != null) 'explanation': explanation,
-      };
+    'id': id,
+    'prompt': prompt,
+    'options': options.map((o) => o.toJson()).toList(),
+    if (explanation != null) 'explanation': explanation,
+  };
 
   /// Returns the [AnswerOption] that is correct.
   AnswerOption get correctOption => options[correctIndex];
@@ -46,24 +49,19 @@ class Quiz {
 
 /// One answer choice in a [Quiz].
 class AnswerOption {
-  const AnswerOption({
-    required this.text,
-    required this.isCorrect,
-  });
+  const AnswerOption({required this.text, required this.isCorrect});
 
   /// The text shown on the chip.  May contain `backticks` which render as
   /// code chips just like [InlineCodeText].
   final String text;
+
   /// Whether this option is the one correct answer.
   final bool isCorrect;
 
   factory AnswerOption.fromJson(Map<String, dynamic> json) => AnswerOption(
-        text: json['text'] as String,
-        isCorrect: json['isCorrect'] as bool,
-      );
+    text: json['text'] as String,
+    isCorrect: json['isCorrect'] as bool,
+  );
 
-  Map<String, dynamic> toJson() => {
-        'text': text,
-        'isCorrect': isCorrect,
-      };
+  Map<String, dynamic> toJson() => {'text': text, 'isCorrect': isCorrect};
 }

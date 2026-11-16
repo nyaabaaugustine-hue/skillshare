@@ -73,8 +73,11 @@ void main() {
         minOutputLines: 2,
       );
       expect(
-        evaluatePractice(block: two, code: 'print(1)', result: _ok('1\n'))
-            .passed,
+        evaluatePractice(
+          block: two,
+          code: 'print(1)',
+          result: _ok('1\n'),
+        ).passed,
         isFalse,
       );
       expect(
@@ -97,8 +100,7 @@ void main() {
       expect(practices, isNotEmpty);
     });
 
-    test('no starter code already passes without the learner writing any',
-        () {
+    test('no starter code already passes without the learner writing any', () {
       // Starter code is comments/assignments only: running it prints nothing,
       // so a learner cannot pass a practice step by just pressing Run.
       for (final step in practices) {

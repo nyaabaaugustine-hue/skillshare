@@ -5,7 +5,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
-
 /// Everything the certificate needs to render itself.
 class CertificateModel {
   const CertificateModel({
@@ -39,11 +38,7 @@ class CertificateModel {
 /// It is a plain widget so it can be shown locked, previewed as a sample, or
 /// captured to an image for download.
 class CertificateCard extends StatelessWidget {
-  const CertificateCard({
-    super.key,
-    required this.model,
-    this.width = 720,
-  });
+  const CertificateCard({super.key, required this.model, this.width = 720});
 
   final CertificateModel model;
   final double width;
@@ -88,9 +83,7 @@ class CertificateCard extends StatelessWidget {
         child: Stack(
           children: [
             // Engraved paper pattern, drawn behind every element.
-            Positioned.fill(
-              child: CustomPaint(painter: const _PaperPainter()),
-            ),
+            Positioned.fill(child: CustomPaint(painter: const _PaperPainter())),
             // Faint brand watermark, centred behind the wording.
             Positioned.fill(
               child: Center(
@@ -278,8 +271,18 @@ class CertificateCard extends StatelessWidget {
 
   static String _formatDate(DateTime d) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${d.day} ${months[d.month - 1]} ${d.year}';
   }
@@ -439,7 +442,11 @@ class _RibbonSeal extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: const SweepGradient(
-                colors: [Color(0xFFFFE9A8), Color(0xFFD8AE32), Color(0xFFFFE9A8)],
+                colors: [
+                  Color(0xFFFFE9A8),
+                  Color(0xFFD8AE32),
+                  Color(0xFFFFE9A8),
+                ],
               ),
               border: Border.all(
                 color: const Color(0xFF9C7A14),
@@ -553,10 +560,7 @@ class _FooterField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Container(
-          height: 1,
-          color: color.withValues(alpha: 0.35),
-        ),
+        Container(height: 1, color: color.withValues(alpha: 0.35)),
         const SizedBox(height: 4),
         Text(
           caption,
@@ -634,12 +638,7 @@ class _PaperPainter extends CustomPainter {
           ..lineTo(0, 0)
           ..lineTo(arm, 0)
           ..moveTo(arm * 0.25, arm * 0.55)
-          ..quadraticBezierTo(
-            arm * 0.25,
-            arm * 0.25,
-            arm * 0.55,
-            arm * 0.25,
-          );
+          ..quadraticBezierTo(arm * 0.25, arm * 0.25, arm * 0.55, arm * 0.25);
         canvas.drawPath(path, corner);
         canvas.restore();
       }

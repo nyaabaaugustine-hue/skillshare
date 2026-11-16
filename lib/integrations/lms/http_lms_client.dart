@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:skillbridge_python_lab/core/errors/app_exception.dart';
 import 'package:skillbridge_python_lab/features/exercises/exercise.dart';
 import 'package:skillbridge_python_lab/features/submissions/submission.dart';
+
 import 'lms_client.dart';
 import 'lms_models.dart';
 
@@ -61,7 +62,10 @@ class HttpLmsClient implements LmsClient {
 
   Uri _uri(String path) => Uri.parse('$baseUrl$path');
 
-  Future<Map<String, String>> _headers({bool idempotencyKey = false, String? key}) async {
+  Future<Map<String, String>> _headers({
+    bool idempotencyKey = false,
+    String? key,
+  }) async {
     final token = await tokenProvider.getToken();
     return {
       'Accept': 'application/json',
@@ -114,7 +118,9 @@ class HttpLmsClient implements LmsClient {
     final json = await _send(
       () async => _http.get(_uri('/exercises'), headers: await _headers()),
     );
-    final list = (json as Map<String, dynamic>)['exercises'] as List<dynamic>? ?? const [];
+    final list =
+        (json as Map<String, dynamic>)['exercises'] as List<dynamic>? ??
+        const [];
     return list
         .map((e) => Exercise.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
@@ -123,7 +129,8 @@ class HttpLmsClient implements LmsClient {
   @override
   Future<Exercise> fetchExercise(String exerciseId) async {
     final json = await _send(
-      () async => _http.get(_uri('/exercises/$exerciseId'), headers: await _headers()),
+      () async =>
+          _http.get(_uri('/exercises/$exerciseId'), headers: await _headers()),
     );
     return Exercise.fromJson(json as Map<String, dynamic>);
   }
@@ -143,7 +150,10 @@ class HttpLmsClient implements LmsClient {
   @override
   Future<SubmissionReceipt> getSubmissionStatus(String submissionId) async {
     final json = await _send(
-      () async => _http.get(_uri('/submissions/$submissionId'), headers: await _headers()),
+      () async => _http.get(
+        _uri('/submissions/$submissionId'),
+        headers: await _headers(),
+      ),
     );
     return SubmissionReceipt.fromJson(json as Map<String, dynamic>);
   }
@@ -161,7 +171,9 @@ class HttpLmsClient implements LmsClient {
     final json = await _send(
       () async => _http.get(_uri('/achievements'), headers: await _headers()),
     );
-    final list = (json as Map<String, dynamic>)['achievements'] as List<dynamic>? ?? const [];
+    final list =
+        (json as Map<String, dynamic>)['achievements'] as List<dynamic>? ??
+        const [];
     return list
         .map((e) => Achievement.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);

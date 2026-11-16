@@ -15,21 +15,19 @@ class HttpTutorTools {
     required String baseUrl,
     this.token = '',
     http.Client? client,
-  })  : _baseUrl = baseUrl.replaceFirst(RegExp(r'/+$'), ''),
-        _client = client ?? http.Client();
+  }) : _baseUrl = baseUrl.replaceFirst(RegExp(r'/+$'), ''),
+       _client = client ?? http.Client();
 
   final String _baseUrl;
   final String token;
   final http.Client _client;
 
   TutorToolRegistry registry(TutorStudentContext context) => TutorToolRegistry(
-        studentContext: context,
-        webLookup: (query) => webLookup(query),
-        screenshotAnalysis: (attachment) => analyzeScreenshot(
-          attachment,
-          context: context,
-        ),
-      );
+    studentContext: context,
+    webLookup: (query) => webLookup(query),
+    screenshotAnalysis: (attachment) =>
+        analyzeScreenshot(attachment, context: context),
+  );
 
   Future<TutorToolResult> webLookup(String query) async {
     final response = await _post(
@@ -79,23 +77,29 @@ class HttpTutorTools {
       final decoded = jsonDecode(response.body);
       return decoded is Map<String, dynamic>
           ? decoded
-          : <String, dynamic>{'text': 'The tutor returned an invalid tool response.'};
+          : <String, dynamic>{
+              'text': 'The tutor returned an invalid tool response.',
+            };
     } catch (_) {
       return <String, dynamic>{
-        'text': 'I could not reach the online tutor tool. Check your connection '
+        'text':
+            'I could not reach the online tutor tool. Check your connection '
             'or continue with the offline explanation.',
       };
     }
   }
 
   TutorToolResult _result(String tool, Map<String, dynamic> json) {
-    final sources = (json['sources'] as List<dynamic>?)
-            ?.whereType<String>()
-            .toList(growable: false) ??
+    final sources =
+        (json['sources'] as List<dynamic>?)?.whereType<String>().toList(
+          growable: false,
+        ) ??
         const <String>[];
     return TutorToolResult(
       tool: tool,
-      text: (json['text'] as String?) ?? 'The tutor tool returned no explanation.',
+      text:
+          (json['text'] as String?) ??
+          'The tutor tool returned no explanation.',
       sources: sources,
     );
   }

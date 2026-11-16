@@ -4,10 +4,7 @@ import 'python_runtime.dart';
 /// Deterministic in-process runtime used by widget tests and UI previews where
 /// real execution is irrelevant. It never executes code.
 class FakePythonRuntime implements PythonRuntime {
-  FakePythonRuntime({
-    this.result,
-    this.onExecute,
-  });
+  FakePythonRuntime({this.result, this.onExecute});
 
   /// Result returned for every execution unless [onExecute] is supplied.
   final ExecutionResult? result;

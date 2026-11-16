@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:skillbridge_python_lab/app/theme.dart';
+
 import 'code_editing_controller.dart';
 import 'python_input_formatter.dart';
 
@@ -34,8 +35,9 @@ class CodeEditor extends StatefulWidget {
 }
 
 class _CodeEditorState extends State<CodeEditor> {
-  late final PythonInputFormatter _formatter =
-      PythonInputFormatter(indentUnit: widget.indentUnit);
+  late final PythonInputFormatter _formatter = PythonInputFormatter(
+    indentUnit: widget.indentUnit,
+  );
   late int _lineCount;
 
   @override

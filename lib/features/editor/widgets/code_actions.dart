@@ -19,18 +19,27 @@ class CodeActions {
   }) {
     final value = controller.value;
     final selection = _safeSelection(value);
-    final newText = value.text.replaceRange(selection.start, selection.end, text);
+    final newText = value.text.replaceRange(
+      selection.start,
+      selection.end,
+      text,
+    );
     final caret = selection.start + (cursorOffsetFromStart ?? text.length);
     controller.value = value.copyWith(
       text: newText,
-      selection: TextSelection.collapsed(offset: caret.clamp(0, newText.length)),
+      selection: TextSelection.collapsed(
+        offset: caret.clamp(0, newText.length),
+      ),
       composing: TextRange.empty,
     );
   }
 
   /// Indents every line touched by the selection (or the current line).
   static void indent(TextEditingController controller, String indentUnit) {
-    _transformLines(controller, (line) => line.isEmpty ? line : '$indentUnit$line');
+    _transformLines(
+      controller,
+      (line) => line.isEmpty ? line : '$indentUnit$line',
+    );
   }
 
   /// Removes up to one indentation level from the affected lines.
@@ -39,7 +48,9 @@ class CodeActions {
       if (line.startsWith(indentUnit)) return line.substring(indentUnit.length);
       // Fall back to removing up to indentUnit leading spaces.
       var removed = 0;
-      while (removed < indentUnit.length && removed < line.length && line[removed] == ' ') {
+      while (removed < indentUnit.length &&
+          removed < line.length &&
+          line[removed] == ' ') {
         removed++;
       }
       return line.substring(removed);
@@ -67,12 +78,17 @@ class CodeActions {
     return value.selection;
   }
 
-  static void _transformLines(TextEditingController controller, String Function(String) transform) {
+  static void _transformLines(
+    TextEditingController controller,
+    String Function(String) transform,
+  ) {
     final value = controller.value;
     final text = value.text;
     final selection = _safeSelection(value);
 
-    final start = text.lastIndexOf('\n', selection.start > 0 ? selection.start - 1 : 0) + 1;
+    final start =
+        text.lastIndexOf('\n', selection.start > 0 ? selection.start - 1 : 0) +
+        1;
     var end = text.indexOf('\n', selection.end);
     if (end == -1) end = text.length;
 

@@ -15,15 +15,21 @@ class SettingsRepository {
   static const _kAutoSave = 'auto_save_draft';
   static const _kLearnerRef = 'learner_ref';
   static const _kLastSync = 'last_sync_at';
+  static const _kReminderEnabled = 'reminder_enabled';
+  static const _kReminderHour = 'reminder_hour';
+  static const _kReminderMinute = 'reminder_minute';
+  static const _kReminderAsked = 'reminder_permission_asked';
 
   static Future<SettingsRepository> create() async =>
       SettingsRepository(await SharedPreferences.getInstance());
 
   String get themeMode => _prefs.getString(_kThemeMode) ?? 'system';
-  Future<void> setThemeMode(String value) => _prefs.setString(_kThemeMode, value);
+  Future<void> setThemeMode(String value) =>
+      _prefs.setString(_kThemeMode, value);
 
   double get editorFontSize => _prefs.getDouble(_kEditorFontSize) ?? 15.0;
-  Future<void> setEditorFontSize(double value) => _prefs.setDouble(_kEditorFontSize, value);
+  Future<void> setEditorFontSize(double value) =>
+      _prefs.setDouble(_kEditorFontSize, value);
 
   int get tabSize => _prefs.getInt(_kTabSize) ?? 4;
   Future<void> setTabSize(int value) => _prefs.setInt(_kTabSize, value);
@@ -32,12 +38,34 @@ class SettingsRepository {
   Future<void> setWordWrap(bool value) => _prefs.setBool(_kWordWrap, value);
 
   bool get autoSaveDraft => _prefs.getBool(_kAutoSave) ?? true;
-  Future<void> setAutoSaveDraft(bool value) => _prefs.setBool(_kAutoSave, value);
+  Future<void> setAutoSaveDraft(bool value) =>
+      _prefs.setBool(_kAutoSave, value);
+
+  /// Learning reminders. On by default: the app is for learners who need a
+  /// nudge, and the switch is one tap away in Settings.
+  bool get reminderEnabled => _prefs.getBool(_kReminderEnabled) ?? true;
+  Future<void> setReminderEnabled(bool value) =>
+      _prefs.setBool(_kReminderEnabled, value);
+
+  /// Local time of day for the daily reminder (24-hour). Defaults to 6pm.
+  int get reminderHour => _prefs.getInt(_kReminderHour) ?? 18;
+  int get reminderMinute => _prefs.getInt(_kReminderMinute) ?? 0;
+
+  Future<void> setReminderTime({required int hour, required int minute}) async {
+    await _prefs.setInt(_kReminderHour, hour);
+    await _prefs.setInt(_kReminderMinute, minute);
+  }
+
+  /// Whether the OS permission prompt has already been shown once.
+  bool get reminderPermissionAsked => _prefs.getBool(_kReminderAsked) ?? false;
+  Future<void> setReminderPermissionAsked(bool value) =>
+      _prefs.setBool(_kReminderAsked, value);
 
   /// A stable, non-identifying reference for the current learner. Assigned once
   /// and stored locally; the real identity binding happens server-side.
   String? get learnerRef => _prefs.getString(_kLearnerRef);
-  Future<void> setLearnerRef(String value) => _prefs.setString(_kLearnerRef, value);
+  Future<void> setLearnerRef(String value) =>
+      _prefs.setString(_kLearnerRef, value);
 
   DateTime? get lastSyncAt {
     final millis = _prefs.getInt(_kLastSync);

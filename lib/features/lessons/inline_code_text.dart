@@ -144,19 +144,22 @@ class _CodeChipState extends State<_CodeChip>
     super.initState();
     _controller = AnimationController(vsync: this, duration: _total);
     // Later chips start later, but never long enough to feel like waiting.
-    final delayMs =
-        (_stagger.inMilliseconds * widget.index).clamp(0, _total.inMilliseconds - 120);
+    final delayMs = (_stagger.inMilliseconds * widget.index).clamp(
+      0,
+      _total.inMilliseconds - 120,
+    );
     final start = delayMs / _total.inMilliseconds;
     _fade = CurvedAnimation(
       parent: _controller,
       curve: Interval(start, 1, curve: Curves.easeOut),
     );
-    _slide = Tween<Offset>(begin: const Offset(0, 0.35), end: Offset.zero).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Interval(start, 1, curve: Curves.easeOutCubic),
-      ),
-    );
+    _slide = Tween<Offset>(begin: const Offset(0, 0.35), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: Interval(start, 1, curve: Curves.easeOutCubic),
+          ),
+        );
     if (widget.animate) {
       _controller.forward();
     } else {
@@ -177,12 +180,15 @@ class _CodeChipState extends State<_CodeChip>
 
     // Inverted against the surface. Both are theme-derived so a future theme
     // change keeps the contrast relationship.
-    final chipBackground =
-        isDark ? const Color(0xFFE8EDF4) : SkillBridgeColors.codeSurface;
-    final chipForeground =
-        isDark ? const Color(0xFF111A26) : const Color(0xFFF2F5F9);
-    final chipBorder =
-        isDark ? const Color(0xFFB9C4D2) : const Color(0xFF243447);
+    final chipBackground = isDark
+        ? const Color(0xFFE8EDF4)
+        : SkillBridgeColors.codeSurface;
+    final chipForeground = isDark
+        ? const Color(0xFF111A26)
+        : const Color(0xFFF2F5F9);
+    final chipBorder = isDark
+        ? const Color(0xFFB9C4D2)
+        : const Color(0xFF243447);
 
     final content = Container(
       margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
@@ -242,10 +248,13 @@ class CodeBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final background = isDark ? SkillBridgeColors.codeSurface : const Color(0xFFEDF1F6);
-    final foreground = isDark ? const Color(0xFFE6EAF0) : const Color(0xFF14202E);
-    final border =
-        isDark ? const Color(0xFF243447) : const Color(0xFFCBD4E0);
+    final background = isDark
+        ? SkillBridgeColors.codeSurface
+        : const Color(0xFFEDF1F6);
+    final foreground = isDark
+        ? const Color(0xFFE6EAF0)
+        : const Color(0xFF14202E);
+    final border = isDark ? const Color(0xFF243447) : const Color(0xFFCBD4E0);
 
     final block = Container(
       width: double.infinity,
@@ -274,8 +283,10 @@ class CodeBlock extends StatelessWidget {
       curve: Curves.easeOutCubic,
       builder: (context, value, child) => Opacity(
         opacity: value,
-        child:
-            Transform.translate(offset: Offset(0, 12 * (1 - value)), child: child),
+        child: Transform.translate(
+          offset: Offset(0, 12 * (1 - value)),
+          child: child,
+        ),
       ),
       child: block,
     );
