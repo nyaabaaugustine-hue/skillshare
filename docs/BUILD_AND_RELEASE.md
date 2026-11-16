@@ -167,7 +167,7 @@ $root = "C:\Users\<you>\skillbridge_python_lab"
 $env:SERIOUS_PYTHON_APP           = "$root\build\python-app"
 $env:SERIOUS_PYTHON_SITE_PACKAGES = "$root\build\python-site-packages"
 
-dart run serious_python:main package python_app -p Android
+dart run serious_python:main package python_app -p Android --cleanup-app
 ```
 
 `build/` is already git-ignored, which is why it is the right home for these.
@@ -304,7 +304,7 @@ steps:
   - run: flutter pub get
   - run: flutter analyze
   - run: flutter test --reporter expanded
-  - run: dart run serious_python:main package python_app -p Android
+  - run: dart run serious_python:main package python_app -p Android --cleanup-app
     env:
       SERIOUS_PYTHON_APP: ${{ github.workspace }}/build/python-app
       SERIOUS_PYTHON_SITE_PACKAGES: ${{ github.workspace }}/build/python-site-packages
