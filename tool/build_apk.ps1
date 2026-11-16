@@ -5,6 +5,11 @@ $Flutter = if ($env:FLUTTER_BIN) { $env:FLUTTER_BIN } else { 'C:\src\flutter\bin
 $Dart = if ($env:DART_BIN) { $env:DART_BIN } else { Join-Path (Split-Path $Flutter -Parent) 'dart.bat' }
 $AndroidSdk = if ($env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT } else { 'C:\Users\HP\AppData\Local\Android\Sdk' }
 $Output = Join-Path $ProjectRoot 'outputs\skillbridge-python-lab-debug.apk'
+$LeaderboardUrl = if ($env:SB_LEADERBOARD_URL) {
+  $env:SB_LEADERBOARD_URL.TrimEnd('/')
+} else {
+  'https://academy-skillshare.vercel.app'
+}
 
 if (-not (Test-Path $Flutter)) {
   throw "Flutter SDK not found at '$Flutter'. Set FLUTTER_BIN to flutter.bat."
@@ -41,7 +46,7 @@ try {
   # which surfaces as "the embedded Python runtime did not start in time".
   & $Dart run serious_python:main package python_app -p Android --cleanup-app
   if ($LASTEXITCODE -ne 0) { throw "Serious Python packaging failed with exit code $LASTEXITCODE." }
-  & $Flutter build apk --debug --no-pub
+  & $Flutter build apk --debug --no-pub "--dart-define=SB_LEADERBOARD_URL=$LeaderboardUrl"
   if ($LASTEXITCODE -ne 0) { throw "Flutter build failed with exit code $LASTEXITCODE." }
   $Built = Join-Path $ProjectRoot 'build\app\outputs\flutter-apk\app-debug.apk'
   if (-not (Test-Path $Built)) { throw "Flutter reported success but no APK was found at '$Built'." }

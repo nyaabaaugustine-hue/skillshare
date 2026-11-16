@@ -227,7 +227,8 @@ has never been executed on a device — see `docs/KNOWN_LIMITATIONS.md`.
 flutter build apk --release `
   --dart-define=SB_ENV=staging `
   --dart-define=SB_LMS_BASE_URL=https://lms.example.org/api/v1 `
-  --dart-define=SB_LMS_CLIENT_ID=skillbridge-android
+  --dart-define=SB_LMS_CLIENT_ID=skillbridge-android `
+  --dart-define=SB_LEADERBOARD_URL=https://academy-skillshare.vercel.app
 ```
 
 Output: `build/app/outputs/flutter-apk/app-release.apk`.
@@ -257,6 +258,7 @@ during development. Before distributing anything:
 | `SB_LMS_BASE_URL` | *(empty)* | **Empty means "use `MockLmsClient`".** There is no production URL yet. |
 | `SB_LMS_CLIENT_ID` | *(empty)* | OAuth/OIDC client identifier |
 | `SB_LMS_TOKEN` | *(empty)* | Dev-only bearer token, read via `StaticTokenProvider` |
+| `SB_LEADERBOARD_URL` | *(empty; falls back to `SB_LMS_BASE_URL`)* | Website origin that serves `/api/leaderboard` |
 | `SB_PYTHON_RUNTIME` | *(platform default)* | `serious` \| `process` \| `fake` |
 | `SB_PYTHON_EXECUTABLE` | `python` / `python3` | Interpreter for the desktop/dev runtime |
 | `SB_GUARDIAN_REPORT_URL` | *(empty)* | **Empty means "never email progress reports".** URL of the mailer endpoint that renders the report and calls Resend with a server-side key (`guardian_mailer/`, never a key in the app) |

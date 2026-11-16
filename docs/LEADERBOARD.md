@@ -55,16 +55,20 @@ request.
 
 ## Enabling it in the app
 
-The leaderboard is off unless the build knows where the API is:
+The app publishes to the same API as the website leaderboard at
+`https://academy-skillshare.vercel.app/leaderboard`. Configure the app with the
+site origin (not the `/leaderboard` page path):
 
 ```bash
 flutter build appbundle --release \
-  --dart-define=SB_LEADERBOARD_URL=https://skillsbridge.example.org
+  --dart-define=SB_LEADERBOARD_URL=https://academy-skillshare.vercel.app
 ```
 
 `SB_LEADERBOARD_URL` falls back to `SB_LMS_BASE_URL`, so one server address can
 serve both. With neither set, the trophy button still opens the screen but it
 explains that the leaderboard is not connected instead of showing an empty list.
+The Android APK helper uses this production origin by default; override it with
+the `SB_LEADERBOARD_URL` environment variable for local or staging builds.
 
 Local development:
 
