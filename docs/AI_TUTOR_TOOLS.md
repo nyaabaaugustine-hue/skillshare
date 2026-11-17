@@ -1,17 +1,25 @@
-# AI tutor tools and learner context
+# AI tutor and learner context
 
-The tutor supports an offline-first flow and an optional online tool gateway.
-Offline mode never sends learner data or screenshots anywhere. When
-`SB_AI_TUTOR_BASE_URL` is configured, the app enables two explicit server
-endpoints:
+The tutor works offline for everyone. Only a signed-in learner account can use
+the Cloudflare AI routes; guests and guardian accounts stay on the offline
+tutor. The Worker validates the Supabase access token, requires the
+server-managed `app_metadata.role = student` claim, and rate-limits requests
+by user.
 
-- `POST /v1/tutor/tools/web-lookup` with `{ "query": "..." }`
-- `POST /v1/tutor/tools/screenshot` with `{ "attachment": { "name", "mimeType", "base64" }, "studentContext": { ... } }`
+## Worker routes
 
-Both endpoints should return `{ "text": "...", "sources": ["https://..."] }`.
-The web tool must return citations and should use an allowlisted search provider.
-The screenshot tool should inspect code screenshots, tracebacks, diagrams, or
-lesson work and return a student-friendly explanation rather than a grade.
+- `POST /v1/tutor/chat` returns a short explanation and allowlisted Python
+  documentation sources.
+- `POST /v1/tutor/chat/stream` streams the answer as server-sent events.
+- `POST /v1/tutor/vision` analyzes a learner-selected screenshot after an
+  in-app preview and send confirmation.
+- `POST /v1/tutor/resources` returns short videos only when the learner asks
+  after receiving an explanation. Results are restricted to configured,
+  trusted YouTube channels and videos with captions.
+
+The Worker does not persist chat history. The app sends only recent turns for
+conversation context, along with the active learner's minimum tutoring
+context. Screenshots are sent only after the learner confirms the preview.
 
 ## Context sent to the tutor
 
@@ -22,32 +30,43 @@ Only the active learner's tutoring context is allowed:
 - completed and total challenges
 - weak course steps and latest scores
 
-The app does **not** send auth tokens, email addresses, guardian records, raw
-submission history, or unrelated learners to the tutor tools. The student name
-and progress are loaded from the authenticated learner session and LMS progress;
-weak points are derived from the learner's own course attempts.
+The app does **not** send auth tokens as prompt content, email addresses,
+guardian records, raw submission history, or unrelated learners. The access
+token is sent only in the HTTPS authorization header so the Worker can validate
+the session with Supabase Auth.
 
-## Teaching behavior
+Remote tutor implementations should explain in small steps, show short worked
+Python examples, ask a useful follow-up question, encourage effort without
+inventing scores, and adapt practice to weak points.
 
-Remote tutor implementations should use the `TutorTeachingStyle` contract:
+## Configuration
 
-- explain in small steps
-- show short worked Python examples
-- ask a Socratic follow-up question
-- encourage effort without inventing or changing points
-- adapt the next exercise to weak points
-
-A safe production backend should additionally enforce authentication, rate
-limits, content moderation, prompt-injection resistance for web pages, source
-citations, retention limits, and guardian-consent rules for under-13 learners.
-
-## Example build configuration
+Configure these values through the normal build environment:
 
 ```powershell
 flutter run `
-  --dart-define=SB_AI_TUTOR_BASE_URL=https://api.example.com `
-  --dart-define=SB_AI_TUTOR_TOKEN=<short-lived-token>
+  --dart-define=SB_AI_TUTOR_BASE_URL=https://<worker> `
+  --dart-define=SB_SUPABASE_URL=https://<project>.supabase.co `
+  --dart-define=SB_SUPABASE_ANON_KEY=<publishable-key>
 ```
 
-Do not commit real tokens. Prefer a short-lived authenticated session token
-issued by the LMS rather than a permanent API key embedded in the app.
+The Supabase publishable key is not a service-role secret. The short-lived
+Supabase access token comes from the signed-in session and is never compiled
+into the app. The Worker needs its own `SUPABASE_URL` and
+`SUPABASE_ANON_KEY` configuration, Workers AI binding, and production Durable
+Object rate limiter. Configure exact `AI_ALLOWED_ORIGINS` values for web
+builds; native apps do not send an Origin header.
+
+Before deploying the Worker, apply
+`supabase/migrations/20261117000100_tutor_account_role.sql` to the Supabase
+project. It sets a server-managed account role on new users and backfills
+existing accounts from the role selected at signup. The Worker fails closed
+for accounts without a trusted student role.
+
+`SB_AI_TUTOR_TOKEN` is obsolete and must not be used. Rotate any credentials
+that were previously exposed before deploying. Do not place service-role keys,
+Cloudflare API tokens, or provider secrets in Flutter build arguments.
+
+Video lookup stays disabled until both `YOUTUBE_API_KEY` and
+`YOUTUBE_ALLOWED_CHANNEL_IDS` are configured on the Worker. Only curated
+channel IDs should be allowed.

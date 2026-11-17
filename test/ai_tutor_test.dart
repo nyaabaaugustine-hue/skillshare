@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skillbridge_python_lab/app/theme.dart';
 import 'package:skillbridge_python_lab/features/ai/ai_tutor_screen.dart';
+import 'package:skillbridge_python_lab/features/ai/tutor_models.dart';
 import 'package:skillbridge_python_lab/features/ai/tutor_service.dart';
 
 void main() {
@@ -86,6 +87,51 @@ void main() {
       expect(find.textContaining('Two kinds of loop'), findsOneWidget);
       // The conversation replaced the welcome state.
       expect(find.text('Quiz me'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('streamed replies show citations and visual explanations', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(900, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final service = TutorService(
+        remoteStream:
+            ({
+              required String message,
+              required List<TutorChatTurn> history,
+              required TutorStudentContext context,
+              required TutorTeachingStyle style,
+            }) async* {
+              yield const TutorStreamEvent(text: 'A loop repeats code.');
+              yield const TutorStreamEvent(
+                sources: <String>[
+                  'https://docs.python.org/3/tutorial/controlflow.html',
+                ],
+              );
+            },
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildDarkTheme(),
+          home: AiTutorScreen(service: service),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), 'Explain loops');
+      await tester.pump();
+      await tester.tap(find.byTooltip('Send to tutor'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+
+      expect(find.textContaining('A loop repeats code.'), findsOneWidget);
+      expect(find.text('Python documentation'), findsOneWidget);
+      expect(find.text('QUICK PICTURE'), findsOneWidget);
+      expect(find.byTooltip('Read aloud'), findsNothing);
+      expect(find.text('Read aloud'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });

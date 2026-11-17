@@ -19,8 +19,8 @@ class CloudUser {
   final String name;
   final String email;
 
-  /// `student` or `guardian`, kept in the account's metadata so the app knows
-  /// which shell to open after a web sign-in.
+  /// `student` or `guardian`, resolved from server-managed account metadata
+  /// when available so the app opens the correct shell after sign-in.
   final String role;
   final String? token;
   final String? guardianEmail;
@@ -161,6 +161,9 @@ class CloudAuth {
   }
 
   String _role(User user) {
+    final trustedRole = user.appMetadata['role']?.toString();
+    if (trustedRole == 'student') return 'student';
+    if (trustedRole == 'guardian') return 'guardian';
     final metadata = user.userMetadata ?? const <String, dynamic>{};
     return metadata['role']?.toString() == 'guardian' ? 'guardian' : 'student';
   }

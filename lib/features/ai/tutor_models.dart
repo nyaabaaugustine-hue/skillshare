@@ -99,10 +99,67 @@ class TutorToolResult {
   final List<String> sources;
 }
 
+class TutorReply {
+  const TutorReply({required this.text, this.sources = const <String>[]});
+
+  final String text;
+  final List<String> sources;
+}
+
+class TutorStreamEvent {
+  const TutorStreamEvent({this.text = '', this.sources = const <String>[]});
+
+  final String text;
+  final List<String> sources;
+}
+
+class TutorVideo {
+  const TutorVideo({
+    required this.title,
+    required this.channel,
+    required this.url,
+  });
+
+  final String title;
+  final String channel;
+  final String url;
+}
+
 typedef TutorWebLookup = Future<TutorToolResult> Function(String query);
 typedef TutorScreenshotAnalysis = Future<TutorToolResult> Function(
   TutorAttachment attachment,
 );
+typedef TutorVideoSearch = Future<List<TutorVideo>> Function(String topic);
+
+/// One earlier message, sent with each request so the remote model keeps the
+/// thread of the conversation.
+class TutorChatTurn {
+  const TutorChatTurn({required this.fromUser, required this.text});
+
+  final bool fromUser;
+  final String text;
+
+  Map<String, String> toJson() => <String, String>{
+    'role': fromUser ? 'user' : 'assistant',
+    'content': text,
+  };
+}
+
+/// Asks a remote language model for a reply. Returns null on any failure so
+/// the caller can fall back to the offline tutor.
+typedef TutorRemoteChat = Future<TutorReply?> Function({
+  required String message,
+  required List<TutorChatTurn> history,
+  required TutorStudentContext context,
+  required TutorTeachingStyle style,
+});
+
+typedef TutorRemoteStream = Stream<TutorStreamEvent> Function({
+  required String message,
+  required List<TutorChatTurn> history,
+  required TutorStudentContext context,
+  required TutorTeachingStyle style,
+});
 
 /// Optional capabilities supplied by an online tutor adapter.
 ///
@@ -113,14 +170,17 @@ class TutorToolRegistry {
     required this.studentContext,
     this.webLookup,
     this.screenshotAnalysis,
+    this.videoSearch,
   });
 
   final TutorStudentContext studentContext;
   final TutorWebLookup? webLookup;
   final TutorScreenshotAnalysis? screenshotAnalysis;
+  final TutorVideoSearch? videoSearch;
 
   bool get canLookupWeb => webLookup != null;
   bool get canAnalyzeScreenshots => screenshotAnalysis != null;
+  bool get canFindVideos => videoSearch != null;
 
   Future<TutorToolResult> lookupWeb(String query) async {
     final lookup = webLookup;
@@ -142,6 +202,12 @@ class TutorToolRegistry {
       );
     }
     return analyze(attachment);
+  }
+
+  Future<List<TutorVideo>> findVideos(String topic) async {
+    final search = videoSearch;
+    if (search == null) return const <TutorVideo>[];
+    return search(topic);
   }
 }
 

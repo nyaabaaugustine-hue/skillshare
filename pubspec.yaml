@@ -30,6 +30,9 @@ dependencies:
   connectivity_plus: ^6.1.0
   video_player: ^2.9.2
   image_picker: ^1.1.2
+  speech_to_text: ^7.3.0
+  flutter_tts: ^4.2.3
+  url_launcher: ^6.3.2
 
   # Lightweight preferences (theme, editor settings).
   shared_preferences: ^2.3.3

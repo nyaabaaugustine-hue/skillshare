@@ -4,6 +4,7 @@
          release APK would silently fail every network call without it. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <!-- Android 13+ shows no notification at all without this runtime grant,
          and schedules are lost on reboot without the boot receiver below. -->
@@ -72,6 +73,9 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
         </intent>
     </queries>
 </manifest>

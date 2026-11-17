@@ -36,7 +36,6 @@ class AppConfig {
     required this.executionTimeout,
     required this.maxOutputChars,
     this.aiTutorBaseUrl = '',
-    this.aiTutorToken = '',
     this.guardianReportUrl = '',
     this.supabaseUrl = '',
     this.supabaseAnonKey = '',
@@ -55,7 +54,6 @@ class AppConfig {
   final Duration executionTimeout;
   final int maxOutputChars;
   final String aiTutorBaseUrl;
-  final String aiTutorToken;
 
   /// Endpoint that emails a Parent / Guardian progress report through Resend
   /// (see `guardian_mailer/README.md`). Empty disables progress emails, which
@@ -97,9 +95,6 @@ class AppConfig {
   static const String _aiTutorBaseUrl = String.fromEnvironment(
     'SB_AI_TUTOR_BASE_URL',
   );
-  static const String _aiTutorToken = String.fromEnvironment(
-    'SB_AI_TUTOR_TOKEN',
-  );
   static const String _guardianReportUrl = String.fromEnvironment(
     'SB_GUARDIAN_REPORT_URL',
   );
@@ -131,7 +126,6 @@ class AppConfig {
       executionTimeout: const Duration(seconds: 10),
       maxOutputChars: 200000,
       aiTutorBaseUrl: _aiTutorBaseUrl,
-      aiTutorToken: _aiTutorToken,
       guardianReportUrl: _guardianReportUrl,
       supabaseUrl: _supabaseUrl,
       supabaseAnonKey: _supabaseAnonKey,

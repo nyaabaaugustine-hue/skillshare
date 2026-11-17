@@ -262,11 +262,18 @@ during development. Before distributing anything:
 | `SB_PYTHON_RUNTIME` | *(platform default)* | `serious` \| `process` \| `fake` |
 | `SB_PYTHON_EXECUTABLE` | `python` / `python3` | Interpreter for the desktop/dev runtime |
 | `SB_GUARDIAN_REPORT_URL` | *(empty)* | **Empty means "never email progress reports".** URL of the mailer endpoint that renders the report and calls Resend with a server-side key (`guardian_mailer/`, never a key in the app) |
-| `SB_AI_TUTOR_BASE_URL` | *(empty)* | Online tutor tools; empty keeps the offline tutor brain |
+| `SB_AI_TUTOR_BASE_URL` | *(empty)* | Cloudflare tutor Worker; empty keeps the offline tutor |
+| `SB_SUPABASE_URL` | *(empty)* | Supabase project URL for signed-in accounts |
+| `SB_SUPABASE_ANON_KEY` | *(empty)* | Supabase publishable key; never use the service-role key |
 
 No secret belongs in any of these at rest. `SB_LMS_TOKEN` exists only so a
 developer can hit a staging endpoint; production must use a real
 `AuthTokenProvider` backed by platform secure storage.
+
+Remote tutor access requires `SB_AI_TUTOR_BASE_URL`, `SB_SUPABASE_URL`, and
+`SB_SUPABASE_ANON_KEY`, plus a signed-in student session. Apply the tutor-role
+Supabase migration documented in `docs/AI_TUTOR_TOOLS.md` before enabling the
+Worker in production.
 
 ## iOS
 

@@ -7,32 +7,60 @@ import 'tutor_models.dart';
 /// The app is offline-first (the Python editor runs locally too), so the tutor
 /// ships with a built-in brain: targeted explanations, worked examples, a
 /// graded quiz, and debugging help. The interface (`ask`) is deliberately
-/// async and single-shot so a remote LLM backend can be swapped in later
-/// without touching the UI.
+/// async so the local tutor and optional streamed remote tutor share one UI.
 class TutorService {
   TutorService({
     Random? random,
     TutorStudentContext? studentContext,
     TutorToolRegistry? tools,
+    TutorRemoteChat? remote,
+    TutorRemoteStream? remoteStream,
     this.teachingStyle = const TutorTeachingStyle(),
   }) : _random = random ?? Random(),
        _studentContext = studentContext ?? TutorStudentContext.empty,
-       _tools = tools; // ignore: prefer_initializing_formals
+       _tools = tools, // ignore: prefer_initializing_formals
+       _remote = remote, // ignore: prefer_initializing_formals
+       _remoteStream = remoteStream; // ignore: prefer_initializing_formals
 
   final Random _random;
   TutorStudentContext _studentContext;
   TutorToolRegistry? _tools;
+
+  /// Cloudflare-hosted language model. When set it answers first; the offline
+  /// brain below is the fallback whenever it is unreachable.
+  TutorRemoteChat? _remote;
+  TutorRemoteStream? _remoteStream;
+  final List<TutorChatTurn> _history = <TutorChatTurn>[];
+  static const int _maxHistoryTurns = 10;
   final TutorTeachingStyle teachingStyle;
 
   TutorStudentContext get studentContext => _studentContext;
 
-  void updateContext(TutorStudentContext context, {TutorToolRegistry? tools}) {
+  void updateContext(
+    TutorStudentContext context, {
+    TutorToolRegistry? tools,
+    TutorRemoteChat? remote,
+    TutorRemoteStream? remoteStream,
+  }) {
     _studentContext = context;
     _tools = tools;
+    _remote = remote;
+    _remoteStream = remoteStream;
+  }
+
+  void _remember(String question, String answer) {
+    _history
+      ..add(TutorChatTurn(fromUser: true, text: question))
+      ..add(TutorChatTurn(fromUser: false, text: answer));
+    while (_history.length > _maxHistoryTurns) {
+      _history.removeAt(0);
+    }
   }
 
   /// Shown in the app bar so the learner knows what they are talking to.
-  String get modeLabel => _tools?.canLookupWeb == true
+  String get modeLabel => _remote != null || _remoteStream != null
+      ? 'AI tutor (Cloudflare)'
+      : _tools?.canLookupWeb == true
       ? 'Tutor + web tools'
       : 'Tutor + learner context';
 
@@ -75,8 +103,8 @@ class TutorService {
   int _quizIndex = 0;
   int? _pendingAnswer;
 
-  /// Answers [message]. Never throws and never leaves the learner on read.
-  Future<String> ask(
+  /// Answers [message] and keeps any trusted source metadata.
+  Future<TutorReply> askReply(
     String message, {
     List<TutorAttachment> attachments = const <TutorAttachment>[],
   }) async {
@@ -89,12 +117,18 @@ class TutorService {
         for (final attachment in attachments) {
           results.add(await screenshotTool!.analyzeScreenshot(attachment));
         }
-        return results.map((result) => result.text).join('\n\n');
+        return TutorReply(
+          text: results.map((result) => result.text).join('\n\n'),
+          sources: <String>{for (final result in results) ...result.sources}
+              .toList(growable: false),
+        );
       }
-      return 'I received ${attachments.length == 1 ? 'the screenshot' : 'the screenshots'}, '
-          'but screenshot analysis is not enabled in offline mode. Connect an '
-          'online tutor provider to inspect images. You can also paste the '
-          'error text here and I can explain it now.';
+      return TutorReply(
+        text:
+            'I received ${attachments.length == 1 ? 'the screenshot' : 'the screenshots'}, '
+            'but image analysis needs a signed-in online tutor connection. '
+            'You can paste the code or error text and I can help offline.',
+      );
     }
 
     if ((m.contains('web') ||
@@ -103,18 +137,97 @@ class TutorService {
             m.contains('look up')) &&
         _tools?.canLookupWeb == true) {
       final result = await _tools!.lookupWeb(message.trim());
-      final sources = result.sources.isEmpty
-          ? ''
-          : '\n\nSources:\n${result.sources.map((s) => '- $s').join('\n')}';
-      return '${result.text}$sources';
+      return TutorReply(text: result.text, sources: result.sources);
     }
 
     // A short letter right after a quiz question is an answer, not a new
     // question.
     final letter = _answerLetter(m);
     if (letter != null && _pendingAnswer != null) {
-      return _grade(letter);
+      return TutorReply(text: _grade(letter));
     }
+
+    final remote = _remote;
+    if (remote != null && m.isNotEmpty) {
+      try {
+        final reply = await remote(
+          message: message.trim(),
+          history: List<TutorChatTurn>.unmodifiable(_history),
+          context: _studentContext,
+          style: teachingStyle,
+        );
+        if (reply != null && reply.text.trim().isNotEmpty) {
+          _clearQuiz();
+          _remember(message.trim(), reply.text);
+          return reply;
+        }
+      } catch (_) {
+        // A failed remote request intentionally falls through to the local tutor.
+      }
+    }
+
+    return TutorReply(text: _askOffline(message));
+  }
+
+  /// Answers [message]. Never throws and never leaves the learner on read.
+  Future<String> ask(
+    String message, {
+    List<TutorAttachment> attachments = const <TutorAttachment>[],
+  }) async => (await askReply(message, attachments: attachments)).text;
+
+  /// Streams the remote answer when available, then falls back to one complete
+  /// offline answer if the request fails before the model sends any text.
+  Stream<TutorStreamEvent> askStream(String message) async* {
+    final cleanMessage = message.trim();
+    final m = cleanMessage.toLowerCase();
+    final letter = _answerLetter(m);
+    if (letter != null && _pendingAnswer != null) {
+      yield TutorStreamEvent(text: _grade(letter));
+      return;
+    }
+
+    final remote = _remoteStream;
+    if (remote == null || cleanMessage.isEmpty) {
+      yield TutorStreamEvent(text: (await askReply(cleanMessage)).text);
+      return;
+    }
+
+    final output = StringBuffer();
+    try {
+      await for (final event in remote(
+        message: cleanMessage,
+        history: List<TutorChatTurn>.unmodifiable(_history),
+        context: _studentContext,
+        style: teachingStyle,
+      )) {
+        if (event.text.isNotEmpty) output.write(event.text);
+        if (event.text.isNotEmpty || event.sources.isNotEmpty) yield event;
+      }
+    } catch (_) {
+      if (output.isNotEmpty) {
+        yield const TutorStreamEvent(
+          text: '\n\nThe connection paused. Please retry if the answer is incomplete.',
+        );
+        return;
+      }
+    }
+
+    if (output.isNotEmpty) {
+      _clearQuiz();
+      _remember(cleanMessage, output.toString());
+      return;
+    }
+    yield TutorStreamEvent(text: _askOffline(cleanMessage));
+  }
+
+  Future<List<TutorVideo>> findShortVideos(String topic) async {
+    final tools = _tools;
+    if (tools?.canFindVideos != true) return const <TutorVideo>[];
+    return tools!.findVideos(topic);
+  }
+
+  String _askOffline(String message) {
+    final m = message.trim().toLowerCase();
 
     if (_matches(m, const [
       'error',
