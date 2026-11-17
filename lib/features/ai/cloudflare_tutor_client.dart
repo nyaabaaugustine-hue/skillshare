@@ -7,8 +7,10 @@ import 'tutor_models.dart';
 
 /// Authenticated client for the SkillsBridge Cloudflare Worker.
 ///
-/// The Worker validates the current Supabase access token; no provider
-/// credential or static app token is shipped in the Flutter bundle.
+/// The Worker now requires a Neon-signed JWT; no provider credential or static
+/// app token is shipped in the Flutter bundle. The auth adapter still supplies
+/// a Supabase session token today, so remote requests remain incompatible until
+/// the Flutter Neon Auth migration is completed.
 class CloudflareTutorClient {
   CloudflareTutorClient({
     required String baseUrl,

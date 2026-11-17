@@ -1,10 +1,11 @@
 # AI tutor and learner context
 
-The tutor works offline for everyone. Only a signed-in learner account can use
+The tutor works offline for everyone. Only a trusted student account can use
 the Cloudflare AI routes; guests and guardian accounts stay on the offline
-tutor. The Worker validates the Supabase access token, requires the
-server-managed `app_metadata.role = student` claim, and rate-limits requests
-by user.
+tutor. The Worker now verifies a signed Neon JWT against the configured JWKS,
+issuer, and audience, requires the active organization claim `o.role = owner`,
+and rate-limits requests by verified subject. This claim mapping is provisional
+until confirmed with a real JWT issued by the production Neon Auth branch.
 
 ## Worker routes
 
@@ -32,8 +33,8 @@ Only the active learner's tutoring context is allowed:
 
 The app does **not** send auth tokens as prompt content, email addresses,
 guardian records, raw submission history, or unrelated learners. The access
-token is sent only in the HTTPS authorization header so the Worker can validate
-the session with Supabase Auth.
+token is sent only in the HTTPS authorization header so the Worker can verify
+the session locally against Neon Auth signing keys.
 
 Remote tutor implementations should explain in small steps, show short worked
 Python examples, ask a useful follow-up question, encourage effort without
@@ -41,27 +42,17 @@ inventing scores, and adapt practice to weak points.
 
 ## Configuration
 
-Configure these values through the normal build environment:
+**Not yet runnable:** Flutter still uses Supabase Auth; the Neon build define,
+Flutter session adapter, and fresh Neon JWT retrieval are not implemented yet.
+When completed, configure the Worker with `NEON_AUTH_JWKS_URL`,
+`NEON_AUTH_ISSUER`, and `NEON_AUTH_AUDIENCE`, plus its Workers AI binding and
+production Durable Object rate limiter. Configure exact `AI_ALLOWED_ORIGINS`
+values for web builds; native apps do not send an Origin header.
 
-```powershell
-flutter run `
-  --dart-define=SB_AI_TUTOR_BASE_URL=https://<worker> `
-  --dart-define=SB_SUPABASE_URL=https://<project>.supabase.co `
-  --dart-define=SB_SUPABASE_ANON_KEY=<publishable-key>
-```
-
-The Supabase publishable key is not a service-role secret. The short-lived
-Supabase access token comes from the signed-in session and is never compiled
-into the app. The Worker needs its own `SUPABASE_URL` and
-`SUPABASE_ANON_KEY` configuration, Workers AI binding, and production Durable
-Object rate limiter. Configure exact `AI_ALLOWED_ORIGINS` values for web
-builds; native apps do not send an Origin header.
-
-Before deploying the Worker, apply
-`supabase/migrations/20261117000100_tutor_account_role.sql` to the Supabase
-project. It sets a server-managed account role on new users and backfills
-existing accounts from the role selected at signup. The Worker fails closed
-for accounts without a trusted student role.
+Before deploying, verify Neon Auth's real signed-token format, JWKS URL,
+issuer/audience, and active organization claim format against a real account.
+The Worker fails closed for missing, expired, incorrectly signed, or
+non-owner-role tokens. Synthetic tests do not prove Neon branch compatibility.
 
 `SB_AI_TUTOR_TOKEN` is obsolete and must not be used. Rotate any credentials
 that were previously exposed before deploying. Do not place service-role keys,
