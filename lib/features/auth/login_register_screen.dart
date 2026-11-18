@@ -39,11 +39,13 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _otp = TextEditingController();
   final _guardianEmail = TextEditingController();
 
   bool _registerMode = false;
   bool _obscure = true;
   bool _parentLink = false;
+  bool _awaitingOtp = false;
   UserRole _role = UserRole.student;
 
   bool get _isGuardian => _role == UserRole.guardian;
@@ -60,6 +62,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
     _name.dispose();
     _email.dispose();
     _password.dispose();
+    _otp.dispose();
     _guardianEmail.dispose();
     super.dispose();
   }
@@ -68,6 +71,20 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
     final form = _formKey.currentState;
     if (form == null || !form.validate()) return;
     final auth = context.read<AuthController>();
+
+    if (_awaitingOtp) {
+      final ok = await auth.verifyEmail(
+        email: auth.pendingVerificationEmail ?? _email.text.trim(),
+        otp: _otp.text.trim(),
+      );
+      if (!mounted) return;
+      if (ok) {
+        widget.onAuthenticated();
+      } else {
+        form.validate();
+      }
+      return;
+    }
 
     if (_registerMode && !_isGuardian) {
       // The switch is the opt-in: the address is only collected (and required)
@@ -84,15 +101,16 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
         if (!mounted) return;
         if (ok) {
           widget.onAuthenticated();
+        } else if (auth.pendingVerificationEmail != null) {
+          setState(() => _awaitingOtp = true);
         } else {
           form.validate();
         }
         return;
       }
 
-      // Creating a student account can also create the Parent / Guardian
-      // login, so families never register a second account and connect it by
-      // hand.
+      // A shared account creates a family group and invites the parent after
+      // the student's email has been verified.
       final credentials = await auth.registerStudentWithGuardian(
         name: _name.text.trim(),
         email: _email.text.trim(),
@@ -103,6 +121,8 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
       if (credentials == null) {
         if (auth.isAuthenticated) {
           widget.onAuthenticated();
+        } else if (auth.pendingVerificationEmail != null) {
+          setState(() => _awaitingOtp = true);
         } else {
           form.validate();
         }
@@ -133,6 +153,8 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
     if (!mounted) return;
     if (ok) {
       widget.onAuthenticated();
+    } else if (auth.pendingVerificationEmail != null) {
+      setState(() => _awaitingOtp = true);
     } else {
       form.validate();
     }
@@ -143,15 +165,6 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
     await auth.continueAsGuest();
     if (!mounted) return;
     widget.onGuest();
-  }
-
-  /// Facebook sign-in. The browser (in the app) or the page itself (on the web)
-  /// leaves for Facebook and comes back; the session then arrives from
-  /// [AuthController], which rebuilds the shell — no navigation here.
-  Future<void> _facebook() async {
-    final auth = context.read<AuthController>();
-    final launched = await auth.loginWithFacebook();
-    if (!mounted || !launched) return;
   }
 
   void _switchMode() {
@@ -171,6 +184,17 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
 
   String? _passwordValidator(String? value) {
     if ((value ?? '').length < 6) return 'At least 6 characters';
+    return null;
+  }
+
+  String? _registrationPasswordValidator(String? value) {
+    final password = value ?? '';
+    if (password.length < 12 ||
+        !RegExp(r'[A-Z]').hasMatch(password) ||
+        !RegExp(r'[a-z]').hasMatch(password) ||
+        !RegExp(r'[0-9]').hasMatch(password)) {
+      return 'Use 12+ characters with uppercase, lowercase, and a number';
+    }
     return null;
   }
 
@@ -274,13 +298,17 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                         Entrance(
                           child: _RoleSelector(
                             role: _role,
-                            onChanged: auth.busy ? null : _selectRole,
+                            onChanged: auth.busy || _awaitingOtp
+                                ? null
+                                : _selectRole,
                           ),
                         ),
                         const SizedBox(height: 16),
                         _ModeToggle(
                           registerMode: _registerMode,
-                          onChanged: auth.busy ? null : _switchMode,
+                          onChanged: auth.busy || _awaitingOtp
+                              ? null
+                              : _switchMode,
                         ),
                         const SizedBox(height: 20),
                         Form(
@@ -329,7 +357,8 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                                   obscureText: _obscure,
                                   decoration: InputDecoration(
                                     labelText: 'Password',
-                                    helperText: 'At least 6 characters',
+                                    helperText:
+                                        '12+ characters with uppercase, lowercase, and a number',
                                     prefixIcon: const Icon(
                                       Icons.lock_outline_rounded,
                                     ),
@@ -346,13 +375,14 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                                           setState(() => _obscure = !_obscure),
                                     ),
                                   ),
-                                  validator: _passwordValidator,
+                                  validator: _registrationPasswordValidator,
                                 ),
-                                if (!_isGuardian && !auth.cloudAuthEnabled) ...[
+                                if (!_isGuardian) ...[
                                   const SizedBox(height: 14),
                                   _OptionalParentLink(
                                     expanded: _parentLink,
                                     enabled: !auth.busy,
+                                    sharedAccount: auth.cloudAuthEnabled,
                                     email: _guardianEmail,
                                     validator: _guardianEmailValidator,
                                     onToggle: () => setState(
@@ -404,6 +434,31 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                                   validator: _passwordValidator,
                                 ),
                               ],
+                              if (_awaitingOtp) ...[
+                                const SizedBox(height: 14),
+                                Text(
+                                  'Enter the verification code sent to ${auth.pendingVerificationEmail ?? _email.text.trim()}.',
+                                  style: const TextStyle(
+                                    color: SkillBridgeColors.textMuted,
+                                    fontSize: 13,
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                TextFormField(
+                                  controller: _otp,
+                                  keyboardType: TextInputType.number,
+                                  textInputAction: TextInputAction.done,
+                                  onFieldSubmitted: (_) => auth.busy ? null : _submit(),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Email verification code',
+                                    prefixIcon: Icon(Icons.pin_outlined),
+                                  ),
+                                  validator: (value) => (value?.trim().isEmpty ?? true)
+                                      ? 'Enter the code from your email'
+                                      : null,
+                                ),
+                              ],
                               if (error != null) ...[
                                 const SizedBox(height: 16),
                                 _ErrorBanner(message: error),
@@ -413,10 +468,24 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                         ),
                         const SizedBox(height: 22),
                         PremiumButton(
-                          label: _registerMode ? 'Create account' : 'Sign in',
+                          label: _awaitingOtp
+                              ? 'Verify email'
+                              : _registerMode
+                              ? 'Create account'
+                              : 'Sign in',
                           onPressed: auth.busy ? null : _submit,
                           height: 54,
                         ),
+                        if (_awaitingOtp)
+                          TextButton(
+                            onPressed: auth.busy
+                                ? null
+                                : () => auth.resendVerificationCode(
+                                    auth.pendingVerificationEmail ??
+                                        _email.text.trim(),
+                                  ),
+                            child: const Text('Resend verification code'),
+                          ),
                         if (auth.busy) ...[
                           const SizedBox(height: 14),
                           const Center(
@@ -459,13 +528,6 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          if (auth.cloudAuthEnabled) ...[
-                            _FacebookButton(
-                              showSignUpHint: _registerMode,
-                              onPressed: auth.busy ? null : _facebook,
-                            ),
-                            const SizedBox(height: 10),
-                          ],
                           OutlinedButton.icon(
                             onPressed: auth.busy ? null : _guest,
                             icon: const Icon(Icons.explore_outlined, size: 20),
@@ -788,6 +850,7 @@ class _OptionalParentLink extends StatelessWidget {
   const _OptionalParentLink({
     required this.expanded,
     required this.enabled,
+    required this.sharedAccount,
     required this.email,
     required this.validator,
     required this.onToggle,
@@ -795,6 +858,7 @@ class _OptionalParentLink extends StatelessWidget {
 
   final bool expanded;
   final bool enabled;
+  final bool sharedAccount;
   final TextEditingController email;
   final FormFieldValidator<String> validator;
   final VoidCallback onToggle;
@@ -831,11 +895,11 @@ class _OptionalParentLink extends StatelessWidget {
                     iconColor: Color(0xFF2A1D00),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Add a parent login',
                           style: TextStyle(
                             color: SkillBridgeColors.textPrimary,
@@ -843,10 +907,12 @@ class _OptionalParentLink extends StatelessWidget {
                             fontSize: 14,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'Optional — creates their login and emails progress.',
-                          style: TextStyle(
+                          sharedAccount
+                              ? 'Optional — sends a family invitation after verification.'
+                              : 'Optional — creates a local parent login and emails progress.',
+                          style: const TextStyle(
                             color: SkillBridgeColors.textMuted,
                             fontSize: 11.5,
                           ),
@@ -874,10 +940,12 @@ class _OptionalParentLink extends StatelessWidget {
                       controller: email,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: "Parent's email",
-                        helperText: 'They sign in with it, and progress reports go here.',
-                        prefixIcon: Icon(Icons.mail_outline_rounded),
+                        helperText: sharedAccount
+                            ? 'They receive the invitation at this email.'
+                            : 'They sign in with it, and progress reports go here.',
+                        prefixIcon: const Icon(Icons.mail_outline_rounded),
                       ),
                       validator: validator,
                     ),
@@ -885,42 +953,6 @@ class _OptionalParentLink extends StatelessWidget {
                 : const SizedBox(width: double.infinity),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// "Continue with Facebook" — one account for the phone and the browser.
-///
-/// Shown only when this build has a shared account backend, because without
-/// one there is nothing to sign the account into.
-class _FacebookButton extends StatelessWidget {
-  const _FacebookButton({
-    required this.onPressed,
-    required this.showSignUpHint,
-  });
-
-  final VoidCallback? onPressed;
-  final bool showSignUpHint;
-
-  static const Color _brand = Color(0xFF1877F2);
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton.icon(
-      onPressed: onPressed,
-      icon: const Icon(Icons.facebook_rounded, size: 22),
-      label: Text(
-        showSignUpHint ? 'Sign up with Facebook' : 'Continue with Facebook',
-        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
-      ),
-      style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(52),
-        backgroundColor: _brand,
-        foregroundColor: Colors.white,
-        disabledBackgroundColor: _brand.withValues(alpha: 0.35),
-        disabledForegroundColor: Colors.white70,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }

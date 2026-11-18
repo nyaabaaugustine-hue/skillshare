@@ -262,18 +262,30 @@ during development. Before distributing anything:
 | `SB_PYTHON_RUNTIME` | *(platform default)* | `serious` \| `process` \| `fake` |
 | `SB_PYTHON_EXECUTABLE` | `python` / `python3` | Interpreter for the desktop/dev runtime |
 | `SB_GUARDIAN_REPORT_URL` | *(empty)* | **Empty means "never email progress reports".** URL of the mailer endpoint that renders the report and calls Resend with a server-side key (`guardian_mailer/`, never a key in the app) |
-| `SB_AI_TUTOR_BASE_URL` | *(empty)* | Cloudflare tutor Worker; empty keeps the offline tutor |
-| `SB_SUPABASE_URL` | *(empty)* | Supabase project URL for signed-in accounts |
-| `SB_SUPABASE_ANON_KEY` | *(empty)* | Supabase publishable key; never use the service-role key |
+| `SB_AI_TUTOR_BASE_URL` | *(empty)* | Optional direct Cloudflare tutor Worker. Empty uses `<SB_API_BASE_URL>/api/tutor`; with both empty the offline tutor answers |
+| `SB_API_BASE_URL` | *(empty)* | Website origin that serves `/api/auth` (the shared account layer). Empty means no cloud account, so no remote tutor either |
 
 No secret belongs in any of these at rest. `SB_LMS_TOKEN` exists only so a
 developer can hit a staging endpoint; production must use a real
 `AuthTokenProvider` backed by platform secure storage.
 
-Remote tutor access requires `SB_AI_TUTOR_BASE_URL`, `SB_SUPABASE_URL`, and
-`SB_SUPABASE_ANON_KEY`, plus a signed-in student session. Apply the tutor-role
-Supabase migration documented in `docs/AI_TUTOR_TOOLS.md` before enabling the
-Worker in production.
+The remote tutor needs **two** things, and silently falls back to the offline
+brain if either is missing:
+
+1. `SB_API_BASE_URL` — the website origin. It is used for sign-in (the Better
+   Auth access JWT the Worker verifies) **and** as the tutor endpoint, because
+the site proxies `/api/tutor/v1/tutor/*` to the Worker. The Worker URL itself
+is server-side (`TUTOR_WORKER_URL` in the website environment), so moving it
+never requires rebuilding the app. (There is no Supabase dependency in the app
+any more; older docs mentioning `SB_SUPABASE_URL` were stale.)
+2. A signed-in learner session with a non-empty token.
+
+`SB_AI_TUTOR_BASE_URL` remains an optional override for builds that talk to the
+Worker directly, bypassing the proxy.
+
+On the Worker side, set `NEON_AUTH_BASE_URL` (the same value the website uses) so
+it can fetch the JWKS; `NEON_AUTH_JWKS_URL`, `NEON_AUTH_ISSUER` and
+`NEON_AUTH_AUDIENCE` can override it. See `guardian_mailer/README.md`.
 
 ## iOS
 

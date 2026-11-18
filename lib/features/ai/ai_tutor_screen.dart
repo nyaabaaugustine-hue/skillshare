@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -55,6 +56,13 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
   int? _loadingVideoFor;
   int _nextId = 0;
 
+  /// Set when the last send used the offline tutor, and cleared by the next
+  /// attempt. Shown as a banner so a fallback is never mistaken for the model.
+  String? _notice;
+  bool _videosUnavailable = false;
+  bool _speaking = false;
+  StreamSubscription<bool>? _connectivitySub;
+
   static const int _typingKey = -1;
   bool get _showTyping => _busy && !_streamHasStarted;
 
@@ -78,7 +86,7 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
     TutorRemoteChat? remote;
     TutorRemoteStream? remoteStream;
     final session = auth.session;
-    final base = deps.config.aiTutorBaseUrl;
+    final base = deps.config.aiTutorEndpoint;
     if (base.isNotEmpty &&
         auth.cloudAuthEnabled &&
         session?.isAccount == true &&
@@ -86,7 +94,10 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
         session?.token?.isNotEmpty == true) {
       final client = CloudflareTutorClient(
         baseUrl: base,
-        accessTokenProvider: () => auth.session?.token,
+        // Refreshes the short-lived JWT when it is about to expire or the
+        // Worker rejected it, instead of reusing the sign-in token forever.
+        accessTokenProvider: ({bool forceRefresh = false}) =>
+            auth.tutorAccessToken(forceRefresh: forceRefresh),
       );
       _cloudflareClient = client;
       remote = client.chat;
@@ -95,28 +106,42 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
 
     var contextData = TutorStudentContext(
       learnerName: session?.displayName ?? 'Learner',
-      totalPoints: 0,
+      totalPoints: null,
       completedChallenges: 0,
       totalChallenges: 0,
       weakPoints: const <String>[],
       recentScores: const <String, int>{},
     );
     try {
-      final progress = await deps.lmsClient.fetchProgress();
-      final report = GuardianReport.build(
-        course: pythonKickstartCourse,
-        history: deps.courseProgress.history(deps.learnerRef),
-      );
-      contextData = TutorStudentContext.fromRecords(
-        learnerName: auth.session?.displayName ?? 'Learner',
-        progress: progress,
-        report: report,
-      );
+      // Progress is stored per device. If a different account has signed in on
+      // this device, do not send the earlier learner's weak points and scores
+      // to the AI (or show them back to the new learner).
+      if (await _contextBelongsToAccount(auth, deps.learnerRef)) {
+        final progress = await deps.lmsClient.fetchProgress();
+        final report = GuardianReport.build(
+          course: pythonKickstartCourse,
+          history: deps.courseProgress.history(deps.learnerRef),
+        );
+        contextData = TutorStudentContext.fromRecords(
+          learnerName: auth.session?.displayName ?? 'Learner',
+          progress: progress,
+          report: report,
+          // Mock LMS points reset every launch; never state them as real.
+          pointsAreServerAuthoritative: !deps.config.useMockLms,
+        );
+      }
     } catch (error) {
       debugPrint(
         'Tutor progress context unavailable; continuing without progress.',
       );
     }
+
+    // Skip the network entirely while the device reports no connection, so the
+    // learner gets the offline answer instead of waiting out a timeout.
+    _connectivitySub ??= deps.connectivity.onChanged.listen(
+      _service.setRemoteEnabled,
+    );
+    _service.setRemoteEnabled(deps.connectivity.isOnline);
 
     _service.updateContext(
       contextData,
@@ -131,12 +156,36 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
     if (mounted) setState(() {});
   }
 
+  /// Ties this device's local learner id to the first account that used the
+  /// tutor here, so a shared device cannot leak context between accounts.
+  Future<bool> _contextBelongsToAccount(
+    AuthController auth,
+    String learnerRef,
+  ) async {
+    final email = auth.session?.email?.trim().toLowerCase() ?? '';
+    if (email.isEmpty) return true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'tutor.contextOwner.$learnerRef';
+      final owner = prefs.getString(key);
+      if (owner == null || owner.isEmpty) {
+        await prefs.setString(key, email);
+        return true;
+      }
+      return owner == email;
+    } catch (_) {
+      // If the scope cannot be read, withholding context is the safe choice.
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     _input.dispose();
     _focus.dispose();
     _scroll.dispose();
     _cloudflareClient?.close();
+    unawaited(_connectivitySub?.cancel());
     unawaited(_speechToText.cancel());
     unawaited(_textToSpeech.stop());
     super.dispose();
@@ -161,8 +210,17 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
 
   Future<void> _send(String raw) async {
     final text = raw.trim();
-    if (text.isEmpty || _busy) return;
     final attachment = _pendingAttachment;
+    // A screenshot on its own is a valid question.
+    if (_busy || (text.isEmpty && attachment == null)) return;
+    final message = text.isEmpty
+        ? 'Explain the Python code or error in this image.'
+        : text;
+    // The Worker reads at most 1500 characters. Trim before showing the bubble
+    // so what the learner sees and what the model reads are the same text.
+    final trimmed = message.length > 1500
+        ? message.substring(0, 1500)
+        : message;
     if (attachment != null && _cloudflareClient != null) {
       final consent = await showDialog<bool>(
         context: context,
@@ -187,35 +245,47 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
       );
       if (consent != true || !mounted) return;
     }
+    if (trimmed.length != message.length) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Long message trimmed to 1500 characters for the tutor.',
+          ),
+        ),
+      );
+    }
     HapticFeedback.selectionClick();
     setState(() {
-      _messages.add(_message(text, fromUser: true));
+      _messages.add(_message(trimmed, fromUser: true));
       _busy = true;
       _streamHasStarted = false;
       _input.clear();
       _pendingAttachment = null;
+      _notice = null;
     });
     _scrollToLatest();
     try {
-      // A beat of thinking time so the typing indicator reads as intent.
-      await Future<void>.delayed(const Duration(milliseconds: 350));
       if (!mounted) return;
       if (attachment != null) {
         final reply = await _service.askReply(
-          text,
+          trimmed,
           attachments: <TutorAttachment>[attachment],
         );
         if (!mounted) return;
         setState(
           () => _messages.add(
-            _message(reply.text, sources: reply.sources, resourceTopic: text),
+            _message(
+              reply.text,
+              sources: reply.sources,
+              resourceTopic: trimmed,
+            ),
           ),
         );
       } else {
         final replyId = _nextId++;
         final answer = StringBuffer();
         final sources = <String>[];
-        await for (final event in _service.askStream(text)) {
+        await for (final event in _service.askStream(trimmed)) {
           if (!mounted) return;
           if (event.text.isNotEmpty) answer.write(event.text);
           if (event.sources.isNotEmpty) {
@@ -232,7 +302,7 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
               replyId,
               answer.toString(),
               sources: List<String>.unmodifiable(sources),
-              resourceTopic: text,
+              resourceTopic: trimmed,
             );
             if (index < 0) {
               _messages.add(reply);
@@ -252,12 +322,16 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
             error: true,
           ),
         );
+        // One tap should retry the same question and screenshot.
+        _input.text = trimmed;
+        _pendingAttachment = attachment;
       });
     } finally {
       if (mounted) {
         setState(() {
           _busy = false;
           _streamHasStarted = false;
+          _notice = _service.lastFailure;
         });
       }
     }
@@ -335,6 +409,11 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
   }
 
   Future<void> _readAloud(String text) async {
+    if (_speaking) {
+      await _textToSpeech.stop();
+      if (mounted) setState(() => _speaking = false);
+      return;
+    }
     final speechText = text
         .replaceAll(RegExp(r'```[\s\S]*?```'), ' code example omitted ')
         .replaceAll(RegExp(r'https://\S+'), ' link ')
@@ -344,8 +423,12 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
       await _textToSpeech.stop();
       await _textToSpeech.setLanguage('en-US');
       await _textToSpeech.setSpeechRate(0.45);
+      await _textToSpeech.awaitSpeakCompletion(true);
+      if (mounted) setState(() => _speaking = true);
       await _textToSpeech.speak(speechText);
+      if (mounted) setState(() => _speaking = false);
     } catch (_) {
+      if (mounted) setState(() => _speaking = false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Read aloud is unavailable right now.')),
@@ -378,7 +461,12 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
       }
     } catch (_) {
       if (!mounted) return;
-      setState(() => _loadingVideoFor = null);
+      setState(() {
+        _loadingVideoFor = null;
+        // The Worker reports 503 until video search is configured; stop
+        // offering a button that can never succeed this session.
+        _videosUnavailable = true;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Video recommendations are unavailable right now.'),
@@ -449,7 +537,15 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
 
   void _clearChat() {
     if (_busy) return;
-    setState(_messages.clear);
+    // Clearing the bubbles alone left the previous turns in the model's
+    // context and any quiz answer still pending.
+    _service.resetConversation();
+    setState(() {
+      _messages.clear();
+      _pendingAttachment = null;
+      _notice = null;
+      _videosUnavailable = false;
+    });
   }
 
   /// Maps a message key back to its list position so existing bubbles keep
@@ -512,7 +608,9 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  _service.modeLabel,
+                  _notice == null
+                      ? _service.modeLabel
+                      : 'Offline fallback',
                   style: const TextStyle(
                     color: SkillBridgeColors.accent,
                     fontWeight: FontWeight.w700,
@@ -568,7 +666,9 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
                                       _copy(context, text, 'Reply copied'),
                                   onReadAloud: _readAloud,
                                   onOpenResource: _openResource,
-                                  onFindVideos: _cloudflareClient == null
+                                  onFindVideos:
+                                      _cloudflareClient == null ||
+                                          _videosUnavailable
                                       ? null
                                       : () => _findShortVideos(message),
                                 ),
@@ -578,6 +678,8 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
                   ),
                 ),
                 if (hasMessages) _FollowUpChips(enabled: !_busy, onPick: _send),
+                if (_notice case final notice?)
+                  _TutorNotice(message: notice),
                 if (_pendingAttachment case final attachment?)
                   _AttachmentPreview(
                     attachment: attachment,
@@ -1120,6 +1222,50 @@ class _LearningSource extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
         ),
+      ),
+    );
+  }
+}
+
+/// A single honest line explaining that the answer came from the offline
+/// tutor, rather than a normal reply from the model.
+class _TutorNotice extends StatelessWidget {
+  const _TutorNotice({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: SkillBridgeColors.accent.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: SkillBridgeColors.accent.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.cloud_off_rounded,
+            size: 16,
+            color: SkillBridgeColors.accent,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: SkillBridgeColors.textMuted,
+                fontSize: 12,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

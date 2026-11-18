@@ -224,5 +224,92 @@ CourseUnit _buildCourse() => CourseUnit(
         ),
       ],
     ),
+    // Debugging practice: the starter code is deliberately broken. Reading a
+    // bug and fixing it is a different skill from writing code from a blank
+    // file, and it is the skill that transfers to real work.
+    CourseStep(
+      id: 'py-fix-bug-loop',
+      title: 'Fix the bug: the endless loop',
+      subtitle: 'Debug a loop',
+      kind: CourseStepKind.coding,
+      xp: 45,
+      previewAsset: _heroPreview,
+      blocks: <CourseBlock>[
+        CodeBlock(
+          heading: 'Fix the bug: the endless loop',
+          brief:
+              'This loop should print 1, 2 and 3 and then stop. Instead it '
+              'keeps printing until the app has to stop it. Find the missing '
+              'line and fix it — do not rewrite the whole program.',
+          whyItWorks:
+              'A while loop repeats until its condition is false. count starts '
+              'at 1 and never changes, so count <= 3 stays true forever. Adding '
+              'count += 1 moves it forward and the loop ends after 3.',
+          takeaway:
+              'Every while loop must change something its condition depends '
+              'on, or it never ends.',
+          starterCode:
+              '# Bug: this loop never stops.\n'
+              'count = 1\n'
+              'while count <= 3:\n'
+              '    print(count)\n'
+              '\n'
+              '# Fix the loop above — it should print 1, 2, 3 and stop.\n',
+          requirements: <String>[
+            'The program finishes without being stopped',
+            'It prints exactly 1, 2 and 3, each on its own line',
+          ],
+          hints: <String>[
+            'What changes inside the loop? Right now: nothing.',
+            'Add one line inside the loop that increases count.',
+          ],
+          expectedOutput: '1\n2\n3',
+          codeContains: <String>['while'],
+        ),
+      ],
+    ),
+    CourseStep(
+      id: 'py-fix-bug-concat',
+      title: 'Fix the bug: the total is text',
+      subtitle: 'Debug types',
+      kind: CourseStepKind.coding,
+      xp: 45,
+      previewAsset: _heroPreview,
+      blocks: <CodeBlock>[
+        CodeBlock(
+          heading: 'Fix the bug: the total is text',
+          brief:
+              'The program prints "Total: 123" but a total of 12 and 3 is 36. '
+              'The numbers are being glued together as text. Fix the '
+              'calculation so it multiplies instead.',
+          whyItWorks:
+              'str() turns a number into text, and + between two pieces of text '
+              'joins them: "12" + "3" is "123". Multiplying the numbers with * '
+              'gives arithmetic: 12 * 3 is 36.',
+          takeaway:
+              'Text plus text joins; numbers with * and + calculate. Only turn '
+              'a number into text when you are printing it.',
+          starterCode:
+              '# Bug: this prints Total: 123 instead of Total: 36.\n'
+              'price = 12\n'
+              'quantity = 3\n'
+              'total = str(price) + str(quantity)\n'
+              'print("Total:", total)\n'
+              '\n'
+              '# Fix the total above — do not type the answer as text.\n',
+          requirements: <String>[
+            'It prints Total: 36',
+            'The total is calculated from price and quantity, not typed',
+          ],
+          hints: <String>[
+            'str() makes text. Do you need text here?',
+            'Two numbers multiplied use *, not +.',
+          ],
+          expectedOutput: 'Total: 36',
+          codeContains: <String>['*'],
+          forbiddenLiterals: <String>['36'],
+        ),
+      ],
+    ),
   ],
 );

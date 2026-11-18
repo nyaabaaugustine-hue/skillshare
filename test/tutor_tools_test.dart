@@ -41,10 +41,13 @@ void main() {
       ),
     );
 
-    final answer = await service.ask('Search the latest Python range docs');
+    final reply = await service.askReply(
+      'Search the latest Python range docs',
+    );
 
-    expect(answer, contains('Result for Search the latest Python range docs'));
-    expect(answer, contains('https://docs.python.org/'));
+    expect(reply.text, contains('Result for Search the latest Python range docs'));
+    // Sources travel beside the text, not inside it.
+    expect(reply.sources, contains('https://docs.python.org/'));
   });
 
   test(
@@ -67,7 +70,7 @@ void main() {
       );
 
       expect(answer, contains('screenshot'));
-      expect(answer, contains('offline mode'));
+      expect(answer, contains('offline'));
     },
   );
 
@@ -77,8 +80,8 @@ void main() {
       studentContext: context,
       tools: TutorToolRegistry(
         studentContext: context,
-        screenshotAnalysis: (attachment) async {
-          called = attachment.name == 'code.png';
+        screenshotAnalysis: (attachment, {question, history}) async {
+          called = attachment.name == 'code.png' && question == 'Explain this code';
           return const TutorToolResult(
             tool: 'screenshot',
             text: 'The screenshot shows a missing colon.',

@@ -36,13 +36,13 @@ dependencies:
 
   # Lightweight preferences (theme, editor settings).
   shared_preferences: ^2.3.3
+  flutter_secure_storage: ^9.2.4
   uuid: ^4.5.1
   crypto: ^3.0.6
 
   # Embedded CPython runtime for on-device execution (Android/iOS/desktop).
   # See docs/ADR_001_PYTHON_RUNTIME.md for the evaluation and rationale.
   serious_python: ^5.0.0
-  supabase_flutter: ^2.18.3
   # Local learning reminders (daily + "you stopped halfway"). Pinned below the
   # versions that require Android SDK 37, which this project does not target.
   flutter_local_notifications: ^19.4.2

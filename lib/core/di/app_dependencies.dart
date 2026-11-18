@@ -60,7 +60,10 @@ class AppDependencies {
   final bool ownsRuntime;
 
   /// Builds the real dependency graph for the running app.
-  static Future<AppDependencies> create({AppConfig? config}) async {
+  static Future<AppDependencies> create({
+    AppConfig? config,
+    String? Function()? accessTokenProvider,
+  }) async {
     final resolved = config ?? AppConfig.forCurrentPlatform();
     final database = AppDatabase();
     final databaseOpen = database.open();
@@ -82,8 +85,8 @@ class AppDependencies {
     } else {
       lmsClient = HttpLmsClient(
         baseUrl: resolved.lmsBaseUrl,
-        tokenProvider: StaticTokenProvider(
-          const String.fromEnvironment('SB_LMS_TOKEN'),
+        tokenProvider: CallbackTokenProvider(
+          accessTokenProvider ?? () => null,
         ),
       );
     }

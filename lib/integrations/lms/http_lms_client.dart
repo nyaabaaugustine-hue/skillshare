@@ -21,16 +21,17 @@ abstract class AuthTokenProvider {
   Future<void> onUnauthorized();
 }
 
-/// Simple provider for development against a token supplied at build time.
-class StaticTokenProvider implements AuthTokenProvider {
-  StaticTokenProvider(this._token);
-  String? _token;
+/// Resolves the current short-lived account token on demand. The callback may
+/// return null for guest/offline sessions; no secret is compiled into the app.
+class CallbackTokenProvider implements AuthTokenProvider {
+  CallbackTokenProvider(this._getToken);
+  final FutureOr<String?> Function() _getToken;
 
   @override
-  Future<String?> getToken() async => _token;
+  Future<String?> getToken() async => _getToken();
 
   @override
-  Future<void> onUnauthorized() async => _token = null;
+  Future<void> onUnauthorized() async {}
 }
 
 /// Real HTTP adapter for the SkillBridge LMS.

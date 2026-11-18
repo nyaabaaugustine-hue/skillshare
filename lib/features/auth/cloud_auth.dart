@@ -1,14 +1,16 @@
-import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:async';
+import 'dart:convert';
 
-/// The signed-in identity behind one account.
-///
-/// The same record is produced by email/password sign-in, signup and Facebook,
-/// on Android and in the browser, because both builds talk to the same
-/// Supabase project: an account created on the phone signs in on the web and
-/// the other way round.
+import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
+
+import '../../core/network/http_client_factory.dart';
+
+/// A shared Neon Auth identity used by the website and Flutter clients.
 class CloudUser {
   const CloudUser({
+    this.id = '',
     required this.name,
     required this.email,
     required this.role,
@@ -16,90 +18,132 @@ class CloudUser {
     this.guardianEmail,
   });
 
+  final String id;
   final String name;
   final String email;
-
-  /// `student` or `guardian`, resolved from server-managed account metadata
-  /// when available so the app opens the correct shell after sign-in.
   final String role;
   final String? token;
   final String? guardianEmail;
 }
 
-/// A sign-in problem that is safe to show to a learner.
 class CloudAuthException implements Exception {
-  const CloudAuthException(this.message);
+  const CloudAuthException(this.message, {this.needsEmailVerification = false});
 
   final String message;
+  final bool needsEmailVerification;
 
   @override
   String toString() => message;
 }
 
-/// Shared-account gateway (Supabase Auth).
+/// Injectable cookie storage makes native session persistence testable. The
+/// production implementation uses Android Keystore/iOS Keychain (and the
+/// secure-storage package's WebCrypto-backed web implementation).
+abstract interface class AuthCookieStore {
+  Future<String?> read();
+  Future<void> write(String value);
+  Future<void> clear();
+}
+
+class SecureAuthCookieStore implements AuthCookieStore {
+  SecureAuthCookieStore([FlutterSecureStorage? storage])
+    : _storage = storage ?? const FlutterSecureStorage();
+
+  static const _key = 'neon_auth.session_cookie';
+  final FlutterSecureStorage _storage;
+
+  @override
+  Future<String?> read() => _storage.read(key: _key);
+
+  @override
+  Future<void> write(String value) => _storage.write(key: _key, value: value);
+
+  @override
+  Future<void> clear() => _storage.delete(key: _key);
+}
+
+/// Thin Better Auth-compatible client for the website's `/api/auth` proxy.
 ///
-/// Enabled when `SB_SUPABASE_URL` and `SB_SUPABASE_ANON_KEY` are passed at
-/// build time. Development and tests can use offline mock authentication when
-/// they are absent; production builds reject local mock sign-in.
-///
-/// Nothing secret lives here: the anon key is a publishable key, and every
-/// credential check happens on the server.
+/// No database URL, service key, or server secret is used here. Native clients
+/// persist only the opaque session cookie in secure storage; browser clients
+/// use the browser's credentialed cookie jar. The API origin must be HTTPS in
+/// production and must be the same trusted website origin used by web sign-in.
 class CloudAuth {
-  CloudAuth._(this._client);
+  // Positional initializing formals, because named parameters cannot start
+  // with an underscore.
+  CloudAuth._(this.baseUrl, this._cookieStore, this._http);
 
-  final SupabaseClient _client;
+  final String baseUrl;
+  final AuthCookieStore _cookieStore;
+  final http.Client _http;
+  final StreamController<CloudUser> _events =
+      StreamController<CloudUser>.broadcast();
+  CloudUser? _currentSession;
+  bool _pendingStudentSignup = false;
+  String? _pendingGuardianEmail;
 
-  /// Android returns from the Facebook browser through this deep link (the
-  /// matching intent filter is in `android/app/src/main/AndroidManifest.xml`).
-  /// On the web the browser simply returns to the page that started the flow.
-  static const String androidRedirectUrl = 'skillsbridge://login-callback';
+  CloudUser? get currentSession => _currentSession;
+  Stream<CloudUser> get userEvents => _events.stream;
 
-  static bool isConfigured({required String url, required String key}) =>
-      url.trim().isNotEmpty && key.trim().isNotEmpty;
+  static bool isConfigured({required String baseUrl}) =>
+      baseUrl.trim().isNotEmpty;
 
-  /// Initialises the SDK once per process and restores a previous session, so
-  /// a learner who signed in on this device stays signed in across reloads.
   static Future<CloudAuth> initialize({
-    required String url,
-    required String key,
+    required String baseUrl,
+    AuthCookieStore? cookieStore,
+    http.Client? client,
   }) async {
-    await Supabase.initialize(url: url.trim(), publishableKey: key.trim());
-    return CloudAuth._(Supabase.instance.client);
+    final normalized = baseUrl.trim().replaceFirst(RegExp(r'/+$'), '');
+    final auth = CloudAuth._(
+      normalized,
+      cookieStore ?? SecureAuthCookieStore(),
+      client ?? createHttpClient(),
+    );
+    await auth.restoreSession();
+    return auth;
   }
 
-  Session? get currentSession => _client.auth.currentSession;
-
-  /// Emits whenever a session becomes available: an email sign-in, a restored
-  /// session, or the moment Facebook hands control back to the app.
-  Stream<CloudUser> get userEvents => _client.auth.onAuthStateChange
-      .where((state) => state.session != null)
-      .map((state) => userFrom(state.session!));
-
-  CloudUser userFrom(Session session) => CloudUser(
-    name: _name(session.user),
-    email: session.user.email ?? '',
-    role: _role(session.user),
-    token: session.accessToken,
-    guardianEmail: _guardianEmail(session.user),
-  );
+  /// Restores the web cookie or securely stored native cookie and refreshes the
+  /// short-lived access JWT. A missing/expired session is a normal signed-out
+  /// result, not a startup failure.
+  Future<CloudUser?> restoreSession() async {
+    try {
+      final payload = await _request('GET', 'get-session');
+      var user = _findUser(payload);
+      if (user == null) {
+        _currentSession = null;
+        return null;
+      }
+      await _activateSoleFamily(payload);
+      final refreshed = await _request('GET', 'get-session');
+      user = _findUser(refreshed) ?? user;
+      final token = await _getAccessToken();
+      final resolved = _cloudUser(user, token);
+      _currentSession = resolved;
+      _events.add(resolved);
+      return resolved;
+    } on CloudAuthException catch (error) {
+      if (error.message.toLowerCase().contains('unauthorized') ||
+          error.message.toLowerCase().contains('session')) {
+        _currentSession = null;
+        await _cookieStore.clear();
+        return null;
+      }
+      rethrow;
+    }
+  }
 
   Future<CloudUser> signIn({
     required String email,
     required String password,
   }) async {
-    final response = await _guard(
-      () => _client.auth.signInWithPassword(
-        email: email.trim(),
-        password: password,
-      ),
-    );
-    final session = response.session ?? _client.auth.currentSession;
-    if (session == null) {
-      throw const CloudAuthException(
-        'Sign-in did not complete. Please try again.',
-      );
-    }
-    return userFrom(session);
+    _pendingStudentSignup = false;
+    _pendingGuardianEmail = null;
+    await _request('POST', 'sign-in/email', <String, Object?>{
+      'email': email.trim(),
+      'password': password,
+    });
+    return _loadAuthenticatedUser();
   }
 
   Future<CloudUser> register({
@@ -107,107 +151,397 @@ class CloudAuth {
     required String email,
     required String password,
     required String role,
+    String guardianEmail = '',
   }) async {
-    final response = await _guard(
-      () => _client.auth.signUp(
-        email: email.trim(),
-        password: password,
-        data: <String, Object?>{'name': name.trim(), 'role': role},
-      ),
-    );
-    final session = response.session ?? _client.auth.currentSession;
-    if (session == null) {
-      // Email confirmation is on: the account exists, but there is no session
-      // to open the app with yet.
-      throw CloudAuthException(
-        'Account created. Open the confirmation link sent to ${email.trim()}, then sign in.',
-      );
+    final normalizedEmail = email.trim();
+    _pendingStudentSignup = role == 'student';
+    _pendingGuardianEmail = guardianEmail.trim().isEmpty
+        ? null
+        : guardianEmail.trim().toLowerCase();
+    final result = await _request('POST', 'sign-up/email', <String, Object?>{
+      'email': normalizedEmail,
+      'password': password,
+      'name': name.trim(),
+    });
+    final user = _findUser(result);
+    if (user != null && user['emailVerified'] == true) {
+      return _loadAuthenticatedUser();
     }
-    return userFrom(session);
+
+    // Use the same email-code flow as the website; do not silently create a
+    // device-only account when verification is enabled.
+    await sendVerificationCode(normalizedEmail);
+    throw CloudAuthException(
+      'verification_required',
+      needsEmailVerification: true,
+    );
   }
 
-  /// Opens Facebook's consent screen.
+  Future<void> sendVerificationCode(String email) async {
+    await _request('POST', 'email-otp/send-verification-otp', <String, Object?>{
+      'email': email.trim(),
+      'type': 'email-verification',
+    });
+  }
+
+  Future<CloudUser> verifyEmail({
+    required String email,
+    required String otp,
+  }) async {
+    await _request('POST', 'email-otp/verify-email', <String, Object?>{
+      'email': email.trim(),
+      'otp': otp.trim(),
+    });
+    return _loadAuthenticatedUser();
+  }
+
+  Future<CloudUser> _loadAuthenticatedUser() async {
+    var payload = await _request('GET', 'get-session');
+    var user = _findUser(payload);
+    if (user == null) {
+      throw const CloudAuthException(
+        'Your email was verified. Sign in to continue.',
+      );
+    }
+    if (_pendingStudentSignup) {
+      await _createStudentFamily(user);
+      _pendingStudentSignup = false;
+      _pendingGuardianEmail = null;
+      payload = await _request('GET', 'get-session');
+      user = _findUser(payload) ?? user;
+    } else {
+      await _activateSoleFamily(payload);
+      payload = await _request('GET', 'get-session');
+      user = _findUser(payload) ?? user;
+    }
+    final token = await _getAccessToken();
+    final resolved = _cloudUser(user, token);
+    _currentSession = resolved;
+    _events.add(resolved);
+    return resolved;
+  }
+
+  /// Mints a fresh access JWT without changing the signed-in user.
   ///
-  /// The web build navigates away and comes back to the same page; Android
-  /// leaves for the browser and returns through [androidRedirectUrl]. The
-  /// session arrives on [userEvents] in both cases.
-  Future<bool> signInWithFacebook() => _guard(
-    () => _client.auth.signInWithOAuth(
-      OAuthProvider.facebook,
-      redirectTo: kIsWeb ? null : androidRedirectUrl,
-      authScreenLaunchMode: kIsWeb
-          ? LaunchMode.platformDefault
-          : LaunchMode.externalApplication,
-    ),
-  );
+  /// The tutor client calls this when its token is about to expire or the
+  /// Worker answered 401, instead of reusing the token captured at sign-in.
+  Future<String> refreshAccessToken() async {
+    final token = await _getAccessToken();
+    final current = _currentSession;
+    if (current != null) {
+      _currentSession = CloudUser(
+        id: current.id,
+        name: current.name,
+        email: current.email,
+        role: current.role,
+        token: token,
+        guardianEmail: current.guardianEmail,
+      );
+      _events.add(_currentSession!);
+    }
+    return token;
+  }
+
+  Future<String> _getAccessToken() async {
+    final payload = await _request('POST', 'get-access-token', <String, Object?>{});
+    final nested = payload['data'];
+    final token = payload['token'] ?? payload['accessToken'] ??
+        (nested is Map ? nested['token'] ?? nested['accessToken'] : null);
+    if (token is! String || token.isEmpty) {
+      throw const CloudAuthException(
+        'The sign-in service did not return a tutor access token.',
+      );
+    }
+    return token;
+  }
+
+  Future<void> _createStudentFamily(Map<String, dynamic> user) async {
+    final userId = user['id']?.toString() ?? '';
+    if (userId.isEmpty) {
+      throw const CloudAuthException('Could not identify the student account.');
+    }
+    final suffix = userId.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
+    final slug = 'family-${suffix.isEmpty ? 'student' : suffix}';
+    var organizations = await _organizationList();
+    final matches = organizations.where((item) => item['slug'] == slug).toList();
+    Map<String, dynamic>? family = matches.isEmpty ? null : matches.first;
+    if (family == null) {
+      final created = await _request('POST', 'organization/create', <String, Object?>{
+        'name': "${(user['name'] ?? 'Student').toString()}'s Family",
+        'slug': slug,
+      });
+      family = _organizationFrom(created);
+      if (family == null) {
+        organizations = await _organizationList();
+        final afterCreate = organizations.where((item) => item['slug'] == slug).toList();
+        if (afterCreate.isNotEmpty) family = afterCreate.first;
+      }
+    }
+    final organizationId = family?['id']?.toString();
+    if (organizationId == null || organizationId.isEmpty) {
+      throw const CloudAuthException('Could not create the family group.');
+    }
+    await _request('POST', 'organization/set-active', <String, Object?>{
+      'organizationId': organizationId,
+    });
+    final guardianEmail = _pendingGuardianEmail;
+    if (guardianEmail != null) {
+      await _request('POST', 'organization/invite-member', <String, Object?>{
+        'email': guardianEmail,
+        'role': 'member',
+        'organizationId': organizationId,
+        'resend': true,
+      });
+    }
+  }
+
+  Future<void> _activateSoleFamily(Map<String, dynamic> payload) async {
+    final session = payload['session'];
+    if (session is Map && session['activeOrganizationId'] is String) return;
+    final organizations = await _organizationList();
+    if (organizations.length != 1) return;
+    final organizationId = organizations.single['id']?.toString();
+    if (organizationId == null || organizationId.isEmpty) return;
+    await _request('POST', 'organization/set-active', <String, Object?>{
+      'organizationId': organizationId,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> _organizationList() async {
+    final payload = await _request('GET', 'organization/list');
+    final data = payload['data'] ?? payload['organizations'];
+    if (data is! List) return const [];
+    return data.whereType<Map>().map(Map<String, dynamic>.from).toList();
+  }
+
+  Map<String, dynamic>? _organizationFrom(Map<String, dynamic> payload) {
+    if (payload['id'] is String) return payload;
+    final data = payload['data'];
+    if (data is Map && data['id'] is String) {
+      return Map<String, dynamic>.from(data);
+    }
+    return null;
+  }
+
+  Future<List<Map<String, dynamic>>> listOrganizations() => _organizationList();
+
+  /// Neon Auth verifies membership before changing the active family group.
+  Future<CloudUser> selectOrganization(String organizationId) async {
+    if (organizationId.trim().isEmpty) {
+      throw const CloudAuthException('Choose a family group first.');
+    }
+    await _request('POST', 'organization/set-active', <String, Object?>{
+      'organizationId': organizationId,
+    });
+    return _loadAuthenticatedUser();
+  }
+
+  Future<bool> signInWithFacebook() async => false;
+
+  /// Calls an authenticated website API using the shared Neon Auth session.
+  /// Native clients send the secure cookie; web uses its credentialed cookie
+  /// jar through the conditional HTTP client.
+  Future<http.Response> requestSharedApi(
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+  }) async {
+    if (!path.startsWith('/api/')) {
+      throw ArgumentError.value(path, 'path', 'Must be a website API path.');
+    }
+    final headers = <String, String>{'Accept': 'application/json'};
+    if (body != null) headers['Content-Type'] = 'application/json';
+    if (!kIsWeb) {
+      final cookie = await _cookieStore.read();
+      if (cookie != null && cookie.isNotEmpty) headers['Cookie'] = cookie;
+    }
+    try {
+      final request = http.Request(method, Uri.parse('$baseUrl$path'))
+        ..headers.addAll(headers);
+      if (body != null) request.body = jsonEncode(body);
+      final response = await http.Response.fromStream(
+        await _http.send(request).timeout(const Duration(seconds: 20)),
+      );
+      await _captureCookies(response);
+      return response;
+    } on TimeoutException {
+      throw const CloudAuthException('The shared service took too long to respond.');
+    } catch (error) {
+      if (error is CloudAuthException) rethrow;
+      throw const CloudAuthException('The shared service is temporarily unavailable.');
+    }
+  }
 
   Future<void> signOut() async {
     try {
-      await _client.auth.signOut();
-    } catch (e) {
-      // Signing out locally must succeed even if the server is unreachable.
-      debugPrint('Cloud sign-out failed: $e');
+      await _request('POST', 'sign-out', <String, Object?>{});
+    } catch (error) {
+      // A network failure must not retain a local account session.
+      debugPrint('Neon Auth sign-out request failed.');
+    } finally {
+      _currentSession = null;
+      await _cookieStore.clear();
     }
   }
 
-  String _name(User user) {
-    final metadata = user.userMetadata ?? const <String, dynamic>{};
-    for (final key in const <String>['name', 'full_name', 'display_name']) {
-      final value = metadata[key]?.toString().trim() ?? '';
-      if (value.isNotEmpty) return value;
+  Future<Map<String, dynamic>> _request(
+    String method,
+    String endpoint, [
+    Map<String, Object?>? body,
+  ]) async {
+    final uri = Uri.parse('$baseUrl/api/auth/$endpoint');
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      if (body != null) 'Content-Type': 'application/json',
+    };
+    if (!kIsWeb) {
+      final cookie = await _cookieStore.read();
+      if (cookie != null && cookie.isNotEmpty) headers['Cookie'] = cookie;
     }
-    final email = user.email ?? '';
-    return email.isEmpty ? 'Learner' : email.split('@').first;
-  }
 
-  String _role(User user) {
-    final trustedRole = user.appMetadata['role']?.toString();
-    if (trustedRole == 'student') return 'student';
-    if (trustedRole == 'guardian') return 'guardian';
-    final metadata = user.userMetadata ?? const <String, dynamic>{};
-    return metadata['role']?.toString() == 'guardian' ? 'guardian' : 'student';
-  }
-
-  String? _guardianEmail(User user) {
-    final metadata = user.userMetadata ?? const <String, dynamic>{};
-    final email = metadata['guardian_email']?.toString().trim() ?? '';
-    return email.isEmpty ? null : email;
-  }
-
-  Future<T> _guard<T>(Future<T> Function() action) async {
+    http.Response response;
     try {
-      return await action();
-    } on AuthException catch (e) {
-      throw CloudAuthException(_messageFor(e.message));
-    } catch (e) {
-      debugPrint('Cloud auth error: $e');
+      final request = http.Request(method, uri)..headers.addAll(headers);
+      if (body != null) request.body = jsonEncode(body);
+      response = await http.Response.fromStream(
+        await _http.send(request).timeout(const Duration(seconds: 20)),
+      );
+    } on TimeoutException {
+      throw const CloudAuthException('The sign-in service took too long to respond.');
+    } catch (error) {
+      if (error is CloudAuthException) rethrow;
       throw const CloudAuthException(
         'We could not reach the sign-in service. Check your connection.',
       );
     }
+
+    await _captureCookies(response);
+    dynamic decoded;
+    try {
+      decoded = response.body.isEmpty ? <String, dynamic>{} : jsonDecode(response.body);
+    } catch (_) {
+      decoded = <String, dynamic>{};
+    }
+    final payload = decoded is Map<String, dynamic>
+        ? decoded
+        : decoded is Map
+        ? Map<String, dynamic>.from(decoded)
+        : decoded is List
+        ? <String, dynamic>{'data': decoded}
+        : <String, dynamic>{};
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final nested = payload['error'];
+      final message = payload['message'] ??
+          (nested is Map ? nested['message'] : nested) ??
+          'The sign-in service returned an error (${response.statusCode}).';
+      throw CloudAuthException(_friendlyMessage(message.toString()));
+    }
+    return payload;
   }
 
-  /// Server messages become sentences a learner can act on.
-  String _messageFor(String message) {
-    final text = message.toLowerCase();
-    if (text.contains('invalid login credentials') ||
-        text.contains('invalid_credentials')) {
+  Future<void> _captureCookies(http.Response response) async {
+    if (kIsWeb) return; // The browser owns its HttpOnly cookie jar.
+    final raw = response.headers['set-cookie'];
+    if (raw == null || raw.isEmpty) return;
+    final existing = <String, String>{};
+    for (final part in (await _cookieStore.read() ?? '').split(';')) {
+      final separator = part.indexOf('=');
+      if (separator > 0) {
+        existing[part.substring(0, separator).trim()] = part.substring(separator + 1).trim();
+      }
+    }
+    // A comma inside the Expires attribute is not followed by another cookie
+    // name/value pair, so this split preserves it while handling combined
+    // Set-Cookie headers from the HTTP stack.
+    for (final cookie in raw.split(RegExp(r',\s*(?=[^;,\s]+=)'))) {
+      final segments = cookie.split(';');
+      final pair = segments.first.trim();
+      final separator = pair.indexOf('=');
+      if (separator <= 0) continue;
+      final name = pair.substring(0, separator).trim();
+      final value = pair.substring(separator + 1).trim();
+      final deleted = segments.skip(1).any((attribute) {
+        final normalized = attribute.trim().toLowerCase();
+        return normalized == 'max-age=0' || normalized.startsWith('max-age=0;');
+      });
+      if (deleted || value.isEmpty) {
+        existing.remove(name);
+      } else {
+        existing[name] = value;
+      }
+    }
+    if (existing.isEmpty) {
+      await _cookieStore.clear();
+    } else {
+      await _cookieStore.write(
+        existing.entries.map((entry) => '${entry.key}=${entry.value}').join('; '),
+      );
+    }
+  }
+
+  Map<String, dynamic>? _findUser(Map<String, dynamic> payload) {
+    final direct = payload['user'];
+    if (direct is Map) return Map<String, dynamic>.from(direct);
+    final data = payload['data'];
+    if (data is Map) {
+      final nested = data['user'];
+      if (nested is Map) return Map<String, dynamic>.from(nested);
+    }
+    return null;
+  }
+
+  CloudUser _cloudUser(Map<String, dynamic> user, String token) {
+    final email = user['email'] is String ? user['email'] as String : '';
+    final metadata = user['userMetadata'] is Map
+        ? Map<String, dynamic>.from(user['userMetadata'] as Map)
+        : user['user_metadata'] is Map
+        ? Map<String, dynamic>.from(user['user_metadata'] as Map)
+        : <String, dynamic>{};
+    final displayName = (user['name'] ?? metadata['name'] ?? '').toString().trim();
+    final role = _displayRole(token);
+    return CloudUser(
+      id: user['id']?.toString() ?? '',
+      name: displayName.isNotEmpty
+          ? displayName
+          : (email.isNotEmpty ? email.split('@').first : 'Learner'),
+      email: email,
+      role: role,
+      token: token,
+      guardianEmail: metadata['guardian_email']?.toString(),
+    );
+  }
+
+  /// This decoding is for UI selection only. The tutor Worker independently
+  /// verifies the JWT signature, issuer, audience, and organization role.
+  String _displayRole(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return 'student';
+      final claims = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      ) as Map<String, dynamic>;
+      final role = (claims['o'] as Map?)?['role'];
+      return role == 'member' ? 'guardian' : 'student';
+    } catch (_) {
+      return 'student';
+    }
+  }
+
+  String _friendlyMessage(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('invalid email or password') ||
+        lower.contains('invalid credentials')) {
       return 'That email and password do not match an account.';
     }
-    if (text.contains('email not confirmed') ||
-        text.contains('email_not_confirmed')) {
-      return 'Confirm your email first — open the link we sent, then sign in.';
-    }
-    if (text.contains('already registered') ||
-        text.contains('user_already_exists')) {
+    if (lower.contains('already exists') || lower.contains('already registered')) {
       return 'An account with that email already exists. Sign in instead.';
     }
-    if (text.contains('password')) {
-      return 'Use a password with at least 6 characters.';
-    }
-    if (text.contains('provider is not enabled')) {
-      return 'Facebook sign-in is not switched on yet for this build.';
-    }
+    if (lower.contains('password')) return 'Use a password with at least 6 characters.';
     return message;
+  }
+
+  Future<void> dispose() async {
+    await _events.close();
+    _http.close();
   }
 }

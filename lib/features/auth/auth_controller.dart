@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/security/id_generator.dart';
+import '../course/course_progress_repository.dart';
+import '../course/course_progress_sync_service.dart';
 import 'cloud_auth.dart';
 import 'family_link.dart';
 
@@ -118,8 +120,11 @@ class AuthController extends ChangeNotifier {
   bool _initialized = false;
   bool _busy = false;
   String? _error;
+  String? _pendingVerificationEmail;
+  CourseProgressRepository? _courseProgress;
+  CourseProgressSyncService? _progressSync;
 
-  /// Shared-account backend, present only when Supabase initialized
+  /// Shared-account backend, present only when Neon Auth initialized
   /// successfully. Development and tests may use the offline mock.
   CloudAuth? _cloud;
   StreamSubscription<CloudUser>? _cloudEvents;
@@ -134,18 +139,63 @@ class AuthController extends ChangeNotifier {
   bool get busy => _busy;
   bool get isAuthenticated => _session?.signedIn ?? false;
   String? get error => _error;
+  String? get pendingVerificationEmail => _pendingVerificationEmail;
 
-  /// True when this build signs in against the shared account backend, i.e.
-  /// the same email or Facebook login works on the phone and in the browser.
+  /// True when this build signs in against the shared website/Neon Auth origin.
   bool get cloudAuthEnabled => _cloud != null;
+
+  /// Returns a usable tutor access JWT, refreshing it when it is expired or
+  /// about to expire (or when the Worker rejected it with 401).
+  Future<String?> tutorAccessToken({bool forceRefresh = false}) async {
+    final token = _session?.token;
+    if (token == null || token.isEmpty) return null;
+    final cloud = _cloud;
+    if (cloud == null) return token;
+    if (!forceRefresh && !_expiresSoon(token)) return token;
+    try {
+      final fresh = await cloud.refreshAccessToken();
+      _session = _session?.copyWith(token: fresh);
+      notifyListeners();
+      return fresh;
+    } catch (error) {
+      debugPrint('Tutor token refresh failed: $error');
+      return forceRefresh ? null : token;
+    }
+  }
+
+  /// True when the JWT expires within two minutes (or its `exp` is unreadable).
+  static bool _expiresSoon(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+      final claims = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+      if (claims is! Map<String, dynamic>) return false;
+      final exp = claims['exp'];
+      if (exp is! int) return false;
+      final remaining = exp * 1000 - DateTime.now().millisecondsSinceEpoch;
+      return remaining < const Duration(minutes: 2).inMilliseconds;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Late-bound LMS configuration; call once [AppDependencies] is ready.
   ///
   /// [learnerRef] ties a created family link to this device's learner, so a
   /// progress report can never be sent to the wrong family on a shared device.
-  void configure(AppConfig config, {String? learnerRef}) {
+  void configure(
+    AppConfig config, {
+    String? learnerRef,
+    CourseProgressRepository? courseProgress,
+  }) {
     _config = config;
     if (learnerRef != null && learnerRef.isNotEmpty) _learnerRef = learnerRef;
+    _courseProgress = courseProgress;
+    if (courseProgress != null) {
+      courseProgress.onProgressChanged = _onLocalProgressChanged;
+    }
   }
 
   /// Connects the shared account backend when configured.
@@ -154,15 +204,25 @@ class AuthController extends ChangeNotifier {
     if (config == null || !config.cloudAuthEnabled || _cloud != null) return;
     try {
       final cloud = await CloudAuth.initialize(
-        url: config.supabaseUrl,
-        key: config.supabaseAnonKey,
+        baseUrl: config.sharedApiBaseUrl,
       );
       _cloud = cloud;
+      final repository = _courseProgress;
+      if (repository != null) {
+        _progressSync = CourseProgressSyncService(
+          baseUrl: config.sharedApiBaseUrl,
+          auth: cloud,
+          repository: repository,
+        );
+      }
       _cloudEvents = cloud.userEvents.listen(_adoptCloudUser);
       // A session restored from this device's storage keeps the same account
       // signed in across reloads (notably in the browser).
       final existing = cloud.currentSession;
-      if (existing != null) _adoptCloudUser(cloud.userFrom(existing));
+      if (existing != null) {
+        _adoptCloudUser(existing);
+        _syncCloudProgress();
+      }
       notifyListeners();
     } catch (e) {
       debugPrint('Shared accounts unavailable: $e');
@@ -182,7 +242,7 @@ class AuthController extends ChangeNotifier {
     _busy = false;
     _error = null;
     notifyListeners();
-    unawaited(_bindFamily(user.email));
+    // Device-local FamilyLinkStore entries are not trusted cloud relationships.
   }
 
   /// Facebook sign-in, available in the app and on the web.
@@ -222,7 +282,7 @@ class AuthController extends ChangeNotifier {
 
   /// Cold-start reset.
   ///
-  /// Clears local guest/mock state at launch. A persisted Supabase session is
+  /// Clears local guest/mock state at launch. A persisted Neon Auth session is
   /// restored separately by [initCloudAuth].
   Future<void> startSignedOut() async {
     try {
@@ -296,10 +356,20 @@ class AuthController extends ChangeNotifier {
     String guardianEmail = '',
   }) async {
     if (_cloud != null) {
-      _error =
-          'Create a separate shared Parent / Guardian account to sign in on '
-          'other devices.';
-      notifyListeners();
+      await _authenticate(
+        path: '/auth/register',
+        body: <String, Object?>{
+          'name': name,
+          'email': email,
+          'password': password,
+          'role': UserRole.student.name,
+          'guardianEmail': guardianEmail.trim(),
+        },
+        fallbackName: name,
+        fallbackEmail: email,
+        role: UserRole.student,
+        identifier: email,
+      );
       return null;
     }
 
@@ -362,19 +432,77 @@ class AuthController extends ChangeNotifier {
     required String email,
     required String password,
     UserRole role = UserRole.student,
-  }) => _authenticate(
-    path: '/auth/register',
-    body: <String, Object?>{
-      'name': name,
-      'email': email,
-      'password': password,
-      'role': role.name,
-    },
-    fallbackName: name,
-    fallbackEmail: email,
-    role: role,
-    identifier: email,
-  );
+  }) {
+    if (_cloud != null && role == UserRole.guardian) {
+      _error = 'A Parent / Guardian must sign in with an invited family account.';
+      notifyListeners();
+      return Future<bool>.value(false);
+    }
+    return _authenticate(
+      path: '/auth/register',
+      body: <String, Object?>{
+        'name': name,
+        'email': email,
+        'password': password,
+        'role': role.name,
+      },
+      fallbackName: name,
+      fallbackEmail: email,
+      role: role,
+      identifier: email,
+    );
+  }
+
+  Future<bool> verifyEmail({required String email, required String otp}) async {
+    final cloud = _cloud;
+    if (cloud == null) {
+      _error = 'Email verification is unavailable until shared sign-in is configured.';
+      notifyListeners();
+      return false;
+    }
+    _busy = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final user = await cloud.verifyEmail(email: email, otp: otp);
+      _session = AuthSession(
+        signedIn: true,
+        name: user.name,
+        email: user.email,
+        token: user.token,
+        role: UserRole.fromName(user.role),
+        guardianEmail: user.guardianEmail,
+      );
+      _pendingVerificationEmail = null;
+      _syncCloudProgress();
+      return true;
+    } on CloudAuthException catch (e) {
+      _error = e.message;
+      return false;
+    } finally {
+      _busy = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> resendVerificationCode(String email) async {
+    final cloud = _cloud;
+    if (cloud == null) return false;
+    _busy = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await cloud.sendVerificationCode(email);
+      _error = 'A new verification code was sent.';
+      return true;
+    } on CloudAuthException catch (e) {
+      _error = e.message;
+      return false;
+    } finally {
+      _busy = false;
+      notifyListeners();
+    }
+  }
 
   Future<bool> _authenticate({
     required String path,
@@ -387,6 +515,7 @@ class AuthController extends ChangeNotifier {
   }) async {
     _busy = true;
     _error = null;
+    _pendingVerificationEmail = null;
     notifyListeners();
     try {
       final resolved = await _post(
@@ -405,12 +534,18 @@ class AuthController extends ChangeNotifier {
             : role,
       );
       _session = session;
-      await _bindFamily(identifier ?? session.email ?? '');
+      if (_cloud == null) await _bindFamily(identifier ?? session.email ?? '');
+      _syncCloudProgress();
       return true;
     } on _AuthFailure catch (e) {
       _error = e.message;
       return false;
     } on CloudAuthException catch (e) {
+      if (e.needsEmailVerification) {
+        _pendingVerificationEmail = fallbackEmail;
+        _error = 'Check your email for the verification code.';
+        return false;
+      }
       _error = e.message;
       return false;
     } catch (e) {
@@ -470,8 +605,21 @@ class AuthController extends ChangeNotifier {
     );
   }
 
-  /// Uses Supabase for shared accounts. Local mock sessions are limited to
-  /// development and tests; production requires the shared provider.
+  void _onLocalProgressChanged(String learner) {
+    if (learner != _learnerRef || !(_session?.isAccount ?? false)) return;
+    _syncCloudProgress();
+  }
+
+  void _syncCloudProgress() {
+    final sync = _progressSync;
+    final learner = _learnerRef;
+    if (sync == null || learner == null || !(_session?.isAccount ?? false)) {
+      return;
+    }
+    unawaited(sync.sync(learner));
+  }
+
+  /// Uses Neon Auth for shared accounts. Local guest progress remains offline.
   Future<Map<String, Object?>> _post({
     required String path,
     required Map<String, Object?> body,
@@ -493,6 +641,7 @@ class AuthController extends ChangeNotifier {
               email: body['email'] as String? ?? '',
               password: body['password'] as String? ?? '',
               role: body['role'] as String? ?? UserRole.student.name,
+              guardianEmail: body['guardianEmail'] as String? ?? '',
             )
           : await cloud.signIn(
               email: body['identifier'] as String? ?? '',
@@ -566,6 +715,8 @@ class AuthController extends ChangeNotifier {
   @override
   void dispose() {
     _cloudEvents?.cancel();
+    final cloud = _cloud;
+    if (cloud != null) unawaited(cloud.dispose());
     super.dispose();
   }
 }

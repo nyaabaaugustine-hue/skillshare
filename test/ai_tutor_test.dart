@@ -53,6 +53,64 @@ void main() {
       expect(reply.trim(), isNotEmpty);
       expect(reply, contains('loops'));
     });
+
+    test('a greeting followed by a real question is answered', () async {
+      // Regression: "hi, ..." was treated as a bare hello and the question was
+      // dropped.
+      final reply = await svc.ask('hi, how do I use a while loop?');
+      expect(reply, contains('while'));
+      expect(reply, isNot(contains('I am your Python tutor')));
+    });
+
+    test('a topic question is not swallowed by the debugging branch', () async {
+      final reply = await svc.ask('help me fix my list');
+      expect(reply, contains('append'));
+      expect(reply, isNot(contains('traceback')));
+    });
+
+    test('substring lookalikes do not hijack a topic', () async {
+      final reply = await svc.ask('what is a suffix');
+      expect(reply, isNot(contains('traceback')));
+    });
+
+    test('resetConversation clears the pending quiz answer', () async {
+      final service = TutorService();
+      await service.ask('Quiz me');
+      service.resetConversation();
+      final reply = await service.ask('b');
+      expect(reply, isNot(contains('Correct')));
+      expect(reply, isNot(contains('Not quite')));
+    });
+
+    test('a failed online call is labelled and remembered', () async {
+      final service = TutorService(
+        remote:
+            ({
+              required String message,
+              required List<TutorChatTurn> history,
+              required TutorStudentContext context,
+              required TutorTeachingStyle style,
+            }) async {
+              expect(message, 'Explain loops');
+              throw const TutorException(
+                TutorFailureKind.offline,
+                'The online tutor could not be reached.',
+              );
+            },
+      );
+
+      final reply = await service.ask('Explain loops');
+      expect(reply, contains(TutorService.offlineNotice));
+      expect(reply, contains('Two kinds of loop'));
+      expect(service.lastFailure, 'The online tutor could not be reached.');
+      expect(service.modeLabel, 'Offline fallback');
+    });
+
+    test('open-ended answers are deterministic', () async {
+      final first = await TutorService().ask('zzz qqq wibble');
+      final second = await TutorService().ask('zzz qqq wibble');
+      expect(first, second);
+    });
   });
 
   group('AiTutorScreen', () {
@@ -78,10 +136,11 @@ void main() {
       await pumpTutor(tester);
 
       await tester.tap(find.text('Explain loops'));
-      await tester.pump(); // user bubble + typing indicator
+      await tester.pump();
       expect(find.text('Explain for and while loops simply'), findsOneWidget);
-      expect(find.byKey(const Key('typing-dots')), findsOneWidget);
 
+      // The offline brain now answers without an artificial delay, so the
+      // typing indicator is not guaranteed to be visible between frames.
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.byKey(const Key('typing-dots')), findsNothing);
       expect(find.textContaining('Two kinds of loop'), findsOneWidget);

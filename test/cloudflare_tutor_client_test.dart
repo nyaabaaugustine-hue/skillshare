@@ -11,10 +11,10 @@ void main() {
     () async {
       final client = CloudflareTutorClient(
         baseUrl: 'https://worker.example',
-        accessTokenProvider: () => 'learner-token',
+                accessTokenProvider: ({bool forceRefresh = false}) async =>
+            'learner-token',
         client: _ResponseClient(
-          200,
-          'data: {"choices":[{"delta":{"content":"Hello "}}]}\n\n'
+          200,'data: {"choices":[{"delta":{"content":"Hello "}}]}\n\n'
           'data: {"response":"world"}\n\n'
           'event: meta\n'
           'data: {"sources":["https://docs.python.org/3/tutorial/",'
@@ -46,7 +46,8 @@ void main() {
   test('video lookup returns only HTTPS YouTube watch URLs', () async {
     final client = CloudflareTutorClient(
       baseUrl: 'https://worker.example',
-      accessTokenProvider: () => 'learner-token',
+      accessTokenProvider: ({bool forceRefresh = false}) async =>
+          'learner-token',
       client: _ResponseClient(
         200,
         jsonEncode(<String, Object?>{
@@ -76,14 +77,21 @@ void main() {
   test('video lookup surfaces an unavailable Worker response', () async {
     final client = CloudflareTutorClient(
       baseUrl: 'https://worker.example',
-      accessTokenProvider: () => 'learner-token',
+      accessTokenProvider: ({bool forceRefresh = false}) async =>
+          'learner-token',
       client: _ResponseClient(503, '{"error":"video_search_not_configured"}'),
     );
     addTearDown(client.close);
 
     await expectLater(
       client.findShortVideos('loops'),
-      throwsA(isA<http.ClientException>()),
+      throwsA(
+        isA<TutorException>().having(
+          (error) => error.kind,
+          'kind',
+          TutorFailureKind.unavailable,
+        ),
+      ),
     );
   });
 }

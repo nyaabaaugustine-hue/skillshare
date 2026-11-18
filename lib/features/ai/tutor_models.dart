@@ -18,14 +18,18 @@ class TutorStudentContext {
     required this.recentScores,
   });
 
+  /// [pointsAreServerAuthoritative] is false when the app is running against
+  /// the mock LMS, whose points reset on every launch. In that case the tutor
+  /// must not state a points total at all rather than invent one.
   factory TutorStudentContext.fromRecords({
     required String learnerName,
     required LearnerProgress progress,
     required GuardianReport report,
+    bool pointsAreServerAuthoritative = true,
   }) {
     return TutorStudentContext(
       learnerName: learnerName,
-      totalPoints: progress.totalPoints,
+      totalPoints: pointsAreServerAuthoritative ? progress.totalPoints : null,
       completedChallenges: progress.completedChallenges,
       totalChallenges: progress.totalChallenges,
       weakPoints: [
@@ -40,7 +44,9 @@ class TutorStudentContext {
   }
 
   final String learnerName;
-  final int totalPoints;
+
+  /// Server-authoritative points, or null when no real LMS is configured.
+  final int? totalPoints;
   final int completedChallenges;
   final int totalChallenges;
   final List<String> weakPoints;
@@ -51,7 +57,7 @@ class TutorStudentContext {
 
   Map<String, Object?> toPromptData() => <String, Object?>{
     'studentName': learnerName,
-    'totalPoints': totalPoints,
+    if (totalPoints != null) 'totalPoints': totalPoints,
     'completedChallenges': completedChallenges,
     'totalChallenges': totalChallenges,
     'weakPoints': weakPoints,
@@ -60,7 +66,7 @@ class TutorStudentContext {
 
   static const empty = TutorStudentContext(
     learnerName: 'Learner',
-    totalPoints: 0,
+    totalPoints: null,
     completedChallenges: 0,
     totalChallenges: 0,
     weakPoints: <String>[],
@@ -106,6 +112,23 @@ class TutorReply {
   final List<String> sources;
 }
 
+/// Why an online tutor call failed. The app needs this to tell a learner
+/// "sign in again" apart from "you have asked a lot, retry in 4 minutes" and
+/// from "you are offline" - otherwise every failure looks like a normal reply
+/// from the offline brain.
+enum TutorFailureKind { unauthorized, rateLimited, unavailable, offline, malformed }
+
+class TutorException implements Exception {
+  const TutorException(this.kind, this.message, {this.retryAfter});
+
+  final TutorFailureKind kind;
+  final String message;
+  final Duration? retryAfter;
+
+  @override
+  String toString() => message;
+}
+
 class TutorStreamEvent {
   const TutorStreamEvent({this.text = '', this.sources = const <String>[]});
 
@@ -127,8 +150,10 @@ class TutorVideo {
 
 typedef TutorWebLookup = Future<TutorToolResult> Function(String query);
 typedef TutorScreenshotAnalysis = Future<TutorToolResult> Function(
-  TutorAttachment attachment,
-);
+  TutorAttachment attachment, {
+  String? question,
+  List<TutorChatTurn>? history,
+});
 typedef TutorVideoSearch = Future<List<TutorVideo>> Function(String topic);
 
 /// One earlier message, sent with each request so the remote model keeps the
@@ -193,7 +218,11 @@ class TutorToolRegistry {
     return lookup(query);
   }
 
-  Future<TutorToolResult> analyzeScreenshot(TutorAttachment attachment) async {
+  Future<TutorToolResult> analyzeScreenshot(
+    TutorAttachment attachment, {
+    String? question,
+    List<TutorChatTurn>? history,
+  }) async {
     final analyze = screenshotAnalysis;
     if (analyze == null) {
       return const TutorToolResult(
@@ -201,7 +230,7 @@ class TutorToolRegistry {
         text: 'Screenshot analysis needs an online AI tutor connection.',
       );
     }
-    return analyze(attachment);
+    return analyze(attachment, question: question, history: history);
   }
 
   Future<List<TutorVideo>> findVideos(String topic) async {

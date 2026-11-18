@@ -37,8 +37,7 @@ class AppConfig {
     required this.maxOutputChars,
     this.aiTutorBaseUrl = '',
     this.guardianReportUrl = '',
-    this.supabaseUrl = '',
-    this.supabaseAnonKey = '',
+    this.sharedApiBaseUrl = '',
     this.leaderboardUrl = '',
   });
 
@@ -60,16 +59,11 @@ class AppConfig {
   /// is the default for development and the offline mock.
   final String guardianReportUrl;
 
-  /// Shared-account backend (see `docs/SHARED_ACCOUNTS.md`). When both values
-  /// are present the app signs in against the same Supabase project from
-  /// Android and from the web build, so one account works on both. Development
-  /// and tests may use offline auth when these values are empty; release or
-  /// production-environment builds reject local mock sign-in.
-  final String supabaseUrl;
-  final String supabaseAnonKey;
+  /// Public origin of the website hosting `/api/auth` and shared API routes.
+  /// This is an origin, not a Neon database URL or secret.
+  final String sharedApiBaseUrl;
 
-  bool get cloudAuthEnabled =>
-      supabaseUrl.trim().isNotEmpty && supabaseAnonKey.trim().isNotEmpty;
+  bool get cloudAuthEnabled => sharedApiBaseUrl.trim().isNotEmpty;
 
   /// Base URL of the website that serves `/api/leaderboard` (see
   /// `docs/LEADERBOARD.md`). Empty disables the leaderboard screen rather than
@@ -77,6 +71,23 @@ class AppConfig {
   final String leaderboardUrl;
 
   bool get leaderboardEnabled => leaderboardUrl.trim().isNotEmpty;
+
+  /// Base URL the tutor client should call.
+  ///
+  /// Falls back to the website's same-origin proxy (`/api/tutor`) when no Worker
+  /// URL was compiled in. That is enough for the whole chain: the app already
+  /// needs the site origin to sign in, the proxy forwards the bearer token, and
+  /// the Worker still verifies it. Empty means "no cloud tutor" and the offline
+  /// brain answers.
+  String get aiTutorEndpoint {
+    final explicit = aiTutorBaseUrl.trim();
+    if (explicit.isNotEmpty) {
+      return explicit.replaceFirst(RegExp(r'/+$'), '');
+    }
+    final shared = sharedApiBaseUrl.trim();
+    if (shared.isEmpty) return '';
+    return '${shared.replaceFirst(RegExp(r'/+$'), '')}/api/tutor';
+  }
 
   bool get requiresCloudAuth =>
       kReleaseMode || environment.toLowerCase() == 'production';
@@ -98,10 +109,8 @@ class AppConfig {
   static const String _guardianReportUrl = String.fromEnvironment(
     'SB_GUARDIAN_REPORT_URL',
   );
-  static const String _supabaseUrl = String.fromEnvironment('SB_SUPABASE_URL');
-  static const String _supabaseAnonKey = String.fromEnvironment(
-    'SB_SUPABASE_ANON_KEY',
-  );
+  static const String _sharedApiBaseUrl =
+      String.fromEnvironment('SB_API_BASE_URL');
   static const String _leaderboardUrl = String.fromEnvironment(
     'SB_LEADERBOARD_URL',
   );
@@ -127,12 +136,11 @@ class AppConfig {
       maxOutputChars: 200000,
       aiTutorBaseUrl: _aiTutorBaseUrl,
       guardianReportUrl: _guardianReportUrl,
-      supabaseUrl: _supabaseUrl,
-      supabaseAnonKey: _supabaseAnonKey,
+      sharedApiBaseUrl: _sharedApiBaseUrl,
       // One server address is enough: the site serves the ranking API.
       leaderboardUrl: _leaderboardUrl.isNotEmpty
           ? _leaderboardUrl
-          : _lmsBaseUrl,
+          : (_sharedApiBaseUrl.isNotEmpty ? _sharedApiBaseUrl : _lmsBaseUrl),
     );
   }
 

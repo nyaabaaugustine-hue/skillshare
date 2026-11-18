@@ -65,11 +65,17 @@ class _BootstrapAppState extends State<BootstrapApp> {
 
   Future<void> _load() async {
     try {
-      final deps = await AppDependencies.create();
+      final deps = await AppDependencies.create(
+        accessTokenProvider: () => _auth.session?.token,
+      );
       if (!mounted) return;
-      _auth.configure(deps.config, learnerRef: deps.learnerRef);
-      // Shared accounts (same login on phone and web) when this build was
-      // given Supabase credentials; otherwise the offline accounts stay.
+      _auth.configure(
+        deps.config,
+        learnerRef: deps.learnerRef,
+        courseProgress: deps.courseProgress,
+      );
+      // Shared accounts (same Neon Auth login on phone and web) when the
+      // public website API origin is configured; guest/offline access remains.
       await _auth.initCloudAuth();
       // Schedules the daily nudge (and asks for notification permission the
       // first time). Never blocks the first frame.
@@ -102,7 +108,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
     if (_error != null) {
       return _ErrorScreen(message: '$_error', onRetry: _retry);
     }
-    // Wait for dependencies and auth state. Supabase restores shared sessions;
+    // Wait for dependencies and auth state. Neon Auth restores shared sessions;
     // local guest/mock sessions do not persist. Signing out returns here, while
     // signing in (or continuing as guest) opens the app shell.
     return AnimatedBuilder(

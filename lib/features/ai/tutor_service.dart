@@ -16,7 +16,7 @@ class TutorService {
     TutorRemoteChat? remote,
     TutorRemoteStream? remoteStream,
     this.teachingStyle = const TutorTeachingStyle(),
-  }) : _random = random ?? Random(),
+  }) : _random = random ?? Random(7),
        _studentContext = studentContext ?? TutorStudentContext.empty,
        _tools = tools, // ignore: prefer_initializing_formals
        _remote = remote, // ignore: prefer_initializing_formals
@@ -57,12 +57,45 @@ class TutorService {
     }
   }
 
+  /// Why the last online attempt failed, or null if it succeeded (or there is
+  /// no online tutor configured at all).
+  String? _lastFailure;
+  String? get lastFailure => _lastFailure;
+
+  bool get canFindVideos => _tools?.canFindVideos == true;
+
+  /// False while the device reports no network, so a learner never waits out a
+  /// 35 second timeout before the offline answer appears.
+  bool _remoteEnabled = true;
+
+  void setRemoteEnabled(bool enabled) {
+    if (_remoteEnabled == enabled) return;
+    _remoteEnabled = enabled;
+  }
+
+  static const String offlineNotice =
+      'I could not reach the online AI tutor just now, so this answer comes '
+      'from the offline tutor.';
+
   /// Shown in the app bar so the learner knows what they are talking to.
-  String get modeLabel => _remote != null || _remoteStream != null
-      ? 'AI tutor (Cloudflare)'
-      : _tools?.canLookupWeb == true
-      ? 'Tutor + web tools'
-      : 'Tutor + learner context';
+  String get modeLabel {
+    if (_remote == null && _remoteStream == null) {
+      return _tools?.canLookupWeb == true
+          ? 'Tutor + web tools'
+          : 'Offline tutor';
+    }
+    if (!_remoteEnabled) return 'Offline tutor';
+    return _lastFailure == null ? 'AI tutor (Cloudflare)' : 'Offline fallback';
+  }
+
+  /// Starts a genuinely new conversation: clears the turns sent to the model
+  /// and any quiz answer still waiting to be graded.
+  void resetConversation() {
+    _history.clear();
+    _pendingAnswer = null;
+    _quizIndex = 0;
+    _lastFailure = null;
+  }
 
   static const _quiz = <_QuizQuestion>[
     _QuizQuestion(
@@ -109,16 +142,26 @@ class TutorService {
     List<TutorAttachment> attachments = const <TutorAttachment>[],
   }) async {
     final m = message.trim().toLowerCase();
+    _lastFailure = null;
 
     if (attachments.isNotEmpty) {
       final screenshotTool = _tools;
       if (screenshotTool?.canAnalyzeScreenshots == true) {
+        _clearQuiz();
         final results = <TutorToolResult>[];
         for (final attachment in attachments) {
-          results.add(await screenshotTool!.analyzeScreenshot(attachment));
+          results.add(
+            await screenshotTool!.analyzeScreenshot(
+              attachment,
+              question: message.trim(),
+              history: List<TutorChatTurn>.unmodifiable(_history),
+            ),
+          );
         }
+        final text = results.map((result) => result.text).join('\n\n');
+        _remember(message.trim(), text);
         return TutorReply(
-          text: results.map((result) => result.text).join('\n\n'),
+          text: text,
           sources: <String>{for (final result in results) ...result.sources}
               .toList(growable: false),
         );
@@ -148,7 +191,7 @@ class TutorService {
     }
 
     final remote = _remote;
-    if (remote != null && m.isNotEmpty) {
+    if (remote != null && _remoteEnabled && m.isNotEmpty) {
       try {
         final reply = await remote(
           message: message.trim(),
@@ -161,12 +204,23 @@ class TutorService {
           _remember(message.trim(), reply.text);
           return reply;
         }
-      } catch (_) {
-        // A failed remote request intentionally falls through to the local tutor.
+      } catch (error) {
+        // Fall through to the offline tutor, but remember why so the answer can
+        // say it is a fallback instead of posing as the online model.
+        _lastFailure = error is TutorException
+            ? error.message
+            : 'The online tutor is unavailable right now.';
       }
     }
 
-    return TutorReply(text: _askOffline(message));
+    return TutorReply(text: _offlineReply(message));
+  }
+
+  /// Offline answer that is remembered for follow-ups and labelled honestly.
+  String _offlineReply(String message) {
+    final text = _askOffline(message);
+    _remember(message.trim(), text);
+    return _lastFailure == null ? text : '$offlineNotice\n\n$text';
   }
 
   /// Answers [message]. Never throws and never leaves the learner on read.
@@ -180,6 +234,7 @@ class TutorService {
   Stream<TutorStreamEvent> askStream(String message) async* {
     final cleanMessage = message.trim();
     final m = cleanMessage.toLowerCase();
+    _lastFailure = null;
     final letter = _answerLetter(m);
     if (letter != null && _pendingAnswer != null) {
       yield TutorStreamEvent(text: _grade(letter));
@@ -187,7 +242,7 @@ class TutorService {
     }
 
     final remote = _remoteStream;
-    if (remote == null || cleanMessage.isEmpty) {
+    if (remote == null || cleanMessage.isEmpty || !_remoteEnabled) {
       yield TutorStreamEvent(text: (await askReply(cleanMessage)).text);
       return;
     }
@@ -203,8 +258,12 @@ class TutorService {
         if (event.text.isNotEmpty) output.write(event.text);
         if (event.text.isNotEmpty || event.sources.isNotEmpty) yield event;
       }
-    } catch (_) {
+    } catch (error) {
+      _lastFailure = error is TutorException
+          ? error.message
+          : 'The online tutor is unavailable right now.';
       if (output.isNotEmpty) {
+        _remember(cleanMessage, output.toString());
         yield const TutorStreamEvent(
           text: '\n\nThe connection paused. Please retry if the answer is incomplete.',
         );
@@ -217,7 +276,7 @@ class TutorService {
       _remember(cleanMessage, output.toString());
       return;
     }
-    yield TutorStreamEvent(text: _askOffline(cleanMessage));
+    yield TutorStreamEvent(text: _offlineReply(cleanMessage));
   }
 
   Future<List<TutorVideo>> findShortVideos(String topic) async {
@@ -229,7 +288,8 @@ class TutorService {
   String _askOffline(String message) {
     final m = message.trim().toLowerCase();
 
-    if (_matches(m, const [
+    if (!_mentionsTopic(m) &&
+        _matchesWord(m, const [
       'error',
       'errors',
       'crash',
@@ -371,10 +431,7 @@ class TutorService {
           'text. Indexes start at 0, so greeting[0] is the H.';
     }
 
-    if (m.contains('list') ||
-        m.contains('lists') ||
-        m.contains('append') ||
-        m.contains('array')) {
+    if (_matchesWord(m, const ['list', 'lists', 'append', 'array'])) {
       _clearQuiz();
       return 'A list is an ordered collection you can grow and shrink.\n\n'
           '```python\n'
@@ -389,10 +446,7 @@ class TutorService {
           'for loop walks every item in order.';
     }
 
-    if (m.contains('dict') ||
-        m.contains('dictionary') ||
-        m.contains('key-value') ||
-        m.contains('key value')) {
+    if (_matchesWord(m, const ['dict', 'dictionary', 'key-value', 'key value'])) {
       _clearQuiz();
       return 'A dictionary stores pairs: a key that points to a value.\n\n'
           '```python\n'
@@ -409,7 +463,7 @@ class TutorService {
     if (m.contains('if statement') ||
         m.contains('condition') ||
         m.contains('conditions') ||
-        m.contains('else') ||
+        _matchesWord(m, const ['else']) ||
         m.contains('boolean') ||
         m.contains('compare')) {
       _clearQuiz();
@@ -501,15 +555,30 @@ class TutorService {
       'good evening',
     };
     if (exact.contains(m)) return true;
-    // Greetings stay short: long messages are real questions.
-    if (m.length > 45) return false;
-    return m.startsWith('hello ') ||
-        m.startsWith('hey ') ||
-        m.startsWith('hi ') ||
-        m.startsWith('good morning ') ||
-        m.startsWith('good afternoon ') ||
-        m.startsWith('good evening ') ||
-        m.startsWith('what can you do');
+    // A greeting must be a greeting: "hi, how do while loops work?" is a
+    // question, and treating it as a hello threw the real question away.
+    if (m.length > 32 || m.contains('?')) return false;
+    const starters = <String>[
+      'hello',
+      'hey',
+      'hi',
+      'hiya',
+      'yo',
+      'salam',
+      'good morning',
+      'good afternoon',
+      'good evening',
+      'what can you do',
+    ];
+    for (final starter in starters) {
+      if (!m.startsWith(starter)) continue;
+      final rest = m
+          .substring(starter.length)
+          .replaceAll(RegExp(r'^[\s,!.:;-]*'), '')
+          .trim();
+      return rest.isEmpty;
+    }
+    return false;
   }
 
   String _nextQuiz() {
@@ -540,7 +609,7 @@ class TutorService {
     if (m.isEmpty) return null;
     final cleaned = m
         .replaceAll(RegExp(r'^answer\s*(is)?\s*[:\-]?\s*'), '')
-        .replaceAll('.', '')
+        .replaceAll(RegExp(r'^[\(\[\s]+|[\)\]\s.,!?]+$'), '')
         .trim();
     if (cleaned.length != 1) return null;
     final c = cleaned.codeUnitAt(0);
@@ -549,7 +618,43 @@ class TutorService {
     return null;
   }
 
-  bool _matches(String m, List<String> phrases) => phrases.any(m.contains);
+  /// Whole-word/phrase match. Plain `contains` made "prefix" a debugging
+  /// question, "listen" a list question and "addict" a dictionary question.
+  bool _matchesWord(String m, List<String> phrases) => phrases.any(
+    (phrase) => RegExp(
+      '(^|[^a-z0-9_])${RegExp.escape(phrase)}([^a-z0-9_]|\$)',
+    ).hasMatch(m),
+  );
+
+  static const _topicWords = <String>[
+    'loop',
+    'loops',
+    'for',
+    'while',
+    'function',
+    'functions',
+    'def',
+    'string',
+    'strings',
+    'list',
+    'lists',
+    'append',
+    'dict',
+    'dictionary',
+    'condition',
+    'conditions',
+    'if',
+    'else',
+    'variable',
+    'variables',
+    'input',
+    'quiz',
+    'challenge',
+  ];
+
+  /// True when the message names a topic the offline tutor can teach, so the
+  /// generic debugging answer does not pre-empt the specific one.
+  bool _mentionsTopic(String m) => _matchesWord(m, _topicWords);
 
   void _clearQuiz() {
     _pendingAnswer = null;
