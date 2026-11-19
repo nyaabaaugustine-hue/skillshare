@@ -153,34 +153,52 @@ stale caveats behind.
 26. **`android/app/build.gradle.kts` still carries the `flutter create`
     TODO comment** about choosing a unique application id.
 27. **iOS has never been built.** The `ios/` directory is scaffolding only.
+28. **`flutter_tts` is the last plugin that applies the Kotlin Gradle Plugin
+    (KGP).** `flutter build apk` prints:
+
+    ```
+    WARNING: Your app uses the following plugins that apply Kotlin Gradle Plugin
+    (KGP): flutter_tts
+    Future versions of Flutter will fail to build if your app uses plugins that
+    apply KGP.
+    ```
+
+    The trigger is `apply plugin: 'kotlin-android'` in
+    `flutter_tts/android/build.gradle`; the latest release (4.2.5) still has it,
+    so a version bump cannot clear the warning. It is harmless today (the app
+    builds on AGP 9.1.0 with `android.builtInKotlin=false`) but becomes a hard
+    failure once Flutter removes KGP support. Fix by tracking `flutter_tts` for a
+    release that adopts Built-in Kotlin, or by removing the plugin if TTS is not
+    used. Migration guide:
+    https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin
 
 ## Product and policy
 
-28. **`learnerRef` is an anonymous local id.** Nothing binds it to a real
+29. **`learnerRef` is an anonymous local id.** Nothing binds it to a real
     learner. Doing so is a server-side decision with real privacy consequences
     for minors and has not been made.
-29. **No parental/guardian consent flow, no data-deletion request flow, no
+30. **No parental/guardian consent flow, no data-deletion request flow, no
     terms of service, no privacy policy text.** These are required before this
     app is used by under-13s in most jurisdictions, including Ghana's Data
     Protection Act, 2012 (Act 843).
-30. **Accessibility is designed for, not audited.** Touch targets are ≥48 dp,
+31. **Accessibility is designed for, not audited.** Touch targets are ≥48 dp,
     text uses scalable styles, and there are no fixed-size text boxes — but
     nothing has been checked with TalkBack, a large font scale, or by anyone
     with a visual impairment.
-31. **English only.** No localisation, and no right-to-left support.
-32. **The exercise set is eight hard-coded items** inside `MockLmsClient`
+32. **English only.** No localisation, and no right-to-left support.
+33. **The exercise set is eight hard-coded items** inside `MockLmsClient`
     (hello-world, variables, arithmetic, conditions, loops, functions, lists,
     input), plus whatever the LMS eventually sends. There is no authoring tool.
-33. **No onboarding or tutorial.** The first-run experience is the home
+34. **No onboarding or tutorial.** The first-run experience is the home
     screen.
 
 ## Test suite caveats
 
-34. **The real-execution tests skip (they do not fail) when no interpreter is
+35. **The real-execution tests skip (they do not fail) when no interpreter is
     available**, and print an explicit skip message naming the interpreter they
     looked for. A CI machine without Python would show them as skipped, not
     green.
-35. **Widget tests cannot touch the database directly.** `testWidgets` runs its
+36. **Widget tests cannot touch the database directly.** `testWidgets` runs its
     body in a fake-async zone where timers only fire when the clock is
     advanced, but SQLite's FFI path schedules a real internal timer. Awaiting
     the database straight from a test body therefore hangs until the test
@@ -192,23 +210,23 @@ stale caveats behind.
     hang, not a failure message. The app itself uses the isolate-backed
     `databaseFactoryFfi` on device; only the tests use
     `databaseFactoryFfiNoIsolate`.
-36. **The widget tests use a fake Python runtime**, so they prove the UI
+37. **The widget tests use a fake Python runtime**, so they prove the UI
     wiring, not interpreter behaviour; real execution is covered separately
     by `python_runtime_process_test.dart`. Likewise they use a fake
     connectivity service, so no test has ever observed a real network change.
-37. **Widget tests still avoid `pumpAndSettle`** and advance time in fixed
+38. **Widget tests still avoid `pumpAndSettle`** and advance time in fixed
     steps, because an indeterminate progress indicator makes `pumpAndSettle`
     hang forever. This means they can pass while an animation is still
     running.
-38. **There are no integration tests** (`integration_test/`), no golden tests,
+39. **There are no integration tests** (`integration_test/`), no golden tests,
     and no performance tests.
-39. **No fuzzing of the executor.** The Python executor runs arbitrary learner
+40. **No fuzzing of the executor.** The Python executor runs arbitrary learner
     code; a fuzzer over the job-file parser would be a cheap, high-value
     addition.
 
 ## Desktop and web builds
 
-40. **The Windows desktop build works only because of a workaround.**
+41. **The Windows desktop build works only because of a workaround.**
     `flutter build windows` needs one symlink per Windows plugin, and creating
     a real symlink on Windows requires `SeCreateSymbolicLinkPrivilege`, which a
     non-administrator only has when Developer Mode is enabled. Developer Mode is
@@ -221,14 +239,14 @@ stale caveats behind.
     before it was relied on. Enabling Developer Mode is still the supported
     route; run the script after `flutter pub get` and before the build, because
     a `pub get` that changes the plugin list recreates the directory.
-41. **The desktop artifact is a Debug build.** `skillbridge_python_lab.exe`
+42. **The desktop artifact is a Debug build.** `skillbridge_python_lab.exe`
     (1.2 MB) links `flutter_windows.dll` (46 MB) and an unstripped
     `python314_d.dll` (~14 MB), and has not been optimised. No release build
     has been produced.
 
 ## Lesson content
 
-42. **The lessons are hand-authored seed copy, not LMS content.** All eight
+43. **The lessons are hand-authored seed copy, not LMS content.** All eight
     lessons live inline as Dart string literals inside
     `MockLmsClient.sampleExercises()`. There is no authoring tool, no content
     pipeline, no way for a teacher to edit a sentence without a code change and
@@ -236,7 +254,7 @@ stale caveats behind.
     children. `HttpLmsClient` does not parse a `lesson` field yet either, so
     the wire contract for lessons is one of the open questions in
     `docs/LMS_INTEGRATION.md` rather than a settled one.
-43. **Lesson progress is not persisted.** A learner who leaves part-way through
+44. **Lesson progress is not persisted.** A learner who leaves part-way through
     a lesson starts again at step 1: the screen holds its position only in
     widget state. Completion is not recorded anywhere, not shown as a tick or a
     "reviewed" marker, and not reported to the LMS - so "you have already done

@@ -1,12 +1,11 @@
 # Shared accounts: one login on the phone and in the browser
 
-> **Migration notice (2026-11-17):** This page documents the previous Supabase
-> implementation and is not current setup guidance. The selected target is the
-> website's Neon Auth identity. Flutter still uses Supabase Auth, and its Neon
-> session persistence, OTP, organization selection, and token refresh are not
-> implemented yet. Do not treat cross-app shared Neon sign-in or remote tutor
-> authorization as production-ready until that migration and real-account
-> verification are complete.
+> **Migration notice (2026-11-18):** This page documents the previous Supabase
+> implementation and is not current setup guidance. The website and Flutter
+> app now use Neon Auth. Accounts created in the former Supabase or device-local
+> account stores have not been imported into Neon Auth; those accounts cannot
+> sign in until they are migrated or recreated there. Production registration
+> and login still need end-to-end verification with a test account.
 
 The Android app and the Flutter web build sign in against the **same Supabase
 project**, so an account created on a phone works on a computer and the other

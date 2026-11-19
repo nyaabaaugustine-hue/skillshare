@@ -139,8 +139,33 @@ IndexedDB, so the offline story still holds on web.
 To serve it:
 
 ```powershell
-flutter run -d web-server --web-port 8787 --web-hostname 127.0.0.1
+flutter run -d web-server --web-port 8080 --web-hostname 127.0.0.1 `
+  --dart-define=SB_API_BASE_URL=http://localhost:3001
 ```
+
+The website's `NEXT_PUBLIC_LEARN_URL` (or `FLUTTER_APP_ORIGIN`) must match the
+Flutter app origin. The tutor and sign-in APIs use this exact origin for CORS.
+`SB_API_BASE_URL` points the Flutter build at the website API; without it, the
+app intentionally uses only its offline tutor.
+
+### Hosting the web build
+
+Use the project script, which validates the API origin and regenerates the wasm
+assets before building:
+
+```powershell
+.\tool\build_web.ps1                        # or: .\tool\build_web.ps1 -SiteOrigin https://your-site.example
+```
+
+Publish `build/web` to any static host (Cloudflare Pages, Netlify, or a Vercel
+static project). Then point the website at that origin in the Vercel env:
+
+* `NEXT_PUBLIC_LEARN_URL` — drives the `/learn` iframe `src`.
+* `FLUTTER_APP_ORIGIN` — the allowed frame origin and the tutor CORS allow-list.
+
+Both must be the exact origin (scheme + host + port). The website builds its
+CSP `frame-src` from them, so a mismatch makes `/learn` show its "not linked"
+notice instead of the app.
 
 The **Wasm** target does *not* build: `serious_python` imports `dart:ffi`, and
 dart2js rejects it without `--enable-experimental-ffi`. The default JS target is
@@ -226,6 +251,7 @@ has never been executed on a device — see `docs/KNOWN_LIMITATIONS.md`.
 ```powershell
 flutter build apk --release `
   --dart-define=SB_ENV=staging `
+  --dart-define=SB_API_BASE_URL=https://academy-skillshare.vercel.app `
   --dart-define=SB_LMS_BASE_URL=https://lms.example.org/api/v1 `
   --dart-define=SB_LMS_CLIENT_ID=skillbridge-android `
   --dart-define=SB_LEADERBOARD_URL=https://academy-skillshare.vercel.app
@@ -233,16 +259,45 @@ flutter build apk --release `
 
 Output: `build/app/outputs/flutter-apk/app-release.apk`.
 
-**Release signing is not configured.** `android/app/build.gradle.kts` currently
-signs the release build with the debug key so that `flutter run --release` works
-during development. Before distributing anything:
+`android/app/build.gradle.kts` signs the release build from a git-ignored
+`android/keystore.properties` when that file exists, and otherwise falls back to
+the debug key so `flutter run --release` keeps working locally. Configure the
+real signing before distributing anything — see
+[Release signing](#4-release-signing).
 
-1. Create an upload keystore (`keytool -genkey -v -keystore ...`).
-2. Add a `keystore.properties` file (never commit it) with `storeFile`,
-   `storePassword`, `keyAlias`, `keyPassword`.
-3. Replace `signingConfig = signingConfigs.getByName("debug")` with a real
-   `signingConfig` loaded from that file.
-4. Prefer Play App Signing so Google holds the app-signing key.
+### 4. Release signing
+
+One-off: generate an upload keystore. It is kept out of the repo — `*.jks` is
+git-ignored.
+
+```powershell
+keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+```
+
+Copy `android/keystore.properties.example` to `android/keystore.properties`
+(git-ignored) and fill it in. `storeFile` is resolved relative to `android/app`,
+so `../upload-keystore.jks` means `android/upload-keystore.jks`:
+
+```
+storeFile=../upload-keystore.jks
+storePassword=<your keystore password>
+keyAlias=upload
+keyPassword=<your key password>
+```
+
+Build the App Bundle Play needs, with the same `--dart-define`s as the APK:
+
+```powershell
+flutter build appbundle --release `
+  --dart-define=SB_ENV=staging `
+  --dart-define=SB_API_BASE_URL=https://academy-skillshare.vercel.app `
+  --dart-define=SB_LMS_BASE_URL=https://lms.example.org/api/v1 `
+  --dart-define=SB_LMS_CLIENT_ID=skillbridge-android `
+  --dart-define=SB_LEADERBOARD_URL=https://academy-skillshare.vercel.app
+```
+
+Output: `build/app/outputs/bundle/release/app-release.aab`. Prefer Play App
+Signing so Google holds the app-signing key and only the upload key lives here.
 
 ### Build variants
 

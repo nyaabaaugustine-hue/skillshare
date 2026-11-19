@@ -47,6 +47,8 @@ __pycache__/
 *.py[cod]
 outputs/
 tool/*.txt
+*.log
+.toolcache/
 ios/Flutter/ephemeral/
 web/sqflite_sw.js
 web/sqlite3.wasm
