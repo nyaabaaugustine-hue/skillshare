@@ -74,10 +74,10 @@ class _ReadStepViewState extends State<ReadStepView> {
                       key: ValueKey('p$i'),
                       child: Text(
                         widget.step.paragraphs[i],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           height: 1.6,
-                          color: SkillBridgeColors.textPrimary,
+                          color: context.appColors.textPrimary,
                         ),
                       ),
                     ),
@@ -152,10 +152,10 @@ class _CodeWalkStepViewState extends State<CodeWalkStepView> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
-                    color: SkillBridgeColors.surface,
+                    color: context.appColors.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: SkillBridgeColors.surfaceHigh,
+                      color: context.appColors.surfaceHigh,
                       width: 2,
                     ),
                   ),
@@ -194,10 +194,10 @@ class _CodeWalkStepViewState extends State<CodeWalkStepView> {
                               Expanded(
                                 child: Text(
                                   lines[i].code,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'monospace',
                                     fontSize: 16,
-                                    color: SkillBridgeColors.textPrimary,
+                                    color: context.appColors.textPrimary,
                                   ),
                                 ),
                               ),
@@ -215,10 +215,10 @@ class _CodeWalkStepViewState extends State<CodeWalkStepView> {
                         ? lines[_line].note
                         : 'Tap START to watch Python read the code.',
                     key: ValueKey(_line),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       height: 1.5,
-                      color: SkillBridgeColors.textPrimary,
+                      color: context.appColors.textPrimary,
                     ),
                   ),
                 ),
@@ -234,12 +234,12 @@ class _CodeWalkStepViewState extends State<CodeWalkStepView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'OUTPUT',
                         style: TextStyle(
                           fontSize: 12,
                           letterSpacing: 2,
-                          color: SkillBridgeColors.textMuted,
+                          color: context.appColors.textMuted,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -305,11 +305,12 @@ class _QuizStepViewState extends State<QuizStepView> {
     _selected = null;
   });
 
-  Widget _option(int i) {
+  Widget _option(BuildContext context, int i) {
+    final palette = context.appColors;
     final selected = _selected == i;
     var border = selected
         ? SkillBridgeColors.primary
-        : SkillBridgeColors.surfaceHigh;
+        : palette.surfaceHigh;
     if (_checked && selected) {
       border = _isCorrect ? SkillBridgeColors.success : SkillBridgeColors.error;
     }
@@ -325,7 +326,7 @@ class _QuizStepViewState extends State<QuizStepView> {
           constraints: const BoxConstraints(minHeight: 64),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
-            color: SkillBridgeColors.surface,
+            color: palette.surface,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: border, width: 2),
             boxShadow: [BoxShadow(color: border, offset: const Offset(0, 3))],
@@ -335,9 +336,9 @@ class _QuizStepViewState extends State<QuizStepView> {
               Expanded(
                 child: Text(
                   widget.step.options[i],
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 17,
-                    color: SkillBridgeColors.textPrimary,
+                    color: palette.textPrimary,
                   ),
                 ),
               ),
@@ -377,7 +378,8 @@ class _QuizStepViewState extends State<QuizStepView> {
     return Padding(padding: const EdgeInsets.only(bottom: 14), child: tile);
   }
 
-  Widget _banner() {
+  Widget _banner(BuildContext context) {
+    final palette = context.appColors;
     final color = _isCorrect
         ? SkillBridgeColors.success
         : SkillBridgeColors.error;
@@ -387,7 +389,7 @@ class _QuizStepViewState extends State<QuizStepView> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color, width: 2),
       ),
@@ -405,10 +407,10 @@ class _QuizStepViewState extends State<QuizStepView> {
           const SizedBox(height: 4),
           Text(
             widget.step.explanation,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               height: 1.4,
-              color: SkillBridgeColors.textPrimary,
+              color: palette.textPrimary,
             ),
           ),
         ],
@@ -443,7 +445,8 @@ class _QuizStepViewState extends State<QuizStepView> {
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 24),
-                for (var i = 0; i < widget.step.options.length; i++) _option(i),
+                for (var i = 0; i < widget.step.options.length; i++)
+                  _option(context, i),
               ],
             ),
           ),
@@ -461,7 +464,7 @@ class _QuizStepViewState extends State<QuizStepView> {
             ),
           ),
           child: _checked
-              ? _banner()
+              ? _banner(context)
               : const SizedBox.shrink(key: ValueKey('none')),
         ),
         ChunkyButton(label: label, onPressed: action),

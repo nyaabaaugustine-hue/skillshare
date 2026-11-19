@@ -222,12 +222,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     ),
                 ],
                 const SizedBox(height: 18),
-                const Text(
+                Text(
                   'Ranks use the total score across the twelve steps; more '
                   'finished steps and higher scores both move you up. Photos are '
                   'visible to everyone on this board.',
                   style: TextStyle(
-                    color: SkillBridgeColors.textMuted,
+                    color: context.appColors.textMuted,
                     fontSize: 12,
                     height: 1.5,
                   ),
@@ -254,7 +254,7 @@ class _HeaderCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: SkillBridgeColors.heroGradient,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Row(
         children: [
@@ -272,8 +272,8 @@ class _HeaderCard extends StatelessWidget {
               children: [
                 Text(
                   me == null ? 'Not ranked yet' : 'Rank #${me!.rank}',
-                  style: const TextStyle(
-                    color: SkillBridgeColors.textPrimary,
+                  style: TextStyle(
+                    color: context.appColors.textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
@@ -285,8 +285,8 @@ class _HeaderCard extends StatelessWidget {
                       : '${me!.stepsCompleted} steps · '
                             '${me!.practicesCompleted} practice · '
                             '${me!.score} points · ${me!.average}% average',
-                  style: const TextStyle(
-                    color: SkillBridgeColors.textMuted,
+                  style: TextStyle(
+                    color: context.appColors.textMuted,
                     fontSize: 12.5,
                     height: 1.4,
                   ),
@@ -339,14 +339,14 @@ class _RankRow extends StatelessWidget {
         decoration: BoxDecoration(
           color: isMe
               ? SkillBridgeColors.primary.withValues(alpha: 0.12)
-              : SkillBridgeColors.surface,
+              : context.appColors.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isMe
                 ? SkillBridgeColors.primary.withValues(alpha: 0.55)
                 : top
                 ? SkillBridgeColors.accent.withValues(alpha: 0.35)
-                : SkillBridgeColors.outline,
+                : context.appColors.outline,
           ),
         ),
         child: Row(
@@ -359,7 +359,7 @@ class _RankRow extends StatelessWidget {
                 style: TextStyle(
                   color: top
                       ? SkillBridgeColors.accent
-                      : SkillBridgeColors.textMuted,
+                      : context.appColors.textMuted,
                   fontSize: _medal.isNotEmpty ? 18 : 14,
                   fontWeight: FontWeight.w800,
                 ),
@@ -380,8 +380,8 @@ class _RankRow extends StatelessWidget {
                     isMe ? '${entry.name} (you)' : entry.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: SkillBridgeColors.textPrimary,
+                    style: TextStyle(
+                      color: context.appColors.textPrimary,
                       fontSize: 14.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -393,8 +393,8 @@ class _RankRow extends StatelessWidget {
                     '${entry.practicesCompleted} practice',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: SkillBridgeColors.textMuted,
+                    style: TextStyle(
+                      color: context.appColors.textMuted,
                       fontSize: 11.5,
                     ),
                   ),
@@ -413,10 +413,10 @@ class _RankRow extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const Text(
+                Text(
                   'points',
                   style: TextStyle(
-                    color: SkillBridgeColors.textMuted,
+                    color: context.appColors.textMuted,
                     fontSize: 10.5,
                   ),
                 ),
@@ -450,8 +450,8 @@ class _Avatar extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: SkillBridgeColors.surfaceHigh,
-        border: Border.all(color: SkillBridgeColors.outline),
+        color: context.appColors.surfaceHigh,
+        border: Border.all(color: context.appColors.outline),
         image: image == null
             ? null
             : DecorationImage(image: image!, fit: BoxFit.cover),
@@ -461,7 +461,7 @@ class _Avatar extends StatelessWidget {
           ? Text(
               _initials,
               style: TextStyle(
-                color: SkillBridgeColors.textPrimary,
+                color: context.appColors.textPrimary,
                 fontSize: size * 0.34,
                 fontWeight: FontWeight.w800,
               ),
@@ -491,19 +491,19 @@ class _MessageCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: SkillBridgeColors.textMuted, size: 26),
+          Icon(icon, color: context.appColors.textMuted, size: 26),
           const SizedBox(height: 10),
           Text(
             title,
-            style: const TextStyle(
-              color: SkillBridgeColors.textPrimary,
+            style: TextStyle(
+              color: context.appColors.textPrimary,
               fontSize: 16,
               fontWeight: FontWeight.w800,
             ),
@@ -511,8 +511,8 @@ class _MessageCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             message,
-            style: const TextStyle(
-              color: SkillBridgeColors.textMuted,
+            style: TextStyle(
+              color: context.appColors.textMuted,
               fontSize: 13,
               height: 1.5,
             ),

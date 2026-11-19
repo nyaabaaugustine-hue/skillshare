@@ -106,6 +106,26 @@ void main() {
       expect(service.modeLabel, 'Offline fallback');
     });
 
+    test('an empty online stream is reported as an offline fallback', () async {
+      final service = TutorService(
+        remoteStream: ({
+          required String message,
+          required List<TutorChatTurn> history,
+          required TutorStudentContext context,
+          required TutorTeachingStyle style,
+        }) async* {},
+      );
+
+      final events = await service.askStream('Explain loops').toList();
+
+      expect(events.single.text, contains(TutorService.offlineNotice));
+      expect(
+        service.lastFailure,
+        'The online AI tutor returned an empty reply.',
+      );
+      expect(service.modeLabel, 'Offline fallback');
+    });
+
     test('open-ended answers are deterministic', () async {
       final first = await TutorService().ask('zzz qqq wibble');
       final second = await TutorService().ask('zzz qqq wibble');
@@ -129,6 +149,22 @@ void main() {
       expect(find.text('AI Tutor'), findsOneWidget);
       expect(find.text('Explain loops'), findsOneWidget);
       expect(find.text('Quiz me'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('welcome layout fits a phone-width viewport', (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(theme: buildDarkTheme(), home: const AiTutorScreen()),
+      );
+      await tester.pump();
+
+      expect(find.text('AI Tutor'), findsOneWidget);
+      expect(find.text('Fix my code'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
       await tester.pumpWidget(const SizedBox());
     });
 

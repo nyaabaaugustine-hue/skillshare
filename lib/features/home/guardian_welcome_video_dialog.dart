@@ -68,7 +68,7 @@ class _GuardianWelcomeVideoDialogState
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
-      backgroundColor: SkillBridgeColors.surface,
+      backgroundColor: context.appColors.surface,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 680),
         child: SingleChildScrollView(
@@ -80,11 +80,11 @@ class _GuardianWelcomeVideoDialogState
                 padding: const EdgeInsets.fromLTRB(20, 18, 12, 12),
                 child: Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Welcome to SkillBridge Academy',
                         style: TextStyle(
-                          color: SkillBridgeColors.textPrimary,
+                          color: context.appColors.textPrimary,
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                         ),
@@ -141,10 +141,10 @@ class _GuardianWelcomeVideoDialogState
                 padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
                 child: Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'A short introduction for parents and guardians.',
-                        style: TextStyle(color: SkillBridgeColors.textMuted),
+                        style: TextStyle(color: context.appColors.textMuted),
                       ),
                     ),
                     OutlinedButton.icon(

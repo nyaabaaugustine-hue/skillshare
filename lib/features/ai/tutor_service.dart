@@ -262,7 +262,7 @@ class TutorService {
       _lastFailure = error is TutorException
           ? error.message
           : 'The online tutor is unavailable right now.';
-      if (output.isNotEmpty) {
+      if (output.toString().trim().isNotEmpty) {
         _remember(cleanMessage, output.toString());
         yield const TutorStreamEvent(
           text: '\n\nThe connection paused. Please retry if the answer is incomplete.',
@@ -276,6 +276,7 @@ class TutorService {
       _remember(cleanMessage, output.toString());
       return;
     }
+    _lastFailure = 'The online AI tutor returned an empty reply.';
     yield TutorStreamEvent(text: _offlineReply(cleanMessage));
   }
 
@@ -290,21 +291,21 @@ class TutorService {
 
     if (!_mentionsTopic(m) &&
         _matchesWord(m, const [
-      'error',
-      'errors',
-      'crash',
-      'crashing',
-      'bug',
-      'buggy',
-      'fix',
-      'fixing',
-      'broken',
-      'traceback',
-      'exception',
-      'not working',
-      'wrong output',
-      'debug',
-    ])) {
+          'error',
+          'errors',
+          'crash',
+          'crashing',
+          'bug',
+          'buggy',
+          'fix',
+          'fixing',
+          'broken',
+          'traceback',
+          'exception',
+          'not working',
+          'wrong output',
+          'debug',
+        ])) {
       _clearQuiz();
       return 'Let us read the error like a detective:\n\n'
           '1. Go to the LAST line of the traceback — that names the real '
@@ -446,7 +447,12 @@ class TutorService {
           'for loop walks every item in order.';
     }
 
-    if (_matchesWord(m, const ['dict', 'dictionary', 'key-value', 'key value'])) {
+    if (_matchesWord(m, const [
+      'dict',
+      'dictionary',
+      'key-value',
+      'key value',
+    ])) {
       _clearQuiz();
       return 'A dictionary stores pairs: a key that points to a value.\n\n'
           '```python\n'
@@ -621,9 +627,9 @@ class TutorService {
   /// Whole-word/phrase match. Plain `contains` made "prefix" a debugging
   /// question, "listen" a list question and "addict" a dictionary question.
   bool _matchesWord(String m, List<String> phrases) => phrases.any(
-    (phrase) => RegExp(
-      '(^|[^a-z0-9_])${RegExp.escape(phrase)}([^a-z0-9_]|\$)',
-    ).hasMatch(m),
+    (phrase) =>
+        RegExp('(^|[^a-z0-9_])${RegExp.escape(phrase)}([^a-z0-9_]|\$)')
+            .hasMatch(m),
   );
 
   static const _topicWords = <String>[

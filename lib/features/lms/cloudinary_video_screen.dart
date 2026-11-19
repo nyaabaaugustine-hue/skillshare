@@ -78,9 +78,9 @@ class _CloudinaryVideoScreenState extends State<CloudinaryVideoScreen> {
             ),
             Text(
               widget.subtitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: SkillBridgeColors.textMuted,
+                color: context.appColors.textMuted,
               ),
             ),
           ],
@@ -568,7 +568,7 @@ class _LoadingOrError extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               hasError ? 'Check your connection and try again.' : 'Connecting securely to the SkillBridge Academy video library.',
-              style: const TextStyle(color: SkillBridgeColors.textMuted),
+              style: TextStyle(color: context.appColors.textMuted),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 18),

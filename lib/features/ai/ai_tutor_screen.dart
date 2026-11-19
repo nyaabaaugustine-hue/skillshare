@@ -27,8 +27,8 @@ import 'tutor_visual_aid.dart';
 /// Signed-in learners may also use the authenticated Cloudflare tutor. Once
 /// messages exist, learners get a real chat: bubbles on both sides,
 /// code in a monospace block with a copy button, quick follow-up chips and a
-/// typing indicator while the tutor thinks. All answers come from
-/// [TutorService], which runs locally, so replies work with no network.
+/// typing indicator while the tutor thinks. [TutorService] streams online
+/// answers when configured and keeps the offline tutor available as fallback.
 class AiTutorScreen extends StatefulWidget {
   const AiTutorScreen({super.key, this.service});
 
@@ -561,25 +561,49 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
   @override
   Widget build(BuildContext context) {
     final hasMessages = _messages.isNotEmpty;
+    final compactHeader = MediaQuery.sizeOf(context).width < 420;
+    final mode = _notice != null
+        ? 'Fallback'
+        : _service.modeLabel.contains('Cloudflare')
+        ? 'Online'
+        : 'Offline';
     return Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
             Container(
-              width: 32,
-              height: 32,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: SkillBridgeColors.brandGradient,
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: SkillBridgeColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: SkillBridgeColors.primary.withValues(alpha: 0.24),
+                ),
               ),
               child: const Icon(
-                Icons.auto_awesome_rounded,
-                color: Colors.white,
-                size: 17,
+                Icons.code_rounded,
+                color: SkillBridgeColors.primary,
+                size: 19,
               ),
             ),
-            const SizedBox(width: 10),
-            const Text('AI Tutor'),
+            const SizedBox(width: 11),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('AI Tutor'),
+                if (!compactHeader)
+                  Text(
+                    'Python tutor',
+                    style: TextStyle(
+                      color: context.appColors.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
         actions: [
@@ -589,35 +613,46 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
               onPressed: _busy ? null : _clearChat,
               icon: const Icon(Icons.add_comment_rounded, size: 22),
             ),
-          Container(
-            margin: const EdgeInsets.only(right: 14, left: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-            decoration: BoxDecoration(
-              color: SkillBridgeColors.accent.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: SkillBridgeColors.accent.withValues(alpha: 0.45),
+          Tooltip(
+            message: mode,
+            child: Semantics(
+              label: 'Tutor connection: $mode',
+              child: Container(
+                margin: const EdgeInsets.only(right: 14, left: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: context.appColors.surfaceHigh,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: context.appColors.outline),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      mode == 'Online'
+                          ? Icons.cloud_done_outlined
+                          : Icons.cloud_off_outlined,
+                      color: mode == 'Online'
+                          ? SkillBridgeColors.primary
+                          : context.appColors.textMuted,
+                      size: 14,
+                    ),
+                    if (!compactHeader) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        mode,
+                        style: TextStyle(
+                          color: context.appColors.textMuted,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.bolt_rounded,
-                  color: SkillBridgeColors.accent,
-                  size: 14,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _notice == null
-                      ? _service.modeLabel
-                      : 'Offline fallback',
-                  style: const TextStyle(
-                    color: SkillBridgeColors.accent,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
             ),
           ),
         ],
@@ -678,8 +713,7 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
                   ),
                 ),
                 if (hasMessages) _FollowUpChips(enabled: !_busy, onPick: _send),
-                if (_notice case final notice?)
-                  _TutorNotice(message: notice),
+                if (_notice case final notice?) _TutorNotice(message: notice),
                 if (_pendingAttachment case final attachment?)
                   _AttachmentPreview(
                     attachment: attachment,
@@ -771,113 +805,127 @@ class _WelcomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(22, 20, 22, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        SkillBridgeColors.primary.withValues(alpha: 0.32),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                  child: const Center(
-                    child: CodeBuddy(size: 108, mood: BuddyMood.thinking),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: "Let's learn ",
-                        style: TextStyle(
-                          color: SkillBridgeColors.textPrimary,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      TextSpan(
-                        text: 'Python',
-                        style: TextStyle(
-                          color: SkillBridgeColors.primary,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          decoration: TextDecoration.underline,
-                          decorationColor: SkillBridgeColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Ask anything — loops, errors, ideas, quizzes.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: SkillBridgeColors.textMuted,
-                    fontSize: 15,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.15,
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 500;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Container(
+                padding: EdgeInsets.all(compact ? 18 : 24),
+                decoration: BoxDecoration(
+                  color: context.appColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: context.appColors.outline),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'YOUR PYTHON PARTNER',
+                            style: TextStyle(
+                              color: SkillBridgeColors.primary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(text: "Let's learn\n"),
+                                TextSpan(
+                                  text: 'Python.',
+                                  style: TextStyle(
+                                    color: SkillBridgeColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            style: TextStyle(
+                              color: context.appColors.textPrimary,
+                              fontSize: 30,
+                              height: 1.04,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.8,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            compact
+                                ? 'Ask a question. Learn one step at a time.'
+                                : 'Bring a question, a bug, or a new idea. We will work through it together.',
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
+                              fontSize: 13,
+                              height: 1.45,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: compact ? 4 : 20),
+                    CodeBuddy(
+                      size: compact ? 82 : 122,
+                      mood: BuddyMood.thinking,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Start with a topic',
+                style: TextStyle(
+                  color: context.appColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
               _PromptCard(
                 icon: Icons.sync_rounded,
-                iconColor: const Color(0xFF1697F5),
                 title: 'Explain loops',
-                subtitle: 'for & while, simply',
+                subtitle: 'A clear guide to for and while',
+                featured: true,
                 onTap: enabled
                     ? () => onPick('Explain for and while loops simply')
                     : null,
               ),
-              _PromptCard(
-                icon: Icons.help_outline_rounded,
-                iconColor: const Color(0xFFD0B5FF),
-                title: 'Quiz me',
-                subtitle: 'quick checkpoint',
-                onTap: enabled ? () => onPick('Quiz me') : null,
-              ),
-              _PromptCard(
-                icon: Icons.build_rounded,
-                iconColor: const Color(0xFFFFB81C),
-                title: 'Fix my code',
-                subtitle: 'paste the error',
-                onTap: enabled
-                    ? () => onPick('Help me fix this Python error')
-                    : null,
-              ),
-              _PromptCard(
-                icon: Icons.emoji_events_rounded,
-                iconColor: const Color(0xFF7CF000),
-                title: 'Challenge',
-                subtitle: "today's pickup",
-                onTap: enabled
-                    ? () => onPick('Give me a fun Python challenge for today')
-                    : null,
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 9,
+                runSpacing: 9,
+                children: [
+                  _PromptCard(
+                    icon: Icons.quiz_outlined,
+                    title: 'Quiz me',
+                    onTap: enabled ? () => onPick('Quiz me') : null,
+                  ),
+                  _PromptCard(
+                    icon: Icons.build_outlined,
+                    title: 'Fix my code',
+                    onTap: enabled
+                        ? () => onPick('Help me fix this Python error')
+                        : null,
+                  ),
+                  _PromptCard(
+                    icon: Icons.bolt_outlined,
+                    title: 'Challenge',
+                    onTap: enabled
+                        ? () =>
+                              onPick('Give me a fun Python challenge for today')
+                        : null,
+                  ),
+                ],
               ),
             ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -886,17 +934,17 @@ class _WelcomeView extends StatelessWidget {
 class _PromptCard extends StatelessWidget {
   const _PromptCard({
     required this.icon,
-    required this.iconColor,
     required this.title,
-    required this.subtitle,
     required this.onTap,
+    this.subtitle,
+    this.featured = false,
   });
 
   final IconData icon;
-  final Color iconColor;
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final VoidCallback? onTap;
+  final bool featured;
 
   @override
   Widget build(BuildContext context) {
@@ -907,60 +955,81 @@ class _PromptCard extends StatelessWidget {
       child: Pressable(
         enabled: onTap != null,
         child: Material(
-          color: SkillBridgeColors.surface,
-          borderRadius: BorderRadius.circular(20),
+          color: featured
+              ? SkillBridgeColors.primary.withValues(alpha: 0.10)
+              : context.appColors.surfaceHigh,
+          borderRadius: BorderRadius.circular(featured ? 18 : 14),
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(featured ? 18 : 14),
             child: Ink(
-              padding: const EdgeInsets.all(14),
+              padding: EdgeInsets.symmetric(
+                horizontal: featured ? 16 : 14,
+                vertical: featured ? 15 : 11,
+              ),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: SkillBridgeColors.outline),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    iconColor.withValues(alpha: 0.10),
-                    Colors.transparent,
-                  ],
+                borderRadius: BorderRadius.circular(featured ? 18 : 14),
+                border: Border.all(
+                  color: featured
+                      ? SkillBridgeColors.primary.withValues(alpha: 0.32)
+                      : context.appColors.outline,
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
+                mainAxisSize: featured ? MainAxisSize.max : MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: iconColor.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(
-                        color: iconColor.withValues(alpha: 0.5),
+                  Icon(
+                    icon,
+                    size: featured ? 21 : 18,
+                    color: SkillBridgeColors.primary,
+                  ),
+                  const SizedBox(width: 11),
+                  if (featured)
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: context.appColors.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (subtitle case final value?) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              value,
+                              style: TextStyle(
+                                color: context.appColors.textMuted,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    child: Icon(icon, color: iconColor, size: 24),
-                  ),
-                  const Spacer(),
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: SkillBridgeColors.textPrimary,
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w800,
+                  if (!featured)
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: context.appColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: SkillBridgeColors.textMuted,
-                      fontSize: 12.5,
-                    ),
+                  Icon(
+                    featured
+                        ? Icons.arrow_forward_rounded
+                        : Icons.arrow_outward_rounded,
+                    color: featured
+                        ? SkillBridgeColors.primary
+                        : context.appColors.textMuted,
+                    size: featured ? 18 : 15,
                   ),
                 ],
               ),
@@ -1031,7 +1100,7 @@ class _MessageBubble extends StatelessWidget {
               style: TextStyle(
                 color: message.error
                     ? SkillBridgeColors.error
-                    : SkillBridgeColors.textPrimary,
+                    : context.appColors.textPrimary,
                 fontSize: 14.5,
                 height: 1.5,
               ),
@@ -1054,20 +1123,13 @@ class _MessageBubble extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 520),
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
             decoration: BoxDecoration(
-              gradient: SkillBridgeColors.brandGradient,
+              color: SkillBridgeColors.primaryDeep,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
                 bottomLeft: Radius.circular(20),
                 bottomRight: Radius.circular(5),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: SkillBridgeColors.primary.withValues(alpha: 0.28),
-                  blurRadius: 14,
-                  offset: const Offset(0, 5),
-                ),
-              ],
             ),
             child: SelectableText(
               message.text,
@@ -1088,10 +1150,10 @@ class _MessageBubble extends StatelessWidget {
         : SkillBridgeColors.primary;
     final borderColor = message.error
         ? SkillBridgeColors.error.withValues(alpha: 0.5)
-        : SkillBridgeColors.outline;
+        : context.appColors.outline;
     final bgColor = message.error
         ? SkillBridgeColors.error.withValues(alpha: 0.08)
-        : SkillBridgeColors.surfaceHigh;
+        : context.appColors.surface;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -1123,10 +1185,10 @@ class _MessageBubble extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: bgColor,
                   borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(5),
-                    topRight: Radius.circular(20),
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
+                    topLeft: Radius.circular(18),
+                    topRight: Radius.circular(18),
+                    bottomLeft: Radius.circular(18),
+                    bottomRight: Radius.circular(18),
                   ),
                   border: Border.all(color: borderColor),
                 ),
@@ -1258,8 +1320,8 @@ class _TutorNotice extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
-                color: SkillBridgeColors.textMuted,
+              style: TextStyle(
+                color: context.appColors.textMuted,
                 fontSize: 12,
                 height: 1.35,
               ),
@@ -1288,9 +1350,9 @@ class _AttachmentPreview extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Row(
         children: [
@@ -1310,8 +1372,8 @@ class _AttachmentPreview extends StatelessWidget {
               remoteAvailable
                   ? 'Screenshot ready. It is sent for analysis only when you send your question.'
                   : 'Screenshot stays on this device. Paste code or an error for offline help.',
-              style: const TextStyle(
-                color: SkillBridgeColors.textMuted,
+              style: TextStyle(
+                color: context.appColors.textMuted,
                 fontSize: 12,
                 height: 1.35,
               ),
@@ -1365,8 +1427,8 @@ class _VideoResource extends StatelessWidget {
                         video.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: SkillBridgeColors.textPrimary,
+                        style: TextStyle(
+                          color: context.appColors.textPrimary,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
@@ -1375,18 +1437,18 @@ class _VideoResource extends StatelessWidget {
                         '${video.channel} · Captions available',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: SkillBridgeColors.textMuted,
+                        style: TextStyle(
+                          color: context.appColors.textMuted,
                           fontSize: 11,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.open_in_new_rounded,
                   size: 15,
-                  color: SkillBridgeColors.textMuted,
+                  color: context.appColors.textMuted,
                 ),
               ],
             ),
@@ -1421,12 +1483,12 @@ class _MiniAction extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: SkillBridgeColors.textMuted),
+              Icon(icon, size: 14, color: context.appColors.textMuted),
               const SizedBox(width: 5),
               Text(
                 label,
-                style: const TextStyle(
-                  color: SkillBridgeColors.textMuted,
+                style: TextStyle(
+                  color: context.appColors.textMuted,
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1453,7 +1515,7 @@ class _CodeBlock extends StatelessWidget {
       decoration: BoxDecoration(
         color: SkillBridgeColors.codeSurface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1468,16 +1530,16 @@ class _CodeBlock extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.terminal_rounded,
                   size: 14,
-                  color: SkillBridgeColors.textMuted,
+                  color: context.appColors.textMuted,
                 ),
                 const SizedBox(width: 6),
-                const Text(
+                Text(
                   'PYTHON',
                   style: TextStyle(
-                    color: SkillBridgeColors.textMuted,
+                    color: context.appColors.textMuted,
                     fontSize: 10.5,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,
@@ -1497,8 +1559,8 @@ class _CodeBlock extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: SelectableText(
               code,
-              style: const TextStyle(
-                color: SkillBridgeColors.textPrimary,
+              style: TextStyle(
+                color: context.appColors.textPrimary,
                 fontSize: 13,
                 height: 1.5,
                 fontFamily: 'monospace',
@@ -1571,14 +1633,14 @@ class _TypingIndicatorState extends State<_TypingIndicator>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: SkillBridgeColors.surfaceHigh,
+              color: context.appColors.surfaceHigh,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(5),
                 topRight: Radius.circular(20),
                 bottomLeft: Radius.circular(20),
                 bottomRight: Radius.circular(20),
               ),
-              border: Border.all(color: SkillBridgeColors.outline),
+              border: Border.all(color: context.appColors.outline),
             ),
             child: AnimatedBuilder(
               animation: _controller,
@@ -1652,13 +1714,13 @@ class _FollowUpChips extends StatelessWidget {
                 size: 16,
                 color: enabled
                     ? SkillBridgeColors.primary
-                    : SkillBridgeColors.textMuted,
+                    : context.appColors.textMuted,
               ),
               label: Text(item.$2),
               labelStyle: TextStyle(
                 color: enabled
-                    ? SkillBridgeColors.textPrimary
-                    : SkillBridgeColors.textMuted,
+                    ? context.appColors.textPrimary
+                    : context.appColors.textMuted,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
@@ -1696,9 +1758,9 @@ class _Composer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      decoration: const BoxDecoration(
-        color: SkillBridgeColors.background,
-        border: Border(top: BorderSide(color: SkillBridgeColors.outline)),
+      decoration: BoxDecoration(
+        color: context.appColors.background,
+        border: Border(top: BorderSide(color: context.appColors.outline)),
       ),
       child: ListenableBuilder(
         listenable: Listenable.merge([controller, focusNode]),
@@ -1709,12 +1771,12 @@ class _Composer extends StatelessWidget {
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.only(left: 16, right: 6),
             decoration: BoxDecoration(
-              color: SkillBridgeColors.surface,
+              color: context.appColors.surface,
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
                 color: focused
                     ? SkillBridgeColors.primary
-                    : SkillBridgeColors.outline,
+                    : context.appColors.outline,
                 width: focused ? 1.6 : 1,
               ),
               boxShadow: focused
@@ -1742,7 +1804,7 @@ class _Composer extends StatelessWidget {
                           : Icons.add_photo_alternate_outlined,
                       color: hasAttachment
                           ? SkillBridgeColors.accent
-                          : SkillBridgeColors.textMuted,
+                          : context.appColors.textMuted,
                     ),
                   ),
                 ),
@@ -1757,17 +1819,17 @@ class _Composer extends StatelessWidget {
                     child: TextField(
                       controller: controller,
                       focusNode: focusNode,
-                      style: const TextStyle(
-                        color: SkillBridgeColors.textPrimary,
+                      style: TextStyle(
+                        color: context.appColors.textPrimary,
                         fontSize: 15,
                       ),
                       minLines: 1,
                       maxLines: 4,
                       textCapitalization: TextCapitalization.sentences,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Ask about loops, errors, quizzes\u2026',
                         hintStyle: TextStyle(
-                          color: SkillBridgeColors.textMuted,
+                          color: context.appColors.textMuted,
                           fontSize: 15,
                         ),
                         filled: false,
@@ -1789,7 +1851,7 @@ class _Composer extends StatelessWidget {
                     style: IconButton.styleFrom(
                       foregroundColor: isListening
                           ? SkillBridgeColors.error
-                          : SkillBridgeColors.textMuted,
+                          : context.appColors.textMuted,
                     ),
                     icon: Icon(
                       isListening ? Icons.stop_circle_outlined : Icons.mic_none,
@@ -1810,10 +1872,10 @@ class _Composer extends StatelessWidget {
                       style: IconButton.styleFrom(
                         backgroundColor: ready
                             ? SkillBridgeColors.primary
-                            : SkillBridgeColors.surfaceHigh,
+                            : context.appColors.surfaceHigh,
                         foregroundColor: ready
                             ? SkillBridgeColors.onPrimary
-                            : SkillBridgeColors.textMuted,
+                            : context.appColors.textMuted,
                       ),
                       icon: const Icon(Icons.arrow_upward_rounded, size: 20),
                     ),

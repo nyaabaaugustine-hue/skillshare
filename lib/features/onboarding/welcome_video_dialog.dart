@@ -79,7 +79,7 @@ class _WelcomeVideoDialogState extends State<WelcomeVideoDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      backgroundColor: SkillBridgeColors.surface,
+      backgroundColor: context.appColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
@@ -134,24 +134,24 @@ class _Player extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 16, 10, 10),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Welcome to SkillBridge Academy',
                       style: TextStyle(
-                        color: SkillBridgeColors.textPrimary,
+                        color: context.appColors.textPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.2,
                       ),
                     ),
-                    SizedBox(height: 3),
+                    const SizedBox(height: 3),
                     Text(
                       'English welcome video · under a minute',
                       style: TextStyle(
-                        color: SkillBridgeColors.textMuted,
+                        color: context.appColors.textMuted,
                         fontSize: 12.5,
                       ),
                     ),
@@ -270,16 +270,16 @@ class _VideoState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.cloud_off_rounded,
               size: 36,
-              color: SkillBridgeColors.textMuted,
+              color: context.appColors.textMuted,
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'The welcome video could not load.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: SkillBridgeColors.textMuted),
+              style: TextStyle(color: context.appColors.textMuted),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(

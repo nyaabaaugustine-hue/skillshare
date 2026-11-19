@@ -260,7 +260,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               color: SkillBridgeColors.codeSurface,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: SkillBridgeColors.outline,
+                                color: context.appColors.outline,
                               ),
                             ),
                             child: AnimatedDefaultTextStyle(
@@ -269,7 +269,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 fontFamily: 'monospace',
                                 fontSize: settings.editorFontSize,
                                 height: 1.4,
-                                color: SkillBridgeColors.textPrimary,
+                                color: context.appColors.textPrimary,
                               ),
                               child: const Text(
                                 'print("Hello, SkillBridge Academy!")',
@@ -289,7 +289,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         value: settings.tabSize,
                         underline: const SizedBox.shrink(),
                         borderRadius: BorderRadius.circular(16),
-                        dropdownColor: SkillBridgeColors.surfaceHigh,
+                        dropdownColor: context.appColors.surfaceHigh,
                         onChanged: (v) => settings.setTabSize(v!),
                         items: const [
                           DropdownMenuItem(value: 2, child: Text('2')),
@@ -447,8 +447,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(8, 16, 8, 0),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 16, 8, 0),
                 child: Text(
                   'Python programs run on your device. Local execution is sandboxed by the '
                   'operating system but is not a certified security boundary; only submit code '
@@ -456,7 +456,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.45,
-                    color: SkillBridgeColors.textMuted,
+                    color: context.appColors.textMuted,
                   ),
                 ),
               ),
@@ -606,20 +606,20 @@ class _Group extends StatelessWidget {
     // A Material ancestor is required so the ListTile rows inside paint their
     // background, ripple and ink on this card rather than a hidden DecoratedBox.
     return Material(
-      color: SkillBridgeColors.surface,
+      color: context.appColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(22),
-        side: const BorderSide(color: SkillBridgeColors.outline),
+        side: BorderSide(color: context.appColors.outline),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           for (var i = 0; i < children.length; i++) ...[
             if (i > 0)
-              const Divider(
+              Divider(
                 height: 1,
                 indent: 66,
-                color: SkillBridgeColors.outline,
+                color: context.appColors.outline,
               ),
             children[i],
           ],
@@ -673,8 +673,8 @@ class _SettingTile extends StatelessWidget {
               padding: const EdgeInsets.only(top: 2),
               child: Text(
                 subtitle!,
-                style: const TextStyle(
-                  color: SkillBridgeColors.textMuted,
+                style: TextStyle(
+                  color: context.appColors.textMuted,
                   fontSize: 12.5,
                   height: 1.35,
                 ),
@@ -684,9 +684,9 @@ class _SettingTile extends StatelessWidget {
           trailing ??
           (onTap == null
               ? null
-              : const Icon(
+              : Icon(
                   Icons.chevron_right_rounded,
-                  color: SkillBridgeColors.textMuted,
+                  color: context.appColors.textMuted,
                 )),
     );
     return Pressable(enabled: onTap != null, scale: 0.985, child: tile);

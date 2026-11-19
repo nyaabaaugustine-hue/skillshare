@@ -48,7 +48,7 @@ class TutorVisualAid extends StatelessWidget {
         decoration: BoxDecoration(
           color: SkillBridgeColors.codeSurface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: SkillBridgeColors.outline),
+          border: Border.all(color: context.appColors.outline),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,7 +73,7 @@ class TutorVisualAid extends StatelessWidget {
                     Icon(
                       Icons.arrow_forward_rounded,
                       size: 16,
-                      color: SkillBridgeColors.textMuted,
+                      color: context.appColors.textMuted,
                       semanticLabel: 'then',
                     ),
                 ],
@@ -81,11 +81,11 @@ class TutorVisualAid extends StatelessWidget {
             ),
             if (value.contains('loop')) ...[
               const SizedBox(height: 8),
-              const Center(
+              Center(
                 child: Text(
                   '↶ repeat for each item',
                   style: TextStyle(
-                    color: SkillBridgeColors.textMuted,
+                    color: context.appColors.textMuted,
                     fontSize: 12,
                   ),
                 ),
@@ -112,15 +112,15 @@ class _VisualStep extends StatelessWidget {
       decoration: BoxDecoration(
         color: highlighted
             ? SkillBridgeColors.primary.withValues(alpha: 0.14)
-            : SkillBridgeColors.surfaceHigh,
+            : context.appColors.surfaceHigh,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         label,
         style: TextStyle(
           color: highlighted
-              ? SkillBridgeColors.textPrimary
-              : SkillBridgeColors.textMuted,
+              ? context.appColors.textPrimary
+              : context.appColors.textMuted,
           fontSize: 12,
           fontWeight: FontWeight.w700,
         ),

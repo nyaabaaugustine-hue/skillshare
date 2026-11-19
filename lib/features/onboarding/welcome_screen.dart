@@ -34,12 +34,12 @@ class WelcomeScreen extends StatelessWidget {
                   color: SkillBridgeColors.primary,
                 ),
               ),
-              const Text(
+              Text(
                 'ACADEMY',
                 style: TextStyle(
                   fontSize: 14,
                   letterSpacing: 6,
-                  color: SkillBridgeColors.textMuted,
+                  color: context.appColors.textMuted,
                 ),
               ),
               const Spacer(),

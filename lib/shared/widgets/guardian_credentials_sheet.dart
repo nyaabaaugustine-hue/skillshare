@@ -42,10 +42,10 @@ class _GuardianCredentialsSheet extends StatelessWidget {
     final creds = credentials;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-      decoration: const BoxDecoration(
-        color: SkillBridgeColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border(top: BorderSide(color: SkillBridgeColors.outline)),
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border(top: BorderSide(color: context.appColors.outline)),
       ),
       child: SafeArea(
         top: false,
@@ -58,17 +58,17 @@ class _GuardianCredentialsSheet extends StatelessWidget {
                 width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: SkillBridgeColors.outline,
+                  color: context.appColors.outline,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 18),
-            const Text(
+            Text(
               'Parent / Guardian login created',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: SkillBridgeColors.textPrimary,
+                color: context.appColors.textPrimary,
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
               ),
@@ -78,8 +78,8 @@ class _GuardianCredentialsSheet extends StatelessWidget {
               'Already linked to $studentName — hand these to ${creds.name} '
               'and they can track progress right away.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: SkillBridgeColors.textMuted,
+              style: TextStyle(
+                color: context.appColors.textMuted,
                 fontSize: 13,
                 height: 1.4,
               ),
@@ -103,11 +103,11 @@ class _GuardianCredentialsSheet extends StatelessWidget {
               height: 52,
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'You can reset the parent password later in Settings.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: SkillBridgeColors.textMuted,
+                color: context.appColors.textMuted,
                 fontSize: 11.5,
               ),
             ),
@@ -134,9 +134,9 @@ class _CredentialCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.background,
+        color: context.appColors.background,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Row(
         children: [
@@ -146,8 +146,8 @@ class _CredentialCard extends StatelessWidget {
               children: [
                 Text(
                   label.toUpperCase(),
-                  style: const TextStyle(
-                    color: SkillBridgeColors.textMuted,
+                  style: TextStyle(
+                    color: context.appColors.textMuted,
                     fontSize: 10.5,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,
@@ -156,8 +156,8 @@ class _CredentialCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 SelectableText(
                   value,
-                  style: const TextStyle(
-                    color: SkillBridgeColors.textPrimary,
+                  style: TextStyle(
+                    color: context.appColors.textPrimary,
                     fontSize: 15.5,
                     fontWeight: FontWeight.w700,
                   ),

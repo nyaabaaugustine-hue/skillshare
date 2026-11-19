@@ -174,7 +174,7 @@ class _CourseStatusBar extends StatelessWidget {
             IconButton(
               onPressed: onMenuTap,
               icon: const Icon(Icons.menu_rounded),
-              color: SkillBridgeColors.textPrimary,
+              color: context.appColors.textPrimary,
               tooltip: 'Open menu',
             ),
           const CodeBuddy(size: 64, mood: BuddyMood.happy),
@@ -236,9 +236,9 @@ class _StatPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surfaceHigh,
+        color: context.appColors.surfaceHigh,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -247,8 +247,8 @@ class _StatPill extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             value,
-            style: const TextStyle(
-              color: SkillBridgeColors.textPrimary,
+            style: TextStyle(
+              color: context.appColors.textPrimary,
               fontWeight: FontWeight.w800,
               fontSize: 13,
             ),
@@ -272,9 +272,9 @@ class _UnitCard extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 10, 16, 4),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,8 +307,8 @@ class _UnitCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       controller.course.title,
-                      style: const TextStyle(
-                        color: SkillBridgeColors.textPrimary,
+                      style: TextStyle(
+                        color: context.appColors.textPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                       ),
@@ -321,8 +321,8 @@ class _UnitCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             controller.course.subtitle,
-            style: const TextStyle(
-              color: SkillBridgeColors.textMuted,
+            style: TextStyle(
+              color: context.appColors.textMuted,
               fontSize: 13,
               height: 1.35,
             ),
@@ -344,8 +344,8 @@ class _UnitCard extends StatelessWidget {
             children: [
               Text(
                 '${controller.completedCount} / ${controller.totalSteps} steps',
-                style: const TextStyle(
-                  color: SkillBridgeColors.textPrimary,
+                style: TextStyle(
+                  color: context.appColors.textPrimary,
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
                 ),
@@ -353,8 +353,8 @@ class _UnitCard extends StatelessWidget {
               const Spacer(),
               Text(
                 remaining == 0 ? 'Course complete' : '$remaining to go',
-                style: const TextStyle(
-                  color: SkillBridgeColors.textMuted,
+                style: TextStyle(
+                  color: context.appColors.textMuted,
                   fontSize: 12,
                 ),
               ),
@@ -385,29 +385,29 @@ class _StartDivider extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 6),
       child: Row(
         children: [
-          const Expanded(
-            child: Divider(color: SkillBridgeColors.outline, thickness: 1.5),
+          Expanded(
+            child: Divider(color: context.appColors.outline, thickness: 1.5),
           ),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 12),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: SkillBridgeColors.surfaceHigh,
+              color: context.appColors.surfaceHigh,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: SkillBridgeColors.outline),
+              border: Border.all(color: context.appColors.outline),
             ),
-            child: const Text(
+            child: Text(
               'START',
               style: TextStyle(
-                color: SkillBridgeColors.textMuted,
+                color: context.appColors.textMuted,
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.4,
               ),
             ),
           ),
-          const Expanded(
-            child: Divider(color: SkillBridgeColors.outline, thickness: 1.5),
+          Expanded(
+            child: Divider(color: context.appColors.outline, thickness: 1.5),
           ),
         ],
       ),
@@ -436,12 +436,12 @@ class _PathMessage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(28, 48, 28, 48),
       child: Column(
         children: [
-          Icon(icon, size: 44, color: SkillBridgeColors.textMuted),
+          Icon(icon, size: 44, color: context.appColors.textMuted),
           const SizedBox(height: 14),
           Text(
             title,
-            style: const TextStyle(
-              color: SkillBridgeColors.textPrimary,
+            style: TextStyle(
+              color: context.appColors.textPrimary,
               fontWeight: FontWeight.w800,
               fontSize: 16,
             ),
@@ -450,8 +450,8 @@ class _PathMessage extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: SkillBridgeColors.textMuted,
+            style: TextStyle(
+              color: context.appColors.textMuted,
               fontSize: 13,
               height: 1.4,
             ),
@@ -491,6 +491,8 @@ class _CoursePath extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final steps = controller.course.steps;
+    final outline = context.appColors.outline;
+    final background = context.appColors.background;
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
@@ -518,8 +520,10 @@ class _CoursePath extends StatelessWidget {
                     centers: centers,
                     segmentColors: <Color>[
                       for (var i = 0; i < centers.length - 1; i++)
-                        _colorFor(controller.statusFor(i + 1)),
+                        _colorFor(controller.statusFor(i + 1), outline),
                     ],
+                    lineColor: background,
+                    dotColor: outline.withValues(alpha: 0.35),
                   ),
                 ),
               ),
@@ -549,12 +553,13 @@ class _CoursePath extends StatelessWidget {
     );
   }
 
-  static Color _colorFor(CourseStepStatus status) => switch (status) {
-    CourseStepStatus.completed => SkillBridgeColors.primary,
-    CourseStepStatus.current => SkillBridgeColors.primary,
-    CourseStepStatus.available => SkillBridgeColors.primary,
-    CourseStepStatus.locked => SkillBridgeColors.outline,
-  };
+  static Color _colorFor(CourseStepStatus status, Color lockedColor) =>
+      switch (status) {
+        CourseStepStatus.completed => SkillBridgeColors.primary,
+        CourseStepStatus.current => SkillBridgeColors.primary,
+        CourseStepStatus.available => SkillBridgeColors.primary,
+        CourseStepStatus.locked => lockedColor,
+      };
 }
 
 class _StepLabel extends StatelessWidget {
@@ -569,8 +574,8 @@ class _StepLabel extends StatelessWidget {
       children: [
         Text(
           '${step.kind.label} · STEP ${(index + 1).toString().padLeft(2, '0')}',
-          style: const TextStyle(
-            color: SkillBridgeColors.textMuted,
+          style: TextStyle(
+            color: context.appColors.textMuted,
             fontSize: 9,
             fontWeight: FontWeight.w800,
             letterSpacing: 1,
@@ -582,8 +587,8 @@ class _StepLabel extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: SkillBridgeColors.textPrimary,
+          style: TextStyle(
+            color: context.appColors.textPrimary,
             fontSize: 11.5,
             fontWeight: FontWeight.w700,
             height: 1.2,
@@ -616,17 +621,17 @@ class _ShieldNode extends StatelessWidget {
     final face = switch (status) {
       CourseStepStatus.completed => SkillBridgeColors.primary,
       CourseStepStatus.current => SkillBridgeColors.primary,
-      CourseStepStatus.available => SkillBridgeColors.surfaceHigh,
-      CourseStepStatus.locked => SkillBridgeColors.surface,
+      CourseStepStatus.available => context.appColors.surfaceHigh,
+      CourseStepStatus.locked => context.appColors.surface,
     };
     final lip = switch (status) {
       CourseStepStatus.completed => const Color(0xFF0A5EB0),
       CourseStepStatus.current => const Color(0xFF0A5EB0),
-      CourseStepStatus.available => SkillBridgeColors.outline,
-      CourseStepStatus.locked => SkillBridgeColors.outline,
+      CourseStepStatus.available => context.appColors.outline,
+      CourseStepStatus.locked => context.appColors.outline,
     };
     final Color iconColor = switch (status) {
-      CourseStepStatus.locked => SkillBridgeColors.textMuted,
+      CourseStepStatus.locked => context.appColors.textMuted,
       CourseStepStatus.available => SkillBridgeColors.primary,
       CourseStepStatus.current => Colors.white,
       CourseStepStatus.completed => Colors.white,
@@ -748,7 +753,7 @@ class _ShieldNode extends StatelessWidget {
                 child: CustomPaint(
                   painter: _ShieldBorderPainter(
                     color: locked
-                        ? SkillBridgeColors.outline
+                        ? context.appColors.outline
                         : SkillBridgeColors.primary.withValues(alpha: 0.65),
                     strokeWidth: 2,
                   ),
@@ -764,13 +769,13 @@ class _ShieldNode extends StatelessWidget {
                   ),
                 ),
               if (locked)
-                const Positioned(
+                Positioned(
                   right: -2,
                   bottom: 2,
                   child: _NodeBadge(
                     icon: Icons.lock_rounded,
-                    background: SkillBridgeColors.surfaceHigh,
-                    foreground: SkillBridgeColors.textMuted,
+                    background: context.appColors.surfaceHigh,
+                    foreground: context.appColors.textMuted,
                   ),
                 ),
               if (current)
@@ -823,7 +828,7 @@ class _NodeBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: background,
         shape: BoxShape.circle,
-        border: Border.all(color: SkillBridgeColors.background, width: 3),
+        border: Border.all(color: context.appColors.background, width: 3),
       ),
       child: Icon(icon, size: 13, color: foreground),
     );
@@ -881,10 +886,17 @@ class _ShieldBorderPainter extends CustomPainter {
 
 /// Draws the dotted backdrop and the thick curved connectors between nodes.
 class _PathPainter extends CustomPainter {
-  _PathPainter({required this.centers, required this.segmentColors});
+  _PathPainter({
+    required this.centers,
+    required this.segmentColors,
+    required this.lineColor,
+    required this.dotColor,
+  });
 
   final List<Offset> centers;
   final List<Color> segmentColors;
+  final Color lineColor;
+  final Color dotColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -907,7 +919,7 @@ class _PathPainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = 20
           ..strokeCap = StrokeCap.round
-          ..color = SkillBridgeColors.background,
+          ..color = lineColor,
       );
       canvas.drawPath(
         path,
@@ -922,7 +934,7 @@ class _PathPainter extends CustomPainter {
 
   void _paintDots(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = SkillBridgeColors.outline.withValues(alpha: 0.35);
+      ..color = dotColor;
     const spacing = 34.0;
     for (var x = spacing / 2; x < size.width; x += spacing) {
       for (var y = spacing / 2; y < size.height; y += spacing) {
@@ -955,7 +967,7 @@ class _ReviewCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
         decoration: BoxDecoration(
-          color: SkillBridgeColors.surface,
+          color: context.appColors.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: SkillBridgeColors.accent.withValues(alpha: 0.35),
@@ -980,15 +992,15 @@ class _ReviewCard extends StatelessWidget {
                 ),
                 Text(
                   '${items.length} min',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: SkillBridgeColors.textMuted,
+                    color: context.appColors.textMuted,
                   ),
                 ),
               ],
             ),
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 2, bottom: 6),
               child: Text(
                 'A short pass over what you missed — finish these and you are done '
@@ -996,7 +1008,7 @@ class _ReviewCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   height: 1.35,
-                  color: SkillBridgeColors.textMuted,
+                  color: context.appColors.textMuted,
                 ),
               ),
             ),
@@ -1029,18 +1041,18 @@ class _ReviewCard extends StatelessWidget {
                             ),
                             Text(
                               item.reason,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11.5,
-                                color: SkillBridgeColors.textMuted,
+                                color: context.appColors.textMuted,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.chevron_right_rounded,
                         size: 20,
-                        color: SkillBridgeColors.textMuted,
+                        color: context.appColors.textMuted,
                       ),
                     ],
                   ),

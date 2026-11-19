@@ -31,7 +31,7 @@ class _ChunkyButtonState extends State<ChunkyButton> {
     final enabled = widget.onPressed != null;
     final face = enabled
         ? widget.color
-        : Color.lerp(widget.color, SkillBridgeColors.background, 0.65)!;
+        : Color.lerp(widget.color, context.appColors.background, 0.65)!;
     final edge = Color.lerp(face, Colors.black, 0.35)!;
     final pressed = _down && enabled;
     final offset = pressed ? _depth : 0.0;
@@ -72,7 +72,7 @@ class _ChunkyButtonState extends State<ChunkyButton> {
                     letterSpacing: 1.5,
                     color: enabled
                         ? widget.textColor
-                        : SkillBridgeColors.textMuted,
+                        : context.appColors.textMuted,
                   ),
                 ),
               ),

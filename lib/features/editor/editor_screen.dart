@@ -803,7 +803,7 @@ class _ActionBar extends StatelessWidget {
                       style: FilledButton.styleFrom(
                         backgroundColor: SkillBridgeColors.success,
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor: SkillBridgeColors.surfaceHigh,
+                        disabledBackgroundColor: context.appColors.surfaceHigh,
                       ),
                       icon: const Icon(Icons.flag_rounded),
                       label: const Text('Finish step'),

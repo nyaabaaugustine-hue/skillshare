@@ -24,7 +24,7 @@ class AnimatedProgressBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             child: Stack(
               children: [
-                Container(height: 14, color: SkillBridgeColors.surfaceHigh),
+                Container(height: 14, color: context.appColors.surfaceHigh),
                 FractionallySizedBox(
                   alignment: Alignment.centerLeft,
                   widthFactor: v,

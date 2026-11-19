@@ -45,10 +45,10 @@ class _LmsHubScreenState extends State<LmsHubScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: SkillBridgeColors.background,
+      backgroundColor: context.appColors.background,
       appBar: AppBar(
         titleSpacing: 20,
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -59,7 +59,7 @@ class _LmsHubScreenState extends State<LmsHubScreen> {
               'Your learning hub',
               style: TextStyle(
                 fontSize: 12,
-                color: SkillBridgeColors.textMuted,
+                color: context.appColors.textMuted,
               ),
             ),
           ],
@@ -104,8 +104,8 @@ class _LmsHubScreenState extends State<LmsHubScreen> {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      backgroundColor: SkillBridgeColors.surface,
-      builder: (context) => const Padding(
+      backgroundColor: context.appColors.surface,
+      builder: (context) => Padding(
         padding: EdgeInsets.fromLTRB(24, 8, 24, 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -118,7 +118,7 @@ class _LmsHubScreenState extends State<LmsHubScreen> {
             SizedBox(height: 10),
             Text(
               'SkillBridge Academy makes technology education more accessible for every learner.',
-              style: TextStyle(color: SkillBridgeColors.textMuted, height: 1.5),
+              style: TextStyle(color: context.appColors.textMuted, height: 1.5),
             ),
             SizedBox(height: 14),
             Text(
@@ -200,12 +200,12 @@ class _NavPill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 15),
           decoration: BoxDecoration(
             gradient: active ? SkillBridgeColors.brandGradient : null,
-            color: active ? null : SkillBridgeColors.surface,
+            color: active ? null : context.appColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: active
                   ? Colors.white.withValues(alpha: 0.18)
-                  : SkillBridgeColors.outline,
+                  : context.appColors.outline,
             ),
             boxShadow: active
                 ? [
@@ -222,13 +222,13 @@ class _NavPill extends StatelessWidget {
               Icon(
                 icon,
                 size: 17,
-                color: active ? Colors.white : SkillBridgeColors.textMuted,
+                color: active ? Colors.white : context.appColors.textMuted,
               ),
               const SizedBox(width: 7),
               Text(
                 label,
                 style: TextStyle(
-                  color: active ? Colors.white : SkillBridgeColors.textPrimary,
+                  color: active ? Colors.white : context.appColors.textPrimary,
                   fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                   fontSize: 13,
                   letterSpacing: 0.1,
@@ -408,8 +408,8 @@ class _YouAreHere extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             place,
-            style: const TextStyle(
-              color: SkillBridgeColors.textPrimary,
+            style: TextStyle(
+              color: context.appColors.textPrimary,
               fontSize: 17,
               fontWeight: FontWeight.w800,
             ),
@@ -428,7 +428,7 @@ class _YouAreHere extends StatelessWidget {
                           ? SkillBridgeColors.success
                           : i == step - 1
                           ? marker
-                          : SkillBridgeColors.surfaceHigh,
+                          : context.appColors.surfaceHigh,
                       borderRadius: BorderRadius.circular(5),
                     ),
                   ),
@@ -438,8 +438,8 @@ class _YouAreHere extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Place $step of $total on your map',
-            style: const TextStyle(
-              color: SkillBridgeColors.textMuted,
+            style: TextStyle(
+              color: context.appColors.textMuted,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -547,13 +547,13 @@ class _MapConnector extends StatelessWidget {
     child: Row(
       children: [
         const SizedBox(width: 24),
-        Container(width: 3, height: 38, color: SkillBridgeColors.surfaceHigh),
+        Container(width: 3, height: 38, color: context.appColors.surfaceHigh),
         const SizedBox(width: 12),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            color: SkillBridgeColors.textMuted,
+            color: context.appColors.textMuted,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -862,9 +862,9 @@ class _CourseCard extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Material(
         color: Colors.transparent,
@@ -935,10 +935,10 @@ class _CourseCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 5),
-                      const Text(
+                      Text(
                         'Beginner - 1h 47m - video + practice',
                         style: TextStyle(
-                          color: SkillBridgeColors.textMuted,
+                          color: context.appColors.textMuted,
                           fontSize: 12,
                         ),
                       ),
@@ -948,7 +948,7 @@ class _CourseCard extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: 0.33,
                           minHeight: 6,
-                          backgroundColor: SkillBridgeColors.surfaceHigh,
+                          backgroundColor: context.appColors.surfaceHigh,
                         ),
                       ),
                     ],
@@ -959,14 +959,14 @@ class _CourseCard extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: SkillBridgeColors.surfaceHigh,
+                    color: context.appColors.surfaceHigh,
                     shape: BoxShape.circle,
-                    border: Border.all(color: SkillBridgeColors.outline),
+                    border: Border.all(color: context.appColors.outline),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.chevron_right_rounded,
                     size: 20,
-                    color: SkillBridgeColors.textMuted,
+                    color: context.appColors.textMuted,
                   ),
                 ),
               ],
@@ -1000,7 +1000,7 @@ class _LessonTile extends StatelessWidget {
     final accent = complete
         ? SkillBridgeColors.success
         : locked
-        ? SkillBridgeColors.textMuted
+        ? context.appColors.textMuted
         : SkillBridgeColors.primary;
 
     void open() {
@@ -1022,12 +1022,12 @@ class _LessonTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: locked
-            ? SkillBridgeColors.surface.withValues(alpha: 0.55)
-            : SkillBridgeColors.surface,
+            ? context.appColors.surface.withValues(alpha: 0.55)
+            : context.appColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: locked
-              ? SkillBridgeColors.outline
+              ? context.appColors.outline
               : accent.withValues(alpha: 0.30),
         ),
       ),
@@ -1070,8 +1070,8 @@ class _LessonTile extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: locked
-                              ? SkillBridgeColors.surfaceHigh
-                              : SkillBridgeColors.background,
+                              ? context.appColors.surfaceHigh
+                              : context.appColors.background,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: accent.withValues(alpha: 0.5),
@@ -1117,18 +1117,18 @@ class _LessonTile extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                           fontSize: 14.5,
                           color: locked
-                              ? SkillBridgeColors.textMuted
-                              : SkillBridgeColors.textPrimary,
+                              ? context.appColors.textMuted
+                              : context.appColors.textPrimary,
                           height: 1.3,
                         ),
                       ),
                       const SizedBox(height: 5),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.schedule_rounded,
                             size: 13,
-                            color: SkillBridgeColors.textMuted,
+                            color: context.appColors.textMuted,
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -1139,8 +1139,8 @@ class _LessonTile extends StatelessWidget {
                                 : 'Video + practical'}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: SkillBridgeColors.textMuted,
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
                               fontSize: 11.5,
                             ),
                           ),
@@ -1156,11 +1156,11 @@ class _LessonTile extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: locked
-                        ? SkillBridgeColors.surfaceHigh
+                        ? context.appColors.surfaceHigh
                         : accent.withValues(alpha: 0.14),
                     border: Border.all(
                       color: locked
-                          ? SkillBridgeColors.outline
+                          ? context.appColors.outline
                           : accent.withValues(alpha: 0.45),
                     ),
                   ),
@@ -1170,7 +1170,7 @@ class _LessonTile extends StatelessWidget {
                         : locked
                         ? Icons.lock_outline_rounded
                         : Icons.play_arrow_rounded,
-                    color: locked ? SkillBridgeColors.textMuted : accent,
+                    color: locked ? context.appColors.textMuted : accent,
                     size: 19,
                   ),
                 ),
@@ -1234,9 +1234,9 @@ class _NewsCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -1267,8 +1267,8 @@ class _NewsCard extends StatelessWidget {
                 const Spacer(),
                 Text(
                   date,
-                  style: const TextStyle(
-                    color: SkillBridgeColors.textMuted,
+                  style: TextStyle(
+                    color: context.appColors.textMuted,
                     fontSize: 11.5,
                   ),
                 ),
@@ -1287,8 +1287,8 @@ class _NewsCard extends StatelessWidget {
             const SizedBox(height: 7),
             Text(
               text,
-              style: const TextStyle(
-                color: SkillBridgeColors.textMuted,
+              style: TextStyle(
+                color: context.appColors.textMuted,
                 height: 1.5,
                 fontSize: 13.5,
               ),
@@ -1372,9 +1372,9 @@ class _ResourcesSection extends StatelessWidget {
           Container(
             margin: const EdgeInsets.only(bottom: 10),
             decoration: BoxDecoration(
-              color: SkillBridgeColors.surface,
+              color: context.appColors.surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: SkillBridgeColors.outline),
+              border: Border.all(color: context.appColors.outline),
             ),
             child: Material(
               color: Colors.transparent,
@@ -1422,8 +1422,8 @@ class _ResourcesSection extends StatelessWidget {
                             const SizedBox(height: 3),
                             Text(
                               item.$3,
-                              style: const TextStyle(
-                                color: SkillBridgeColors.textMuted,
+                              style: TextStyle(
+                                color: context.appColors.textMuted,
                                 fontSize: 12,
                               ),
                             ),
@@ -1435,8 +1435,8 @@ class _ResourcesSection extends StatelessWidget {
                         children: [
                           Text(
                             item.$2,
-                            style: const TextStyle(
-                              color: SkillBridgeColors.textMuted,
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
                               fontSize: 9.5,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.8,
@@ -1626,16 +1626,23 @@ class _StatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pct = (progress * 100).round();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = complete
         ? SkillBridgeColors.success
         : SkillBridgeColors.accent;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF16202F), SkillBridgeColors.surface],
+          // The card paints theme text over this wash, so the first stop has to
+          // follow the theme too; a fixed near-black stop would swallow the
+          // dark title text in light mode.
+          colors: [
+            isDark ? const Color(0xFF16202F) : context.appColors.surfaceHigh,
+            context.appColors.surface,
+          ],
         ),
         borderRadius: BorderRadius.circular(26),
         border: Border.all(color: accent.withValues(alpha: 0.45), width: 1.4),
@@ -1690,8 +1697,8 @@ class _StatusBanner extends StatelessWidget {
                       'Download your premium certificate below.'
                 : 'Finish all $totalSteps lessons to unlock your certificate. '
                       'A sample is shown below.',
-            style: const TextStyle(
-              color: SkillBridgeColors.textMuted,
+            style: TextStyle(
+              color: context.appColors.textMuted,
               height: 1.5,
               fontSize: 13.5,
             ),
@@ -1705,7 +1712,7 @@ class _StatusBanner extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: totalSteps == 0 ? 0 : progress,
                     minHeight: 9,
-                    backgroundColor: SkillBridgeColors.surfaceHigh,
+                    backgroundColor: context.appColors.surfaceHigh,
                     color: complete
                         ? SkillBridgeColors.success
                         : SkillBridgeColors.primary,
@@ -1733,8 +1740,8 @@ class _StatusBanner extends StatelessWidget {
           const SizedBox(height: 9),
           Text(
             '$completedCount of $totalSteps lessons complete',
-            style: const TextStyle(
-              color: SkillBridgeColors.textMuted,
+            style: TextStyle(
+              color: context.appColors.textMuted,
               fontWeight: FontWeight.w700,
               fontSize: 12,
             ),
@@ -1805,14 +1812,14 @@ class _LockedPreview extends StatelessWidget {
               if (locked)
                 Positioned.fill(
                   child: ColoredBox(
-                    color: SkillBridgeColors.background.withValues(alpha: 0.42),
+                    color: context.appColors.background.withValues(alpha: 0.42),
                   ),
                 ),
               if (locked)
                 Container(
                   padding: const EdgeInsets.fromLTRB(26, 22, 26, 22),
                   decoration: BoxDecoration(
-                    color: SkillBridgeColors.surfaceHigh.withValues(
+                    color: context.appColors.surfaceHigh.withValues(
                       alpha: 0.94,
                     ),
                     borderRadius: BorderRadius.circular(22),
@@ -1851,10 +1858,10 @@ class _LockedPreview extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      Text(
                         'Locked',
                         style: TextStyle(
-                          color: SkillBridgeColors.textPrimary,
+                          color: context.appColors.textPrimary,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.2,
@@ -1863,8 +1870,8 @@ class _LockedPreview extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         '$pct% complete',
-                        style: const TextStyle(
-                          color: SkillBridgeColors.textMuted,
+                        style: TextStyle(
+                          color: context.appColors.textMuted,
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
                         ),
@@ -1892,7 +1899,7 @@ class _LockedAction extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: SkillBridgeColors.accent.withValues(alpha: 0.30),
@@ -1927,8 +1934,8 @@ class _LockedAction extends StatelessWidget {
                   remaining <= 1
                       ? 'Just $remaining lesson to go - finish it to unlock.'
                       : '$remaining lessons to go - keep going!',
-                  style: const TextStyle(
-                    color: SkillBridgeColors.textMuted,
+                  style: TextStyle(
+                    color: context.appColors.textMuted,
                     fontSize: 12.5,
                     height: 1.4,
                   ),

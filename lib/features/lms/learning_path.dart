@@ -145,14 +145,14 @@ class _UnitHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.background,
+        color: context.appColors.background,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: SkillBridgeColors.outline, width: 1.4),
+        border: Border.all(color: context.appColors.outline, width: 1.4),
         boxShadow: const [
           BoxShadow(color: Color(0xFF0A0D12), offset: Offset(0, 6)),
         ],
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -161,7 +161,7 @@ class _UnitHeader extends StatelessWidget {
               fontSize: 12,
               letterSpacing: 1.6,
               fontWeight: FontWeight.w600,
-              color: SkillBridgeColors.textMuted,
+              color: context.appColors.textMuted,
             ),
           ),
           SizedBox(height: 6),
@@ -182,8 +182,8 @@ class _SectionDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const line = Expanded(
-      child: Divider(color: SkillBridgeColors.outline, thickness: 1),
+    final line = Expanded(
+      child: Divider(color: context.appColors.outline, thickness: 1),
     );
     return Row(
       children: [
@@ -192,11 +192,11 @@ class _SectionDivider extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               letterSpacing: 2,
               fontWeight: FontWeight.w600,
-              color: SkillBridgeColors.textMuted,
+              color: context.appColors.textMuted,
             ),
           ),
         ),
@@ -217,21 +217,21 @@ class _StartBubble extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
           decoration: BoxDecoration(
-            color: SkillBridgeColors.surface,
+            color: context.appColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: SkillBridgeColors.outline),
+            border: Border.all(color: context.appColors.outline),
           ),
-          child: const Text(
+          child: Text(
             'Start',
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              color: SkillBridgeColors.textMuted,
+              color: context.appColors.textMuted,
             ),
           ),
         ),
         CustomPaint(
           size: const Size(14, 7),
-          painter: _TrianglePainter(SkillBridgeColors.outline),
+          painter: _TrianglePainter(context.appColors.outline),
         ),
       ],
     );
@@ -417,9 +417,9 @@ class _DetailCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,7 +450,7 @@ class _DetailCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             place.duration,
-            style: const TextStyle(color: SkillBridgeColors.textMuted),
+            style: TextStyle(color: context.appColors.textMuted),
           ),
           const SizedBox(height: 16),
           FilledButton(

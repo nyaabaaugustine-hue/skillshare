@@ -363,8 +363,8 @@ class _TaskLabel extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: SkillBridgeColors.textPrimary,
+          style: TextStyle(
+            color: context.appColors.textPrimary,
             fontSize: 13.5,
             fontWeight: FontWeight.w800,
             height: 1.2,
@@ -376,8 +376,8 @@ class _TaskLabel extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: SkillBridgeColors.textMuted,
+          style: TextStyle(
+            color: context.appColors.textMuted,
             fontSize: 11,
           ),
         ),

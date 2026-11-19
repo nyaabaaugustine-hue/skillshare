@@ -98,25 +98,25 @@ class BuddySays extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: SkillBridgeColors.surface,
+              color: context.appColors.surface,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(6),
                 topRight: Radius.circular(20),
                 bottomLeft: Radius.circular(20),
                 bottomRight: Radius.circular(20),
               ),
-              border: Border.all(color: SkillBridgeColors.outline, width: 1.4),
+              border: Border.all(color: context.appColors.outline, width: 1.4),
             ),
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               child: Text(
                 message,
                 key: ValueKey(message),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   height: 1.35,
                   fontWeight: FontWeight.w600,
-                  color: SkillBridgeColors.textPrimary,
+                  color: context.appColors.textPrimary,
                 ),
               ),
             ),

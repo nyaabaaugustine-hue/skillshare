@@ -99,10 +99,10 @@ class _CourseLessonScreenState extends State<CourseLessonScreen> {
             ),
             Text(
               '${widget.step.kind.label} - STEP ${(_index + 1)} OF $total',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 letterSpacing: 1,
-                color: SkillBridgeColors.textMuted,
+                color: context.appColors.textMuted,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -132,11 +132,11 @@ class _CourseLessonScreenState extends State<CourseLessonScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: [
                   if (currentBlock == null)
-                    const _BlockCard(
+                    _BlockCard(
                       title: 'Nothing to study yet',
                       child: Text(
                         'This step has no published content yet.',
-                        style: TextStyle(color: SkillBridgeColors.textMuted),
+                        style: TextStyle(color: context.appColors.textMuted),
                       ),
                     )
                   else ...[
@@ -144,8 +144,8 @@ class _CourseLessonScreenState extends State<CourseLessonScreen> {
                       title: "What you'll learn",
                       child: Text(
                         '${widget.step.title}: ${widget.step.subtitle}',
-                        style: const TextStyle(
-                          color: SkillBridgeColors.textPrimary,
+                        style: TextStyle(
+                          color: context.appColors.textPrimary,
                           fontSize: 14,
                           height: 1.5,
                         ),
@@ -217,17 +217,17 @@ class _BlockCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: SkillBridgeColors.textPrimary,
+            style: TextStyle(
+              color: context.appColors.textPrimary,
               fontSize: 17,
               fontWeight: FontWeight.w800,
             ),
@@ -258,9 +258,9 @@ class _ProgressiveHint extends StatelessWidget {
       margin: const EdgeInsets.only(top: 14),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surfaceHigh,
+        color: context.appColors.surfaceHigh,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,19 +273,19 @@ class _ProgressiveHint extends StatelessWidget {
                 color: SkillBridgeColors.accent,
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Need a nudge?',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: SkillBridgeColors.textPrimary,
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               ),
               Text(
                 '$revealed/${hints.length}',
-                style: const TextStyle(
-                  color: SkillBridgeColors.textMuted,
+                style: TextStyle(
+                  color: context.appColors.textMuted,
                   fontSize: 12,
                 ),
               ),
@@ -298,8 +298,8 @@ class _ProgressiveHint extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   '• $hint',
-                  style: const TextStyle(
-                    color: SkillBridgeColors.textMuted,
+                  style: TextStyle(
+                    color: context.appColors.textMuted,
                     height: 1.35,
                   ),
                 ),
@@ -334,8 +334,8 @@ class _ReadingView extends StatelessWidget {
           for (final paragraph in block.paragraphs) ...[
             Text(
               paragraph,
-              style: const TextStyle(
-                color: SkillBridgeColors.textPrimary,
+              style: TextStyle(
+                color: context.appColors.textPrimary,
                 fontSize: 14,
                 height: 1.5,
               ),
@@ -365,8 +365,8 @@ class _ReadingView extends StatelessWidget {
                   Expanded(
                     child: Text(
                       block.tip!,
-                      style: const TextStyle(
-                        color: SkillBridgeColors.textPrimary,
+                      style: TextStyle(
+                        color: context.appColors.textPrimary,
                         fontSize: 13,
                         height: 1.4,
                       ),
@@ -399,8 +399,8 @@ class _VideoView extends StatelessWidget {
         children: [
           Text(
             block.subtitle,
-            style: const TextStyle(
-              color: SkillBridgeColors.textMuted,
+            style: TextStyle(
+              color: context.appColors.textMuted,
               fontSize: 13,
             ),
           ),
@@ -428,7 +428,7 @@ class _VideoView extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  border: Border.all(color: SkillBridgeColors.outline),
+                  border: Border.all(color: context.appColors.outline),
                 ),
                 child: const Center(
                   child: Icon(
@@ -441,11 +441,11 @@ class _VideoView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             'Streamed from your LMS. Captions and progress are reported back '
             'through the same library.',
             style: TextStyle(
-              color: SkillBridgeColors.textMuted,
+              color: context.appColors.textMuted,
               fontSize: 11.5,
               height: 1.4,
             ),
@@ -487,8 +487,8 @@ class _CodeView extends StatelessWidget {
           const _SectionLabel('Short explanation'),
           Text(
             block.brief,
-            style: const TextStyle(
-              color: SkillBridgeColors.textPrimary,
+            style: TextStyle(
+              color: context.appColors.textPrimary,
               fontSize: 14,
               height: 1.5,
             ),
@@ -502,18 +502,18 @@ class _CodeView extends StatelessWidget {
           const _SectionLabel('Try it'),
           Text(
             'Use the starter code to complete this task:',
-            style: const TextStyle(
-              color: SkillBridgeColors.textMuted,
+            style: TextStyle(
+              color: context.appColors.textMuted,
               fontSize: 13,
             ),
           ),
           const SizedBox(height: 10),
           _CodePreview(code: block.starterCode),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'REQUIREMENTS',
             style: TextStyle(
-              color: SkillBridgeColors.textMuted,
+              color: context.appColors.textMuted,
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 1,
@@ -535,8 +535,8 @@ class _CodeView extends StatelessWidget {
                   Expanded(
                     child: Text(
                       requirement,
-                      style: const TextStyle(
-                        color: SkillBridgeColors.textPrimary,
+                      style: TextStyle(
+                        color: context.appColors.textPrimary,
                         fontSize: 13,
                         height: 1.4,
                       ),
@@ -591,8 +591,8 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         label,
-        style: const TextStyle(
-          color: SkillBridgeColors.textMuted,
+        style: TextStyle(
+          color: context.appColors.textMuted,
           fontSize: 11,
           fontWeight: FontWeight.w800,
           letterSpacing: 1,
@@ -623,8 +623,8 @@ class _CompletionSummary extends StatelessWidget {
               const _SectionLabel('Why this works'),
               Text(
                 whyItWorks,
-                style: const TextStyle(
-                  color: SkillBridgeColors.textPrimary,
+                style: TextStyle(
+                  color: context.appColors.textPrimary,
                   fontSize: 14,
                   height: 1.5,
                 ),
@@ -635,8 +635,8 @@ class _CompletionSummary extends StatelessWidget {
               const _SectionLabel('What you can now do'),
               Text(
                 takeaway,
-                style: const TextStyle(
-                  color: SkillBridgeColors.textPrimary,
+                style: TextStyle(
+                  color: context.appColors.textPrimary,
                   fontSize: 14,
                   height: 1.5,
                 ),
@@ -662,7 +662,7 @@ class _CodePreview extends StatelessWidget {
       decoration: BoxDecoration(
         color: SkillBridgeColors.codeSurface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Text(
         code,
@@ -709,8 +709,8 @@ class _QuizViewState extends State<_QuizView> {
         children: [
           Text(
             block.question,
-            style: const TextStyle(
-              color: SkillBridgeColors.textPrimary,
+            style: TextStyle(
+              color: context.appColors.textPrimary,
               fontSize: 15,
               fontWeight: FontWeight.w600,
               height: 1.4,
@@ -791,8 +791,8 @@ class _PromptViewState extends State<_PromptView> {
         children: [
           Text(
             block.task,
-            style: const TextStyle(
-              color: SkillBridgeColors.textPrimary,
+            style: TextStyle(
+              color: context.appColors.textPrimary,
               fontSize: 14,
               height: 1.5,
             ),
@@ -803,23 +803,23 @@ class _PromptViewState extends State<_PromptView> {
             onChanged: _onChanged,
             maxLines: 7,
             minLines: 5,
-            style: const TextStyle(
-              color: SkillBridgeColors.textPrimary,
+            style: TextStyle(
+              color: context.appColors.textPrimary,
               fontSize: 13.5,
               height: 1.5,
             ),
             decoration: InputDecoration(
               hintText: 'Write your prompt here...',
-              hintStyle: const TextStyle(color: SkillBridgeColors.textMuted),
+              hintStyle: TextStyle(color: context.appColors.textMuted),
               filled: true,
               fillColor: SkillBridgeColors.codeSurface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: SkillBridgeColors.outline),
+                borderSide: BorderSide(color: context.appColors.outline),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: SkillBridgeColors.outline),
+                borderSide: BorderSide(color: context.appColors.outline),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -833,15 +833,15 @@ class _PromptViewState extends State<_PromptView> {
             style: TextStyle(
               color: _meetsLength
                   ? SkillBridgeColors.success
-                  : SkillBridgeColors.textMuted,
+                  : context.appColors.textMuted,
               fontSize: 11.5,
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'MUST INCLUDE',
             style: TextStyle(
-              color: SkillBridgeColors.textMuted,
+              color: context.appColors.textMuted,
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 1,
@@ -857,10 +857,10 @@ class _PromptViewState extends State<_PromptView> {
             ),
           if (block.hints.isNotEmpty) ...[
             const SizedBox(height: 14),
-            const Text(
+            Text(
               'HINTS',
               style: TextStyle(
-                color: SkillBridgeColors.textMuted,
+                color: context.appColors.textMuted,
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1,
@@ -872,8 +872,8 @@ class _PromptViewState extends State<_PromptView> {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   '- $hint',
-                  style: const TextStyle(
-                    color: SkillBridgeColors.textMuted,
+                  style: TextStyle(
+                    color: context.appColors.textMuted,
                     fontSize: 12.5,
                     height: 1.4,
                   ),
@@ -924,7 +924,7 @@ class _RequirementRow extends StatelessWidget {
             size: 16,
             color: met
                 ? SkillBridgeColors.success
-                : SkillBridgeColors.textMuted,
+                : context.appColors.textMuted,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -932,8 +932,8 @@ class _RequirementRow extends StatelessWidget {
               label,
               style: TextStyle(
                 color: met
-                    ? SkillBridgeColors.textPrimary
-                    : SkillBridgeColors.textMuted,
+                    ? context.appColors.textPrimary
+                    : context.appColors.textMuted,
                 fontSize: 13,
               ),
             ),
@@ -997,17 +997,17 @@ class _ApiViewState extends State<_ApiView> {
         children: [
           Text(
             block.brief,
-            style: const TextStyle(
-              color: SkillBridgeColors.textPrimary,
+            style: TextStyle(
+              color: context.appColors.textPrimary,
               fontSize: 14,
               height: 1.5,
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'ENDPOINT',
             style: TextStyle(
-              color: SkillBridgeColors.textMuted,
+              color: context.appColors.textMuted,
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 1,
@@ -1024,10 +1024,10 @@ class _ApiViewState extends State<_ApiView> {
               onTap: () => setState(() => _endpoint = i),
             ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'REQUEST BODY',
             style: TextStyle(
-              color: SkillBridgeColors.textMuted,
+              color: context.appColors.textMuted,
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 1,
@@ -1099,8 +1099,8 @@ class _ProjectViewState extends State<_ProjectView> {
         children: [
           Text(
             block.brief,
-            style: const TextStyle(
-              color: SkillBridgeColors.textPrimary,
+            style: TextStyle(
+              color: context.appColors.textPrimary,
               fontSize: 14,
               height: 1.5,
             ),
@@ -1110,10 +1110,10 @@ class _ProjectViewState extends State<_ProjectView> {
             _CodePreview(code: block.starterCode!),
           ],
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'CHECKLIST',
             style: TextStyle(
-              color: SkillBridgeColors.textMuted,
+              color: context.appColors.textMuted,
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 1,
@@ -1144,14 +1144,14 @@ class _ProjectViewState extends State<_ProjectView> {
                       size: 20,
                       color: _done.contains(item)
                           ? SkillBridgeColors.primary
-                          : SkillBridgeColors.textMuted,
+                          : context.appColors.textMuted,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         item,
                         style: TextStyle(
-                          color: SkillBridgeColors.textPrimary,
+                          color: context.appColors.textPrimary,
                           fontSize: 13.5,
                           height: 1.4,
                           decoration: _done.contains(item)
@@ -1232,8 +1232,8 @@ class _AssessmentViewState extends State<_AssessmentView> {
           for (var q = 0; q < block.questions.length; q++) ...[
             Text(
               '${q + 1}. ${block.questions[q].question}',
-              style: const TextStyle(
-                color: SkillBridgeColors.textPrimary,
+              style: TextStyle(
+                color: context.appColors.textPrimary,
                 fontSize: 14.5,
                 fontWeight: FontWeight.w600,
                 height: 1.4,
@@ -1297,7 +1297,7 @@ class _Choice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color border = SkillBridgeColors.outline;
+    Color border = context.appColors.outline;
     Color background = SkillBridgeColors.codeSurface;
     if (selected) {
       border = SkillBridgeColors.primary;
@@ -1332,7 +1332,7 @@ class _Choice extends StatelessWidget {
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: SkillBridgeColors.textPrimary,
+                    color: context.appColors.textPrimary,
                     fontSize: 13.5,
                     height: 1.35,
                     fontFamily: monospace ? 'monospace' : null,
@@ -1388,8 +1388,8 @@ class _Feedback extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                color: SkillBridgeColors.textPrimary,
+              style: TextStyle(
+                color: context.appColors.textPrimary,
                 fontSize: 12.5,
                 height: 1.4,
               ),

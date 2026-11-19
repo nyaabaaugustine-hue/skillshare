@@ -171,13 +171,13 @@ class _GuardianHomeScreenState extends State<GuardianHomeScreen> {
                       )
                     else
                       for (final r in report.retried) _RetryTile(result: r),
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(24, 22, 24, 0),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
                       child: Text(
                         'This is a read-only report. Pull down to refresh.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: SkillBridgeColors.textMuted,
+                          color: context.appColors.textMuted,
                           fontSize: 12,
                         ),
                       ),
@@ -334,9 +334,9 @@ class _StatTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
         decoration: BoxDecoration(
-          color: SkillBridgeColors.surface,
+          color: context.appColors.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: SkillBridgeColors.outline),
+          border: Border.all(color: context.appColors.outline),
         ),
         child: Column(
           children: [
@@ -354,9 +354,9 @@ class _StatTile extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11.5,
-                color: SkillBridgeColors.textMuted,
+                color: context.appColors.textMuted,
               ),
             ),
           ],
@@ -400,9 +400,9 @@ class _SectionTitle extends StatelessWidget {
               ),
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
-                  color: SkillBridgeColors.textMuted,
+                  color: context.appColors.textMuted,
                 ),
               ),
             ],
@@ -452,9 +452,9 @@ class _ResultTile extends StatelessWidget {
         subtitle: Text(
           '${result.step.kind.label} · '
           '${result.attempts} ${result.attempts == 1 ? 'attempt' : 'attempts'}',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12.5,
-            color: SkillBridgeColors.textMuted,
+            color: context.appColors.textMuted,
           ),
         ),
         trailing: _Chip(label: result.band.label, color: color),
@@ -498,8 +498,8 @@ class _WeakPointTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   result.advice,
-                  style: const TextStyle(
-                    color: SkillBridgeColors.textPrimary,
+                  style: TextStyle(
+                    color: context.appColors.textPrimary,
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -547,9 +547,9 @@ class _RetryTile extends StatelessWidget {
                   Text(
                     '${result.retries} ${result.retries == 1 ? 'retry' : 'retries'}'
                     ' · ${result.attempts} tries in total',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12.5,
-                      color: SkillBridgeColors.textMuted,
+                      color: context.appColors.textMuted,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -668,8 +668,8 @@ class _EmptyState extends StatelessWidget {
             'Scores, weak points and retries will appear here as soon as '
             'they do.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: SkillBridgeColors.textMuted,
+            style: TextStyle(
+              color: context.appColors.textMuted,
               height: 1.45,
             ),
           ),

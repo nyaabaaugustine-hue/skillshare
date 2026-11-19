@@ -137,29 +137,43 @@ class _BootstrapAppState extends State<BootstrapApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SkillBridge Academy',
-      debugShowCheckedModeBanner: false,
-      theme: buildDarkTheme(),
-      darkTheme: buildDarkTheme(),
-      themeMode: ThemeMode.dark,
-      onGenerateRoute: AppRouter.onGenerateRoute,
-      builder: (context, child) {
-        return MultiProvider(
-          providers: [
-            ChangeNotifierProvider<AuthController>.value(value: _auth),
-            Provider<AppDependencies>(create: (_) => _deps!),
-            ChangeNotifierProvider<SettingsController>(
-              create: (_) => SettingsController(_deps!.settings),
-            ),
-            ChangeNotifierProvider<ConnectivityController>(
-              create: (_) => ConnectivityController(_deps!),
-            ),
-          ],
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
-      home: _home(),
+    // Providers sit ABOVE MaterialApp so the app itself can read
+    // SettingsController for `themeMode` (a provider below MaterialApp is
+    // invisible to it) while still being above the Navigator, so pushed routes
+    // reach them too. They are lazy, so `_deps!` is only touched once loading
+    // has finished and a screen actually asks for a dependency.
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthController>.value(value: _auth),
+        Provider<AppDependencies>(create: (_) => _deps!),
+        ChangeNotifierProvider<SettingsController>(
+          create: (_) => SettingsController(_deps!.settings),
+        ),
+        ChangeNotifierProvider<ConnectivityController>(
+          create: (_) => ConnectivityController(_deps!),
+        ),
+      ],
+      child: Builder(
+        builder: (context) {
+          // Before dependencies load there is no settings store yet, so the
+          // shell stays on the brand's dark theme until `_deps` arrives. Once it
+          // does, the picker in Settings drives light / dark / system live.
+          final themeMode = _deps == null
+              ? ThemeMode.dark
+              : context.watch<SettingsController>().themeMode;
+          return MaterialApp(
+            title: 'SkillBridge Academy',
+            debugShowCheckedModeBanner: false,
+            theme: buildLightTheme(),
+            darkTheme: buildDarkTheme(),
+            themeMode: themeMode,
+            themeAnimationDuration: const Duration(milliseconds: 300),
+            themeAnimationCurve: Curves.easeOutCubic,
+            onGenerateRoute: AppRouter.onGenerateRoute,
+            home: _home(),
+          );
+        },
+      ),
     );
   }
 }

@@ -55,8 +55,8 @@ class CompletionView extends StatelessWidget {
                 child: Container(
                   width: 140,
                   height: 140,
-                  decoration: const BoxDecoration(
-                    color: SkillBridgeColors.surfaceHigh,
+                  decoration: BoxDecoration(
+                    color: context.appColors.surfaceHigh,
                     shape: BoxShape.circle,
                   ),
                   child: ClipRRect(
@@ -90,14 +90,14 @@ class CompletionView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
                   'Your XP is confirmed by SkillBridge Academy when you are online.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
-                    color: SkillBridgeColors.textMuted,
+                    color: context.appColors.textMuted,
                   ),
                 ),
               ),

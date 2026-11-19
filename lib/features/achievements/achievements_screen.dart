@@ -58,7 +58,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   Widget build(BuildContext context) {
     final screen = Scaffold(
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -72,7 +72,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w400,
-                color: SkillBridgeColors.textMuted,
+                color: context.appColors.textMuted,
               ),
             ),
           ],
@@ -234,7 +234,7 @@ class _HeroCard extends StatelessWidget {
                     Text(
                       'Confirmed by your LMS after it grades a submission.',
                       style: TextStyle(
-                        color: SkillBridgeColors.textMuted.withValues(
+                        color: context.appColors.textMuted.withValues(
                           alpha: 0.9,
                         ),
                         fontSize: 11.5,
@@ -277,9 +277,9 @@ class _HeroCard extends StatelessWidget {
             children: [
               Text(
                 '$completedChallenges of $totalChallenges challenges verified',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
-                  color: SkillBridgeColors.textMuted,
+                  color: context.appColors.textMuted,
                 ),
               ),
               Text(
@@ -322,24 +322,27 @@ class _ProgressRing extends StatelessWidget {
               children: [
                 CustomPaint(
                   size: const Size.square(size),
-                  painter: _RingPainter(progress: progress),
+                  painter: _RingPainter(
+                    progress: progress,
+                    trackColor: context.appColors.surfaceHigh,
+                  ),
                 ),
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       '$percent%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: SkillBridgeColors.textPrimary,
+                        color: context.appColors.textPrimary,
                       ),
                     ),
-                    const Text(
+                    Text(
                       'complete',
                       style: TextStyle(
                         fontSize: 10,
-                        color: SkillBridgeColors.textMuted,
+                        color: context.appColors.textMuted,
                       ),
                     ),
                   ],
@@ -350,11 +353,11 @@ class _ProgressRing extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               letterSpacing: 1.2,
               fontWeight: FontWeight.w600,
-              color: SkillBridgeColors.textMuted,
+              color: context.appColors.textMuted,
             ),
           ),
         ],
@@ -364,9 +367,10 @@ class _ProgressRing extends StatelessWidget {
 }
 
 class _RingPainter extends CustomPainter {
-  const _RingPainter({required this.progress});
+  const _RingPainter({required this.progress, required this.trackColor});
 
   final double progress;
+  final Color trackColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -386,7 +390,7 @@ class _RingPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeWidth = stroke
-        ..color = SkillBridgeColors.surfaceHigh,
+        ..color = trackColor,
     );
 
     canvas.drawArc(
@@ -443,9 +447,9 @@ class _StatTile extends StatelessWidget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 9.5,
-                      color: SkillBridgeColors.textMuted,
+                      color: context.appColors.textMuted,
                     ),
                   ),
                 ),
@@ -455,10 +459,10 @@ class _StatTile extends StatelessWidget {
             Text(
               value,
               maxLines: 1,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
-                color: SkillBridgeColors.textPrimary,
+                color: context.appColors.textPrimary,
               ),
             ),
           ],
@@ -484,7 +488,7 @@ class _ThinBar extends StatelessWidget {
         builder: (context, animated, _) => LinearProgressIndicator(
           value: animated,
           minHeight: 7,
-          backgroundColor: SkillBridgeColors.surfaceHigh,
+          backgroundColor: context.appColors.surfaceHigh,
           valueColor: const AlwaysStoppedAnimation(SkillBridgeColors.primary),
         ),
       ),
@@ -507,9 +511,9 @@ class _CourseTrack extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -525,10 +529,10 @@ class _CourseTrack extends StatelessWidget {
               Expanded(
                 child: Text(
                   course.course.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    color: SkillBridgeColors.textPrimary,
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               ),
@@ -554,7 +558,7 @@ class _CourseTrack extends StatelessWidget {
                       height: 3,
                       color: course.isCompleted(steps[i - 1].id)
                           ? SkillBridgeColors.accent
-                          : SkillBridgeColors.surfaceHigh,
+                          : context.appColors.surfaceHigh,
                     ),
                   _StepPip(
                     index: i,
@@ -567,7 +571,7 @@ class _CourseTrack extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           if (next == null)
-            const Row(
+            Row(
               children: [
                 Icon(
                   Icons.celebration_outlined,
@@ -580,7 +584,7 @@ class _CourseTrack extends StatelessWidget {
                     'Course complete. Everything stays open for review.',
                     style: TextStyle(
                       fontSize: 12.5,
-                      color: SkillBridgeColors.textPrimary,
+                      color: context.appColors.textPrimary,
                     ),
                   ),
                 ),
@@ -593,13 +597,13 @@ class _CourseTrack extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'UP NEXT',
                         style: TextStyle(
                           fontSize: 9.5,
                           letterSpacing: 1.4,
                           fontWeight: FontWeight.w700,
-                          color: SkillBridgeColors.textMuted,
+                          color: context.appColors.textMuted,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -607,10 +611,10 @@ class _CourseTrack extends StatelessWidget {
                         next.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
-                          color: SkillBridgeColors.textPrimary,
+                          color: context.appColors.textPrimary,
                         ),
                       ),
                     ],
@@ -660,8 +664,8 @@ class _StepPip extends StatelessWidget {
       background = SkillBridgeColors.primary;
       border = SkillBridgeColors.primary;
     } else if (locked) {
-      background = SkillBridgeColors.surfaceHigh;
-      border = SkillBridgeColors.outline;
+      background = context.appColors.surfaceHigh;
+      border = context.appColors.outline;
     } else {
       background = SkillBridgeColors.primary.withValues(alpha: 0.18);
       border = SkillBridgeColors.primary;
@@ -674,10 +678,10 @@ class _StepPip extends StatelessWidget {
             color: SkillBridgeColors.onPrimary,
           )
         : locked
-        ? const Icon(
+        ? Icon(
             Icons.lock_rounded,
             size: 12,
-            color: SkillBridgeColors.textMuted,
+            color: context.appColors.textMuted,
           )
         : Text(
             '${index + 1}',
@@ -732,18 +736,18 @@ class _SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w800,
-              color: SkillBridgeColors.textPrimary,
+              color: context.appColors.textPrimary,
             ),
           ),
         ),
         Text(
           caption,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 10.5,
-            color: SkillBridgeColors.textMuted,
+            color: context.appColors.textMuted,
           ),
         ),
       ],
@@ -785,9 +789,9 @@ class _AchievementGrid extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: SkillBridgeColors.surface,
+            color: context.appColors.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: SkillBridgeColors.outline),
+            border: Border.all(color: context.appColors.outline),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -830,10 +834,10 @@ class _AchievementGrid extends StatelessWidget {
                 achievement.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
-                  color: SkillBridgeColors.textPrimary,
+                  color: context.appColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
@@ -842,10 +846,10 @@ class _AchievementGrid extends StatelessWidget {
                   achievement.description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10.5,
                     height: 1.25,
-                    color: SkillBridgeColors.textMuted,
+                    color: context.appColors.textMuted,
                   ),
                 ),
               ),
@@ -862,7 +866,7 @@ class _SubmissionTile extends StatelessWidget {
 
   final SubmissionSummary summary;
 
-  (IconData, Color, String) get _status {
+  (IconData, Color, String) _status(BuildContext context) {
     switch (summary.state) {
       case 'synced':
       case 'synced_to_lms':
@@ -879,7 +883,7 @@ class _SubmissionTile extends StatelessWidget {
       default:
         return (
           Icons.cloud_outlined,
-          SkillBridgeColors.textMuted,
+          context.appColors.textMuted,
           summary.state.replaceAll('_', ' '),
         );
     }
@@ -902,15 +906,15 @@ class _SubmissionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (icon, color, label) = _status;
+    final (icon, color, label) = _status(context);
 
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Row(
         children: [
@@ -932,17 +936,17 @@ class _SubmissionTile extends StatelessWidget {
                   _title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: SkillBridgeColors.textPrimary,
+                    color: context.appColors.textPrimary,
                   ),
                 ),
                 Text(
                   _when,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: SkillBridgeColors.textMuted,
+                    color: context.appColors.textMuted,
                   ),
                 ),
               ],
@@ -1011,20 +1015,20 @@ class _EmptyState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface.withValues(alpha: 0.7),
+        color: context.appColors.surface.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 28, color: SkillBridgeColors.textMuted),
+          Icon(icon, size: 28, color: context.appColors.textMuted),
           const SizedBox(height: 10),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12.5,
-              color: SkillBridgeColors.textMuted,
+              color: context.appColors.textMuted,
             ),
           ),
         ],
@@ -1047,7 +1051,7 @@ class _CoinNote extends StatelessWidget {
           color: SkillBridgeColors.accent.withValues(alpha: 0.25),
         ),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
@@ -1063,7 +1067,7 @@ class _CoinNote extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11.5,
                 height: 1.35,
-                color: SkillBridgeColors.textMuted,
+                color: context.appColors.textMuted,
               ),
             ),
           ),
