@@ -85,6 +85,20 @@ class CloudAuth {
   CloudUser? get currentSession => _currentSession;
   Stream<CloudUser> get userEvents => _events.stream;
 
+  /// The website origin sent as `Origin` on native requests.
+  ///
+  /// Native HTTP sends no `Origin` header at all, and Neon Auth rejects a
+  /// sign-in that arrives without a trusted origin (`INVALID_ORIGIN`). Sending
+  /// the website's own origin makes the request match the origin allowlisted on
+  /// both the website proxy and the Neon Auth branch. Browsers set `Origin`
+  /// themselves (and forbid overriding it), so this is native-only.
+  String get requestOrigin {
+    final uri = Uri.tryParse(baseUrl);
+    if (uri == null) return baseUrl;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return baseUrl;
+    return uri.origin.isEmpty ? baseUrl : uri.origin;
+  }
+
   static bool isConfigured({required String baseUrl}) =>
       baseUrl.trim().isNotEmpty;
 
@@ -92,6 +106,7 @@ class CloudAuth {
     required String baseUrl,
     AuthCookieStore? cookieStore,
     http.Client? client,
+    bool restoreExistingSession = true,
   }) async {
     final normalized = baseUrl.trim().replaceFirst(RegExp(r'/+$'), '');
     final auth = CloudAuth._(
@@ -99,7 +114,7 @@ class CloudAuth {
       cookieStore ?? SecureAuthCookieStore(),
       client ?? createHttpClient(),
     );
-    await auth.restoreSession();
+    if (restoreExistingSession) await auth.restoreSession();
     return auth;
   }
 
@@ -140,7 +155,7 @@ class CloudAuth {
     _pendingStudentSignup = false;
     _pendingGuardianEmail = null;
     await _request('POST', 'sign-in/email', <String, Object?>{
-      'email': email.trim(),
+      'email': email.trim().toLowerCase(),
       'password': password,
     });
     return _loadAuthenticatedUser();
@@ -153,7 +168,7 @@ class CloudAuth {
     required String role,
     String guardianEmail = '',
   }) async {
-    final normalizedEmail = email.trim();
+    final normalizedEmail = email.trim().toLowerCase();
     _pendingStudentSignup = role == 'student';
     _pendingGuardianEmail = guardianEmail.trim().isEmpty
         ? null
@@ -179,7 +194,7 @@ class CloudAuth {
 
   Future<void> sendVerificationCode(String email) async {
     await _request('POST', 'email-otp/send-verification-otp', <String, Object?>{
-      'email': email.trim(),
+      'email': email.trim().toLowerCase(),
       'type': 'email-verification',
     });
   }
@@ -189,7 +204,7 @@ class CloudAuth {
     required String otp,
   }) async {
     await _request('POST', 'email-otp/verify-email', <String, Object?>{
-      'email': email.trim(),
+      'email': email.trim().toLowerCase(),
       'otp': otp.trim(),
     });
     return _loadAuthenticatedUser();
@@ -395,6 +410,7 @@ class CloudAuth {
       if (body != null) 'Content-Type': 'application/json',
     };
     if (!kIsWeb) {
+      headers['Origin'] = requestOrigin;
       final cookie = await _cookieStore.read();
       if (cookie != null && cookie.isNotEmpty) headers['Cookie'] = cookie;
     }
@@ -431,10 +447,23 @@ class CloudAuth {
         : <String, dynamic>{};
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final nested = payload['error'];
-      final message = payload['message'] ??
+      final code =
+          (payload['code'] ?? (nested is Map ? nested['code'] : null))
+              ?.toString()
+              .toUpperCase();
+      final message =
+          payload['message'] ??
           (nested is Map ? nested['message'] : nested) ??
           'The sign-in service returned an error (${response.statusCode}).';
-      throw CloudAuthException(_friendlyMessage(message.toString()));
+      final raw = message.toString();
+      // Signing in before the email code is used returns EMAIL_NOT_VERIFIED;
+      // surface it so the screen offers the code field instead of a dead end.
+      throw CloudAuthException(
+        _friendlyMessage(raw),
+        needsEmailVerification:
+            code == 'EMAIL_NOT_VERIFIED' ||
+            raw.toLowerCase().contains('not verified'),
+      );
     }
     return payload;
   }
@@ -529,6 +558,10 @@ class CloudAuth {
 
   String _friendlyMessage(String message) {
     final lower = message.toLowerCase();
+    if (lower.contains('invalid origin') || lower.contains('invalid_origin')) {
+      return 'Sign-in is blocked for this build because its origin is not '
+          'trusted. Add "$requestOrigin" to the allowed origins.';
+    }
     if (lower.contains('invalid email or password') ||
         lower.contains('invalid credentials')) {
       return 'That email and password do not match an account.';

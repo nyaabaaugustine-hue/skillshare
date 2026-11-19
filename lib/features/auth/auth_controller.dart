@@ -205,6 +205,7 @@ class AuthController extends ChangeNotifier {
     try {
       final cloud = await CloudAuth.initialize(
         baseUrl: config.sharedApiBaseUrl,
+        restoreExistingSession: false,
       );
       _cloud = cloud;
       final repository = _courseProgress;
@@ -213,6 +214,14 @@ class AuthController extends ChangeNotifier {
           baseUrl: config.sharedApiBaseUrl,
           auth: cloud,
           repository: repository,
+        );
+      }
+      try {
+        await cloud.restoreSession();
+      } on CloudAuthException catch (error) {
+        debugPrint(
+          'Shared account session restore failed; sign-in remains available: '
+          '${error.message}',
         );
       }
       _cloudEvents = cloud.userEvents.listen(_adoptCloudUser);

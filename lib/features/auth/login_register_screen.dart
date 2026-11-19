@@ -208,15 +208,22 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
     final error = auth.error;
+    final palette = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF0A1729), SkillBridgeColors.background],
-            stops: [0.0, 0.55],
+            // Light mode lifts from a soft tint rather than the dark header
+            // wash, so the form stays readable on a light background.
+            colors: [
+              isDark ? const Color(0xFF0A1729) : palette.surfaceHigh,
+              palette.background,
+            ],
+            stops: const [0.0, 0.55],
           ),
         ),
         child: Stack(
@@ -267,8 +274,8 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                                           ? 'Welcome, Parent / Guardian'
                                           : 'Welcome back, Student'),
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: SkillBridgeColors.textPrimary,
+                                style: TextStyle(
+                                  color: context.appColors.textPrimary,
                                   fontSize: 25,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: -0.4,
@@ -285,8 +292,8 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                                     : 'Pick up your lessons right where you '
                                           'left off.',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: SkillBridgeColors.textMuted,
+                                style: TextStyle(
+                                  color: context.appColors.textMuted,
                                   fontSize: 13.5,
                                   height: 1.4,
                                 ),
@@ -438,8 +445,8 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                                 const SizedBox(height: 14),
                                 Text(
                                   'Enter the verification code sent to ${auth.pendingVerificationEmail ?? _email.text.trim()}.',
-                                  style: const TextStyle(
-                                    color: SkillBridgeColors.textMuted,
+                                  style: TextStyle(
+                                    color: context.appColors.textMuted,
                                     fontSize: 13,
                                     height: 1.4,
                                   ),
@@ -502,9 +509,9 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                           const SizedBox(height: 16),
                           Row(
                             children: [
-                              const Expanded(
+                              Expanded(
                                 child: Divider(
-                                  color: SkillBridgeColors.outline,
+                                  color: context.appColors.outline,
                                 ),
                               ),
                               Padding(
@@ -514,15 +521,15 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                                 child: Text(
                                   'or',
                                   style: TextStyle(
-                                    color: SkillBridgeColors.textMuted
+                                    color: context.appColors.textMuted
                                         .withValues(alpha: 0.9),
                                     fontSize: 12,
                                   ),
                                 ),
                               ),
-                              const Expanded(
+                              Expanded(
                                 child: Divider(
-                                  color: SkillBridgeColors.outline,
+                                  color: context.appColors.outline,
                                 ),
                               ),
                             ],
@@ -534,7 +541,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                             label: const Text('Continue as guest'),
                             style: OutlinedButton.styleFrom(
                               minimumSize: const Size.fromHeight(52),
-                              backgroundColor: SkillBridgeColors.surface
+                              backgroundColor: context.appColors.surface
                                   .withValues(alpha: 0.5),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
@@ -554,8 +561,8 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                               : 'Guest progress stays on this device. Create '
                                     'an account to use shared sign-in.',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: SkillBridgeColors.textMuted,
+                          style: TextStyle(
+                            color: context.appColors.textMuted,
                             fontSize: 12,
                             height: 1.45,
                           ),
@@ -592,11 +599,11 @@ class _BrandRow extends StatelessWidget {
         const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text(
               'SKILLBRIDGE',
               style: TextStyle(
-                color: SkillBridgeColors.textPrimary,
+                color: context.appColors.textPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 2.4,
@@ -607,7 +614,7 @@ class _BrandRow extends StatelessWidget {
             Text(
               'ACADEMY',
               style: TextStyle(
-                color: SkillBridgeColors.textMuted,
+                color: context.appColors.textMuted,
                 fontSize: 9.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 3.4,
@@ -694,10 +701,10 @@ class _RoleCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected
                 ? accent.withValues(alpha: 0.14)
-                : SkillBridgeColors.surface,
+                : context.appColors.surface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: selected ? accent : SkillBridgeColors.outline,
+              color: selected ? accent : context.appColors.outline,
               width: selected ? 1.8 : 1.2,
             ),
             boxShadow: selected
@@ -741,8 +748,8 @@ class _RoleCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: selected
-                      ? SkillBridgeColors.textPrimary
-                      : SkillBridgeColors.textMuted,
+                      ? context.appColors.textPrimary
+                      : context.appColors.textMuted,
                   fontWeight: FontWeight.w800,
                   fontSize: 13.5,
                 ),
@@ -751,8 +758,8 @@ class _RoleCard extends StatelessWidget {
               Text(
                 subtitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: SkillBridgeColors.textMuted,
+                style: TextStyle(
+                  color: context.appColors.textMuted,
                   fontSize: 11.5,
                 ),
               ),
@@ -775,9 +782,9 @@ class _ModeToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: SkillBridgeColors.outline),
+        border: Border.all(color: context.appColors.outline),
       ),
       child: Row(
         children: [
@@ -832,8 +839,8 @@ class _Segment extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: selected
-                  ? SkillBridgeColors.textPrimary
-                  : SkillBridgeColors.textMuted,
+                  ? context.appColors.textPrimary
+                  : context.appColors.textMuted,
               fontWeight: FontWeight.w700,
               fontSize: 13.5,
             ),
@@ -869,12 +876,12 @@ class _OptionalParentLink extends StatelessWidget {
       duration: const Duration(milliseconds: 240),
       curve: Curves.easeOut,
       decoration: BoxDecoration(
-        color: SkillBridgeColors.surface.withValues(alpha: 0.7),
+        color: context.appColors.surface.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: expanded
               ? SkillBridgeColors.accent.withValues(alpha: 0.45)
-              : SkillBridgeColors.outline,
+              : context.appColors.outline,
         ),
       ),
       child: Column(
@@ -899,10 +906,10 @@ class _OptionalParentLink extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Add a parent login',
                           style: TextStyle(
-                            color: SkillBridgeColors.textPrimary,
+                            color: context.appColors.textPrimary,
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
                           ),
@@ -912,8 +919,8 @@ class _OptionalParentLink extends StatelessWidget {
                           sharedAccount
                               ? 'Optional — sends a family invitation after verification.'
                               : 'Optional — creates a local parent login and emails progress.',
-                          style: const TextStyle(
-                            color: SkillBridgeColors.textMuted,
+                          style: TextStyle(
+                            color: context.appColors.textMuted,
                             fontSize: 11.5,
                           ),
                         ),
@@ -965,29 +972,27 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final errorColor = Theme.of(context).colorScheme.error;
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
-        color: SkillBridgeColors.error.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: SkillBridgeColors.error.withValues(alpha: 0.45),
-        ),
+        color: errorColor.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: errorColor.withValues(alpha: 0.45)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.error_outline_rounded,
-            color: SkillBridgeColors.error,
-            size: 18,
-          ),
-          const SizedBox(width: 8),
+          Icon(Icons.error_outline_rounded, color: errorColor, size: 19),
+          const SizedBox(width: 9),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
-                color: SkillBridgeColors.error,
+              style: TextStyle(
+                color: errorColor,
                 fontSize: 13,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),

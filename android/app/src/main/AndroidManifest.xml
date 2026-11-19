@@ -37,9 +37,9 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Brings the learner back from the Facebook browser sign-in.
+            <!-- Brings the learner back from the browser sign-in flow.
                  The scheme/host must match CloudAuth.androidRedirectUrl and the
-                 Supabase redirect URL allow list (docs/SHARED_ACCOUNTS.md). -->
+                 Neon Auth redirect URL allow list. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>

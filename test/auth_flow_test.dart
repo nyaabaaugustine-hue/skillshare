@@ -182,7 +182,7 @@ void main() {
 
   group('production authentication', () {
     test(
-      'does not fall back to local mock accounts without Supabase config',
+      'does not fall back to local mock accounts without cloud auth config',
       () async {
         final auth = AuthController();
         addTearDown(auth.dispose);
