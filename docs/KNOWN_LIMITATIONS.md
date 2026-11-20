@@ -67,15 +67,24 @@ stale caveats behind.
    takes to launch on a low-end Android phone is unknown and matters a lot for
    the target audience.
 
-6. **The web build runs Python through Pyodide, but needs one online load.**
+6. **The web build runs Python through Pyodide, but the app is not offline.**
    `web/pyodide_worker.js` loads Pyodide and executes `web/skillbridge_exec.py`
    (a byte-identical copy of the native executor, enforced by
    `test/web_executor_sync_test.dart`), so the browser really runs the
-   learner's code. Pyodide itself still comes from a CDN unless
-   `SB_PYODIDE_INDEX_URL` points at a self-hosted copy, so the editor is only
-   usable after one successful online load. Pyodide has no threads, so the
-   watchdog half of the time limit is inert there and only the Python-side
-   output caps apply. `FakePythonRuntime` is now used by widget tests only.
+   learner's code, and the distribution is vendored at `web/pyodide/` rather
+   than fetched from a CDN. What is still missing is a service worker: Flutter
+   3.47 generates a `flutter_service_worker.js` whose entire body unregisters
+   itself, and `--pwa-strategy` no longer exists, so **nothing caches the app
+   shell**. The manifest makes the app installable and the Pyodide dependency
+   no longer leaves the origin, but opening the installed app with no network
+   fails with a normal browser offline error, and the editor is unreachable.
+   Closing this needs a hand-written service worker (cache-first for
+   same-origin assets, versioned cache name, network-first navigations) shipped
+   over `flutter_service_worker.js` — deliberately not done blind, because a
+   bad worker can serve a stale or broken shell to every learner. Pyodide also
+   has no threads, so the watchdog half of the time limit is inert there and
+   only the Python-side output caps apply. `FakePythonRuntime` is used by
+   widget tests only.
 
 ## Editor
 
