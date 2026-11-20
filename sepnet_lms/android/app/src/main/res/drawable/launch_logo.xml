@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launch/splash logo: the transparent SkillBridge mark, drawn directly on
+     the white launch background so there is no white card around it. Used by
+     launch_background.xml and the Android 12+ splash screen
+     (values-v31/styles.xml). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:width="148dp"
+        android:height="120dp"
+        android:gravity="center"
+        android:drawable="@drawable/launch_mark" />
+</layer-list>

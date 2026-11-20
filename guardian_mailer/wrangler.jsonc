@@ -1,0 +1,36 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "skillbridge-tutor",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-17",
+  "ai": {
+    "binding": "AI"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "TUTOR_RATE_LIMITER",
+        "class_name": "TutorRateLimiter"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["TutorRateLimiter"]
+    }
+  ],
+  "vars": {
+    "APP_ENV": "production",
+    "CF_AI_MODEL": "@cf/meta/llama-4-scout-17b-16e-instruct",
+    "CF_AI_VISION_MODEL": "@cf/meta/llama-3.2-11b-vision-instruct",
+    "AI_ALLOWED_ORIGINS": "",
+    "NEON_AUTH_JWKS_URL": "",
+    "NEON_AUTH_ISSUER": "",
+    "NEON_AUTH_AUDIENCE": "",
+    "MAIL_FROM": "SkillsBridge Academy <reports@skillsbridge.academy>"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

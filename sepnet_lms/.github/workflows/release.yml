@@ -1,0 +1,122 @@
+# Release — signed Android App Bundle (AAB).
+#
+# Manual-only (workflow_dispatch). Required repository configuration:
+#
+#   Secrets (Settings -> Secrets and variables -> Actions -> Secrets):
+#     KEYSTORE_BASE64    base64 of the upload keystore (.jks). Generate with
+#                        `base64 -w0 upload-keystore.jks` (Windows:
+#                        `[Convert]::ToBase64String([IO.File]::ReadAllBytes("upload-keystore.jks"))`)
+#     KEYSTORE_PASSWORD  the keystore (store) password
+#     KEY_ALIAS          the key alias inside the keystore
+#     KEY_PASSWORD       the key password
+#
+#   Variables (… -> Variables), each optional with a sensible default below:
+#     SB_API_BASE_URL        website origin serving /api/auth
+#     SB_LEADERBOARD_URL     website origin serving /api/leaderboard
+#     SB_GUARDIAN_REPORT_URL guardian mailer endpoint
+#
+# android/app/build.gradle.kts already reads android/keystore.properties when it
+# exists and signs the release build with it (falling back to the debug key
+# otherwise), so decoding the keystore and writing that file is enough — no
+# Gradle changes are required.
+
+name: Release (Android AAB)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-appbundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Android Gradle Plugin requires JDK 17.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      # Platform/NDK/CMake versions required by Flutter 3.47.7 + serious_python
+      # (compileSdk 36, ndkVersion 28.2.13676358) — see docs/BUILD_AND_RELEASE.md.
+      - name: Install Android SDK components
+        run: |
+          sdkmanager "platform-tools" \
+            "platforms;android-36" "build-tools;36.0.0" \
+            "platforms;android-34" "build-tools;34.0.0" \
+            "ndk;28.2.13676358" "cmake;3.22.1"
+
+      # pubspec.yaml pins the Dart SDK to ^3.13.5; Flutter 3.47.7 ships Dart 3.13.5.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.47.7"
+          cache: true
+
+      # serious_python's `package` step needs a Python interpreter.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: flutter pub get
+
+      # serious_python 5.0.0 stages the Python app into SERIOUS_PYTHON_APP and
+      # the Android Gradle build reads it back out of the same directory, so the
+      # package step and `flutter build` must share these two variables. Skipping
+      # the package step makes the app fail at runtime ("embedded Python runtime
+      # did not start in time"). See docs/BUILD_AND_RELEASE.md.
+      - name: Package the embedded Python runtime
+        run: dart run serious_python:main package python_app -p Android --cleanup-app
+        env:
+          SERIOUS_PYTHON_APP: ${{ github.workspace }}/build/python-app
+          SERIOUS_PYTHON_SITE_PACKAGES: ${{ github.workspace }}/build/python-site-packages
+
+      - name: Decode upload keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
+
+      # Format matches android/keystore.properties.example; storeFile is resolved
+      # relative to android/app, so ../upload-keystore.jks == android/upload-keystore.jks.
+      - name: Write keystore.properties
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          cat > android/keystore.properties <<EOF
+          storeFile=../upload-keystore.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
+      # Fail loudly: an AAB built without a usable SB_API_BASE_URL runs in
+      # guest/offline mode (no cloud sign-in, no Cloudflare tutor) and looks
+      # fine until a learner asks the tutor something.
+      - name: Validate release configuration
+        env:
+          SB_API_BASE_URL: ${{ vars.SB_API_BASE_URL || 'https://www.skillbridgeacademy.tech' }}
+        run: |
+          case "$SB_API_BASE_URL" in
+            http://*|https://*) echo "SB_API_BASE_URL=$SB_API_BASE_URL" ;;
+            *) echo "::error::SB_API_BASE_URL must be an absolute http(s) URL, got '$SB_API_BASE_URL'."; exit 1 ;;
+          esac
+
+      - name: Build release App Bundle
+        run: |
+          flutter build appbundle --release \
+            --dart-define=SB_API_BASE_URL=${{ vars.SB_API_BASE_URL || 'https://www.skillbridgeacademy.tech' }} \
+            --dart-define=SB_LEADERBOARD_URL=${{ vars.SB_LEADERBOARD_URL || 'https://www.skillbridgeacademy.tech' }} \
+            --dart-define=SB_GUARDIAN_REPORT_URL=${{ vars.SB_GUARDIAN_REPORT_URL || 'https://skillbridge-tutor.skillsbridg-academy.workers.dev/guardian-report' }}
+        env:
+          SERIOUS_PYTHON_APP: ${{ github.workspace }}/build/python-app
+          SERIOUS_PYTHON_SITE_PACKAGES: ${{ github.workspace }}/build/python-site-packages
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error

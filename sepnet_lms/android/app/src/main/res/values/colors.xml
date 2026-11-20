@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Clean white shown the instant the app launches. It matches the first
+         Flutter splash frame (see lib/features/splash/splash_screen.dart), so
+         the hand-off from the native launch screen to the app is seamless. -->
+    <color name="launch_bg">#FFFFFF</color>
+</resources>

@@ -1,0 +1,52 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+
+# Worker build output
+guardian_mailer/node_modules/
+guardian_mailer/.wrangler/
+
+# Website build output
+website/node_modules/
+website/.next/
+website/.next-dev/
+website/out/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+sepnet_lms/build/
+sepnet_lms/.dart_tool/
+sepnet_lms/android/.gradle/
+sepnet_lms/android/local.properties
+sepnet_lms/android/key.properties
+sepnet_lms/ios/Pods/
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# Scratch / local logs
+.work/
+*.log
+outputs/
+.freebuff/
+
+# Agent scratch / tool caches (contains test credentials, must never be committed)
+.manus/
+.toolcache/
+
+# Local media staging (large binaries)
+cloudflare-assets/
+screenshot.png
+vvvvvvvvvv.txt
+
+# Workspace-local Pub cache (see docs/BUILD_AND_RELEASE.md). Some plugins
+# mutate their own package directory during an Android build, which fails when
+# the shared %LOCALAPPDATA%\Pub\Cache is read-only.
+.pub-cache/

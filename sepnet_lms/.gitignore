@@ -1,0 +1,54 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Android
+android/.gradle/
+android/.kotlin/
+android/local.properties
+android/key.properties
+android/app/*.jks
+android/app/*.keystore
+*.jks
+*.keystore
+
+# iOS / macOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# Secrets and environment config (never commit)
+.env
+.env.*
+*.secrets.json
+lib/core/config/env.local.dart
+
+# Node (CodeMirror bundle build)
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local generated artifacts
+__pycache__/
+*.py[cod]
+outputs/
+tool/*.txt
+*.log
+.toolcache/
+ios/Flutter/ephemeral/
+web/sqflite_sw.js
+web/sqlite3.wasm

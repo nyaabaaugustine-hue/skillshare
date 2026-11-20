@@ -1,0 +1,340 @@
+import 'package:flutter/material.dart';
+
+import 'package:skillbridge_python_lab/features/python_runtime/execution_result.dart';
+import 'package:skillbridge_python_lab/features/python_runtime/error_explainer.dart';
+
+/// Displays program output and errors in a terminal-like panel with a clear
+/// status line, suited to beginners.
+class OutputConsole extends StatelessWidget {
+  const OutputConsole({
+    super.key,
+    required this.result,
+    this.isRunning = false,
+    this.compact = false,
+    this.source = '',
+  });
+
+  final ExecutionResult? result;
+  final bool isRunning;
+
+  /// Tighter chrome, used when the soft keyboard is up: every pixel the status
+  /// bar gives back is a pixel the learner keeps for their code.
+  final bool compact;
+  final String source;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF0B1220),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _StatusBar(result: result, isRunning: isRunning, compact: compact),
+          const Divider(height: 1, color: Color(0xFF22304A)),
+          Expanded(child: _body(context)),
+        ],
+      ),
+    );
+  }
+
+  Widget _body(BuildContext context) {
+    if (isRunning) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(height: 10),
+            Text('Running…', style: TextStyle(color: Colors.white70)),
+          ],
+        ),
+      );
+    }
+
+    final current = result;
+    if (current == null) {
+      return Center(
+        child: Text(
+          compact ? 'Output appears here.' : 'Tap Run to see the output here.',
+          style: const TextStyle(color: Colors.white38),
+        ),
+      );
+    }
+
+    final buffer = StringBuffer();
+    if (current.stdout.isNotEmpty) buffer.write(current.stdout);
+    if (current.stderr.isNotEmpty) buffer.write(current.stderr);
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(compact ? 8 : 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (buffer.isEmpty && !current.hasException)
+            const Text('(no output)', style: TextStyle(color: Colors.white38)),
+          if (buffer.isNotEmpty)
+            SelectableText(
+              buffer.toString(),
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 13,
+                color: Color(0xFFE6EAF0),
+              ),
+            ),
+          if (current.stdoutTruncated || current.stderrTruncated)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                'Output was shortened because it was very long.',
+                style: TextStyle(color: Color(0xFFF5A623), fontSize: 12),
+              ),
+            ),
+          if (current.exception != null)
+            _ErrorBlock(exception: current.exception!, source: source),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusBar extends StatelessWidget {
+  const _StatusBar({
+    required this.result,
+    required this.isRunning,
+    this.compact = false,
+  });
+
+  final ExecutionResult? result;
+  final bool isRunning;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color, icon) = _status();
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: compact ? 4 : 8),
+      child: Row(
+        children: [
+          Icon(icon, size: compact ? 14 : 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: compact ? 12 : 13,
+            ),
+          ),
+          const Spacer(),
+          if (!compact) ...[
+            if (result != null && result!.durationMs > 0)
+              Text(
+                '${result!.durationMs} ms',
+                style: const TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+            if (result != null && result!.pythonVersion.isNotEmpty) ...[
+              const SizedBox(width: 10),
+              Text(
+                'Python ${result!.pythonVersion}',
+                style: const TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  (String, Color, IconData) _status() {
+    if (isRunning) return ('Running', Colors.white70, Icons.play_arrow);
+    final current = result;
+    if (current == null) {
+      return ('Ready', Colors.white54, Icons.circle_outlined);
+    }
+    switch (current.status) {
+      case ExecutionStatus.success:
+        return (
+          'Finished successfully',
+          const Color(0xFF98C379),
+          Icons.check_circle_outline,
+        );
+      case ExecutionStatus.error:
+        return (
+          'Stopped with an error',
+          const Color(0xFFE06C75),
+          Icons.error_outline,
+        );
+      case ExecutionStatus.timeout:
+        return ('Timed out', const Color(0xFFF5A623), Icons.timer_off_outlined);
+      case ExecutionStatus.cancelled:
+        return ('Stopped', Colors.white54, Icons.stop_circle_outlined);
+    }
+  }
+}
+
+class _ErrorBlock extends StatelessWidget {
+  const _ErrorBlock({required this.exception, required this.source});
+
+  final ExecutionException exception;
+  final String source;
+
+  @override
+  Widget build(BuildContext context) {
+    final explanation = const PythonErrorExplainer().explain(
+      exception,
+      source: source,
+    );
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF3A1D22),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF7A3038)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.lightbulb_outline,
+                color: Color(0xFFF5A623),
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'What happened?',
+                  style: const TextStyle(
+                    color: Color(0xFFFFD9A0),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            explanation.headline,
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          if (explanation.lineLabel.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              explanation.lineLabel,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+          ],
+          const SizedBox(height: 10),
+          _ExplanationRow(label: 'Why it happened', text: explanation.why),
+          const SizedBox(height: 8),
+          _ExplanationRow(label: 'Try this next', text: explanation.nextStep),
+          const SizedBox(height: 10),
+          const Text(
+            'Quick debugging checklist',
+            style: TextStyle(
+              color: Colors.white70,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          for (final item in <String>[
+            'Start with the line number above.',
+            'Check quotes, brackets, colons and indentation.',
+            'Change one thing, then run your code again.',
+          ])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                '- $item',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ),
+          const SizedBox(height: 6),
+          const Text(
+            'Your code is still here. Edit it and run again.',
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${exception.type}: ${exception.message}',
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 12,
+              color: Color(0xFFE6EAF0),
+            ),
+          ),
+          if (exception.traceback.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Theme(
+              data: Theme.of(context)
+                  .copyWith(dividerColor: Colors.transparent),
+              // A Material of its own: the error block paints a coloured
+              // DecoratedBox, and without this the ListTile would paint its
+              // background and ink splash on that ancestor instead.
+              child: Material(
+                type: MaterialType.transparency,
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  title: const Text(
+                    'Details',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  children: [
+                    SelectableText(
+                      exception.traceback,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                        color: Color(0xFFB9C2CF),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ExplanationRow extends StatelessWidget {
+  const _ExplanationRow({required this.label, required this.text});
+
+  final String label;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFFFFD9A0),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+            height: 1.4,
+          ),
+        ),
+      ],
+    );
+  }
+}

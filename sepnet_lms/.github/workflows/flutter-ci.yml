@@ -1,0 +1,28 @@
+name: Flutter CI
+
+on:
+  push:
+  pull_request:
+
+# Cancel superseded runs for the same ref to save runner minutes.
+concurrency:
+  group: flutter-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # pubspec.yaml pins the Dart SDK to ^3.13.5; Flutter 3.47.7 ships Dart
+      # 3.13.5 (see docs/BUILD_AND_RELEASE.md), so pin that version.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.47.7"
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test

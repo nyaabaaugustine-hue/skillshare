@@ -1,0 +1,57 @@
+# Uptime monitor.
+#
+# Pings the two health endpoints on a schedule. A failing run notifies
+# repository watchers (GitHub emails the workflow's actor/owner on scheduled
+# failures by default), so no extra service is needed for a small team.
+#
+# Optional configuration (Settings -> Secrets and variables -> Actions ->
+# Variables). The defaults below point at the production deployment:
+#   SITE_HEALTH_URL    website /api/health
+#   WORKER_HEALTH_URL  tutor Worker /health
+#
+# Note: scheduled workflows are disabled automatically after long periods of
+# repository inactivity; re-enable from the Actions tab if alerts stop.
+
+name: Uptime
+
+on:
+  schedule:
+    # Every 15 minutes.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Website /api/health
+        env:
+          URL: ${{ vars.SITE_HEALTH_URL || 'https://academy-skillshare.vercel.app/api/health' }}
+        run: |
+          body=$(curl -sS -o /tmp/site.json -w '%{http_code}' "$URL" || echo "000")
+          cat /tmp/site.json 2>/dev/null; echo
+          if [ "$body" != "200" ]; then
+            echo "::error::$URL returned HTTP $body"
+            exit 1
+          fi
+          # storage is optional (uploads only); postgres/auth must be ok.
+          if ! grep -q '"postgres":"ok"' /tmp/site.json || ! grep -q '"auth":"ok"' /tmp/site.json; then
+            echo "::error::$URL reports a core service down"
+            exit 1
+          fi
+
+      - name: Tutor Worker /health
+        env:
+          URL: ${{ vars.WORKER_HEALTH_URL || 'https://skillbridge-tutor.skillsbridg-academy.workers.dev/health' }}
+        run: |
+          code=$(curl -sS -o /tmp/worker.json -w '%{http_code}' "$URL" || echo "000")
+          cat /tmp/worker.json 2>/dev/null; echo
+          if [ "$code" != "200" ]; then
+            echo "::error::$URL returned HTTP $code"
+            exit 1
+          fi
+          # The AI tutor is the flagship feature: fail loudly if it is off.
+          if ! grep -q '"ai_configured":true' /tmp/worker.json; then
+            echo "::error::$URL reports ai_configured is not true"
+            exit 1
+          fi

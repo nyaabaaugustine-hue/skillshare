@@ -1,0 +1,40 @@
+name: Worker Tests
+
+on:
+  push:
+    paths:
+      - "guardian_mailer/**"
+      - ".github/workflows/worker-tests.yml"
+  pull_request:
+    paths:
+      - "guardian_mailer/**"
+      - ".github/workflows/worker-tests.yml"
+
+# Cancel superseded runs for the same ref to save runner minutes.
+concurrency:
+  group: worker-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: guardian_mailer
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node 20+ gives a stable `node --test` runner. package-lock.json exists,
+      # so `npm ci` is the reproducible install.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: guardian_mailer/package-lock.json
+
+      - run: npm ci
+
+      # package.json defines "test": "node --test", which runs test/*.test.mjs
+      # against the Worker through Node's built-in test runner.
+      - run: npm test
