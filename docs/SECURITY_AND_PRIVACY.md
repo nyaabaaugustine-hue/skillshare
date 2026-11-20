@@ -25,21 +25,25 @@ exactly where the line is.**
 | `input()` is backed by a list of supplied lines | The app can never freeze waiting for stdin | Anything |
 | Output cap (`maxOutputChars`, default 200 000) | A runaway `print` loop cannot exhaust memory or lock the UI | Deliberate CPU burn |
 | Hard process kill on timeout (`ProcessPythonRuntime`) | An infinite loop is stopped with a real `SIGKILL` | — (this one does work, for the dev/test runtime) |
-| Optional `SIGALRM` CPU limit (POSIX only) | Best-effort in-interpreter timeout | Windows, and most mobile builds |
+| Wall-clock limit: `SIGALRM` (POSIX) plus a watchdog thread | An infinite loop stops in about a second on every platform, including Windows | A single long C call (`time.sleep(60)`) only stops once it returns |
+| `POST /cancel` + `PyThreadState_SetAsyncExc` | Stop works on device, where no process can be killed | Same C-call caveat; untested on hardware |
+| Curated builtins and import allowlist | `open`, `exec`, `eval`, `compile` removed; `os`, `shutil`, `pathlib`, `subprocess`, `socket`, `ctypes` refuse to import with a friendly message | `sys.modules` still reaches already-imported modules; this is a rail, not a boundary |
+| Bearer token on the loopback server | Another local process (or a blind cross-origin POST) cannot run code in our interpreter | The token lives in the app's environment, not in a secret store |
 | Traceback filtering | Internal executor frames are hidden so learners only see their own code | — |
 
-**On device, timeout enforcement is weaker than on the desktop.** The embedded
-runtime runs inside the app's own interpreter and exposes no kill primitive, so
-a runaway loop can only be stopped by the in-interpreter alarm, which is
-POSIX-only. This is recorded in `docs/KNOWN_LIMITATIONS.md`.
+**On device, timeout enforcement is in-interpreter.** The embedded runtime runs
+inside the app's own interpreter and exposes no kill primitive, so a runaway
+loop is stopped by the watchdog thread (and `SIGALRM` where it exists), not by
+a process kill. The desktop runtime still uses a real `SIGKILL`. This is
+recorded in `docs/KNOWN_LIMITATIONS.md`.
 
 ### Threat model, stated plainly
 
 | Threat | Mitigation | Residual risk |
 | --- | --- | --- |
 | Learner code hangs the app | Timeout + output cap | Lower on desktop than on device |
-| Learner code reads the app's files | Nothing meaningful | **Accepted.** On device the code runs inside the app's private data directory |
-| Learner code reaches the network | Nothing meaningful | **Accepted** for now |
+| Learner code reads the app's files | `open`/`exec`/`eval` removed and `os`/`shutil`/`pathlib`/`ctypes` blocked at import | **Reduced, not closed.** A determined escape through `sys.modules` is still possible; treat this as a classroom rail |
+| Learner code reaches the network | `socket`, `subprocess` and `os` blocked at import | **Reduced, not closed.** No sandbox |
 | Stolen device exposes learner work | Device lock screen | **Accepted**; drafts are plaintext |
 | Token theft | Token held by an `AuthTokenProvider`, never in SQLite or `shared_preferences` | Provider not yet implemented |
 | Tampered app binary | Play App Signing / platform signing | Out of scope here |

@@ -1,12 +1,16 @@
 {
     "name": "SkillBridge Academy",
     "short_name": "SkillBridge",
-    "start_url": ".",
+    "id": "/app/",
+    "start_url": "/app/",
+    "scope": "/app/",
     "display": "standalone",
+    "lang": "en",
+    "dir": "ltr",
     "background_color": "#FFFFFF",
     "theme_color": "#1697F5",
-    "description": "SkillBridge Academy \u00e2\u20ac\u201d friendly Python learning for every learner.",
-    "orientation": "portrait-primary",
+    "description": "SkillBridge Academy - friendly Python learning for every learner.",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

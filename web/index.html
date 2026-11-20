@@ -18,6 +18,10 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <!-- Explicit viewport: the engine usually injects one, but relying on that
+       leaves older builds and `flutter run -d chrome` at the 980px default.
+       Zoom is deliberately left enabled for accessibility. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="SkillBridge Academy — friendly Python learning for every learner.">
 
   <!-- iOS meta tags & icons -->

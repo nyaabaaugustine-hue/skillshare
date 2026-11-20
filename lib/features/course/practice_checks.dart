@@ -118,6 +118,28 @@ String stripComments(String code) => code
     })
     .join('\n');
 
+/// Normalises printed text before comparing it with an expected answer.
+///
+/// Python's `print` adds a newline, Windows emits `\r\n`, and a learner may
+/// leave trailing spaces at the end of a line. None of those change what the
+/// program produced, so none of them should fail the check — but a genuinely
+/// different line still must.
+String normalizePrinted(String text) {
+  final lines = text
+      .replaceAll('\r\n', '\n')
+      .replaceAll('\r', '\n')
+      .split('\n')
+      .map((line) => line.replaceFirst(RegExp(r'[ \t]+$'), ''))
+      .toList();
+  while (lines.isNotEmpty && lines.first.trim().isEmpty) {
+    lines.removeAt(0);
+  }
+  while (lines.isNotEmpty && lines.last.trim().isEmpty) {
+    lines.removeLast();
+  }
+  return lines.join('\n');
+}
+
 /// Checks a real [result] (and the learner's [code]) against [block].
 ///
 /// Every check comes from what the program actually printed or what the
@@ -187,7 +209,10 @@ PracticeVerdict evaluatePractice({
     checks.add(
       PracticeCheck(
         label: 'Output matches the expected result',
-        passed: lines.join('\n') == expected,
+        // Compare the whole printed text, normalised only for line endings and
+        // trailing spaces. The old version compared the joined trimmed lines,
+        // so an expected answer containing a blank line could never match.
+        passed: normalizePrinted(output) == normalizePrinted(expected),
       ),
     );
   }

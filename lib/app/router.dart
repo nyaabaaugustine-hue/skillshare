@@ -12,6 +12,8 @@ import 'package:skillbridge_python_lab/features/achievements/achievements_screen
 import 'package:skillbridge_python_lab/features/course/course_lesson_screen.dart';
 import 'package:skillbridge_python_lab/features/course/course_models.dart';
 import 'package:skillbridge_python_lab/features/course/practice_checks.dart';
+import 'package:skillbridge_python_lab/features/quizzes/quiz.dart';
+import 'package:skillbridge_python_lab/features/quizzes/quiz_screen.dart';
 import 'package:skillbridge_python_lab/features/settings/settings_screen.dart';
 
 /// Central named-route table for pushed (full-screen) destinations.
@@ -29,6 +31,7 @@ class AppRouter {
   static const String aiTutor = '/ai-tutor';
   static const String lmsVideo = '/lms-video';
   static const String courseLesson = '/course-lesson';
+  static const String quizRoute = '/quiz';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -112,6 +115,13 @@ class AppRouter {
             step: step,
             onCompleted: onCompleted is ValueChanged<int> ? onCompleted : null,
           ),
+        );
+      case quizRoute:
+        final quizArgument = settings.arguments;
+        if (quizArgument is! Quiz) return _home(settings);
+        return MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => QuizScreen(quiz: quizArgument),
         );
       case '/progress':
         return MaterialPageRoute<void>(

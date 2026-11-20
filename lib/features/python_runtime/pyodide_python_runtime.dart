@@ -9,15 +9,29 @@ import 'package:skillbridge_python_lab/core/errors/app_exception.dart';
 import 'execution_result.dart';
 import 'python_runtime.dart';
 
-/// Default location of the Pyodide distribution (CPython compiled to
-/// WebAssembly) on the public CDN.
+/// Build-time override for where the Pyodide distribution lives.
 ///
-/// Override per build with `--dart-define=SB_PYODIDE_INDEX_URL=...` when the
-/// distribution is vendored next to the app.
-const String defaultPyodideIndexURL = String.fromEnvironment(
+/// Empty by default, which means "the copy shipped next to the app" —
+/// `web/pyodide/`, published at `/app/pyodide/`. Vendoring the distribution is
+/// what makes the installed app work offline: a CDN copy is unreachable on a
+/// school bus, and an editor that cannot run code without a connection is not
+/// much of an offline app.
+const String _pyodideIndexOverride = String.fromEnvironment(
   'SB_PYODIDE_INDEX_URL',
-  defaultValue: 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/',
 );
+
+/// Base URL of the Pyodide distribution used for this build.
+///
+/// Resolved against the document base so the vendored copy works no matter
+/// which path the host serves the bundle from.
+String defaultPyodideIndexURL() {
+  if (_pyodideIndexOverride.isNotEmpty) {
+    return _pyodideIndexOverride.endsWith('/')
+        ? _pyodideIndexOverride
+        : '$_pyodideIndexOverride/';
+  }
+  return Uri.base.resolve('pyodide/').toString();
+}
 
 /// Executes learner code with a **real** CPython interpreter compiled to
 /// WebAssembly (Pyodide), running inside a dedicated Web Worker.
@@ -60,7 +74,7 @@ class PyodidePythonRuntime implements PythonRuntime {
     this.defaultMaxOutputChars = 200000,
     this.initTimeout = const Duration(minutes: 3),
   }) : workerURL = workerURL ?? _resolveWorkerURL(),
-       indexURL = indexURL ?? defaultPyodideIndexURL;
+       indexURL = indexURL ?? defaultPyodideIndexURL();
 
   /// URL of the worker script, resolved against the app's base URL.
   final String workerURL;

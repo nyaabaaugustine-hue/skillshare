@@ -72,7 +72,8 @@ Runtime selection:
 | `SB_PYTHON_RUNTIME=fake` | `FakePythonRuntime` | Deterministic, for widget tests |
 | Android / iOS (default) | `SeriousPythonRuntime` | The only real on-device option |
 | Desktop / CI (default) | `ProcessPythonRuntime` | Makes real-execution tests possible |
-| Web | `FakePythonRuntime` | There is no Python on the web build |
+| Web (default) | `PyodidePythonRuntime` | CPython compiled to WebAssembly, running in a Web Worker |
+| Web, tests | `FakePythonRuntime` | Deterministic, for widget tests |
 
 ## Storage
 

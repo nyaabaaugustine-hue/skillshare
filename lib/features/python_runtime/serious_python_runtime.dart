@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:http/http.dart' as http;
 import 'package:serious_python/serious_python.dart';
@@ -50,6 +51,23 @@ class SeriousPythonRuntime implements PythonRuntime {
   bool _ready = false;
   bool _started = false;
 
+  /// Shared secret for the loopback executor. Generated here and handed to the
+  /// Python side through `SKILLBRIDGE_TOKEN`; `main.py` refuses to start without
+  /// it, so another local process cannot POST learner code into our interpreter.
+  String? _token;
+
+  /// Id of the job currently in flight, so [cancel] can address it.
+  String? _currentJobId;
+  int _jobSeq = 0;
+
+  String get _authToken => _token ??= _generateToken();
+
+  static String _generateToken() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(32, (_) => random.nextInt(256));
+    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  }
+
   /// Non-null once [SeriousPython.run] has resolved. On success it is `null`
   /// (the program is a long-lived server); on failure it carries the message
   /// the plugin returned (e.g. `Python exited with code 1`). Recorded so that a
@@ -88,7 +106,10 @@ class SeriousPythonRuntime implements PythonRuntime {
     unawaited(
       SeriousPython.run(
             appFileName: 'main.py',
-            environmentVariables: {'SKILLBRIDGE_PORT': '$port'},
+            environmentVariables: {
+              'SKILLBRIDGE_PORT': '$port',
+              'SKILLBRIDGE_TOKEN': _authToken,
+            },
           )
           .then((result) {
             _runResult = result;
@@ -178,16 +199,26 @@ class SeriousPythonRuntime implements PythonRuntime {
     }
     final timeout = request.timeout ?? defaultTimeout;
     final maxChars = request.maxOutputChars ?? defaultMaxOutputChars;
+    final jobId = 'job-${_jobSeq++}';
+    _currentJobId = jobId;
 
     try {
       final response = await _http
           .post(
             _base.replace(path: '/execute'),
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $_authToken',
+            },
             body: jsonEncode({
               'code': request.code,
               'stdin': request.stdinLines,
               'maxOutputChars': maxChars,
+              // The executor enforces this itself (SIGALRM where available and a
+              // watchdog thread everywhere else), so a runaway loop is stopped
+              // even before this request's own timeout fires.
+              'cpuSeconds': timeout.inSeconds.clamp(1, 600),
+              'jobId': jobId,
             }),
           )
           // A little grace beyond the in-Python alarm so the result can travel back.
@@ -201,22 +232,46 @@ class SeriousPythonRuntime implements PythonRuntime {
       final map = jsonDecode(response.body) as Map<String, dynamic>;
       return ExecutionResult.fromJson(map);
     } on TimeoutException {
-      // The in-interpreter SIGALRM should fire first on POSIX; this is a fallback.
+      // Ask the executor to stop the job as well, so the interpreter is not
+      // left burning CPU after the UI has given up on the request.
+      unawaited(_requestCancel(jobId));
       return ExecutionResult.timedOut(timeout);
     } catch (e) {
       return ExecutionResult.runtimeFailure('Python execution failed: $e');
+    } finally {
+      _currentJobId = null;
+    }
+  }
+
+  /// POSTs `/cancel` for [jobId]. Never throws: cancellation is a courtesy to
+  /// the interpreter, and a failure must not mask the real result.
+  Future<void> _requestCancel(String jobId) async {
+    try {
+      await _http
+          .post(
+            _base.replace(path: '/cancel'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $_authToken',
+            },
+            body: jsonEncode({'jobId': jobId}),
+          )
+          .timeout(const Duration(seconds: 3));
+    } catch (_) {
+      // Best effort, see above.
     }
   }
 
   @override
   Future<void> cancel() async {
-    // The embedded runtime owns the interpreter thread and exposes no kill
-    // primitive. Cancellation is therefore best-effort: the on-device
-    // SIGALRM/host timeout stops runaway programs. Documented as a limitation.
+    final jobId = _currentJobId;
+    if (jobId == null) return;
+    await _requestCancel(jobId);
   }
 
   @override
   Future<void> dispose() async {
+    await cancel();
     _http.close();
     _ready = false;
   }

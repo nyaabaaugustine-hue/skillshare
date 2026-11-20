@@ -29,7 +29,7 @@ stale caveats behind.
 | The APK runs on a real phone | **No** | None — no device or emulator |
 | The embedded Python runtime works on device | **No** | None — never executed on hardware |
 | The web build compiles and boots | `flutter build web --release` → 40 MB, served and screenshotted with SQLite running through `sqflite_common_ffi_web` | High that it *runs* |
-| The web build executes Python | **No** | None — a browser has neither `dart:io` nor `dart:ffi`, so web always selects `FakePythonRuntime` |
+| The web build executes Python | Yes, through Pyodide | `web/pyodide_worker.js` + `web/skillbridge_exec.py`; verified by the worker/executor sync tests, not yet in a real browser session |
 | iOS builds | **No** | None — no macOS host |
 
 ## Runtime
@@ -41,15 +41,18 @@ stale caveats behind.
    server (port allocation, startup timeout, behaviour under app
    suspension) is untested. The desktop `ProcessPythonRuntime` is the
    verified path, and it calls the same `skillbridge_exec.execute()`.
-2. **`cancel()` is only a hard kill on the desktop.** `ProcessPythonRuntime`
-   really `SIGKILL`s the child process (tested). The embedded runtime has no
-   such primitive; there the interpreter owns its thread and the only mechanism
-   is an in-interpreter `SIGALRM`, which is POSIX-only. A `while True: pass`
-   on device is therefore only stoppable by that alarm, which has not been
-   tested on a phone.
-3. **The in-interpreter CPU limit is POSIX-only.** `SIGALRM` does not exist on
-   Windows or in most Android interpreter builds, so `maxWallSeconds` is
-   inert there. Output caps still apply everywhere.
+2. **Cancellation cannot interrupt a blocking C call.** The desktop
+   `ProcessPythonRuntime` `SIGKILL`s its child (tested). On device the
+   interpreter lives inside the app process, so `cancel()` POSTs `/cancel` to
+   the loopback executor, which raises `_Cancelled` in the running thread via
+   `PyThreadState_SetAsyncExc`. That stops a pure-Python loop promptly but only
+   takes effect between bytecodes, so a program parked inside `time.sleep(...)`
+   keeps sleeping until the call returns. Untested on real hardware.
+3. **The time limit is enforced twice, and one half is best-effort.** The
+   server now receives `cpuSeconds` on every job and installs `SIGALRM` where
+   the platform has it (it can interrupt blocking calls), plus a watchdog
+   thread that covers platforms without `SIGALRM` and implements Stop. Neither
+   can pre-empt a single long C call; output caps apply everywhere.
 4. **The editor and the *on-device* interpreter have still never met.**
    `test/editor_real_runtime_test.dart` closes the "type here, run there" gap
    for the desktop path: it drives the real editor widget, the real
@@ -64,14 +67,15 @@ stale caveats behind.
    takes to launch on a low-end Android phone is unknown and matters a lot for
    the target audience.
 
-6. **The web build cannot execute Python.** A browser provides neither
-   `dart:io` nor `dart:ffi`, so `AppConfig` always resolves to
-   `FakePythonRuntime` on web, and the web factory throws a clear
-   `UnsupportedError` if `SB_PYTHON_RUNTIME` is forced to a native value. The
-   web target is therefore a UI and offline-storage demonstration only. A
-   real browser interpreter would mean something like Pyodide, which is a
-   different runtime with different semantics and has not been evaluated
-   here (see `docs/ADR_001_PYTHON_RUNTIME.md`).
+6. **The web build runs Python through Pyodide, but needs one online load.**
+   `web/pyodide_worker.js` loads Pyodide and executes `web/skillbridge_exec.py`
+   (a byte-identical copy of the native executor, enforced by
+   `test/web_executor_sync_test.dart`), so the browser really runs the
+   learner's code. Pyodide itself still comes from a CDN unless
+   `SB_PYODIDE_INDEX_URL` points at a self-hosted copy, so the editor is only
+   usable after one successful online load. Pyodide has no threads, so the
+   watchdog half of the time limit is inert there and only the Python-side
+   output caps apply. `FakePythonRuntime` is now used by widget tests only.
 
 ## Editor
 
@@ -90,10 +94,11 @@ stale caveats behind.
    character" behaviour. This is a deliberate simplification and reads as a
    minor annoyance.
 11. **No autocomplete, no code folding, no multi-cursor, no find/replace.**
-12. **Indent width is two independent settings.** `Settings → Indent width`
-    controls the editor's auto-indent, but the shortcut bar's indent button
-    always inserts four spaces — it is constructed with the default
-    `indentUnit` rather than the configured one (`editor_screen.dart:233`).
+12. **Executions are serialised.** Learner code swaps the process-wide
+    `sys.stdout`/`sys.stderr` for the duration of a run, so two programs
+    running at once would blend their output. `execute()` now holds a lock:
+    a second run waits for the first to finish or be stopped instead of running
+    in parallel. The app shows one console, so nothing is lost in practice.
 
 ## Storage and sync
 

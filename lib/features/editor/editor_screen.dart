@@ -471,7 +471,14 @@ class _EditorScreenState extends State<EditorScreen> {
                 verdict: _verdict!,
                 block: widget.practice?.block,
               ),
-            ShortcutBar(controller: _codeController, focusNode: _focusNode),
+            ShortcutBar(
+              controller: _codeController,
+              focusNode: _focusNode,
+              // Follow the learner's tab-width setting: the indent key used to
+              // hard-code four spaces, so changing the setting only affected
+              // the Enter key and the two disagreed.
+              indentUnit: context.watch<SettingsController>().indentUnit,
+            ),
             _ActionBar(
               isRunning: _editor.isRunning,
               isSubmitting: _editor.isSubmitting,

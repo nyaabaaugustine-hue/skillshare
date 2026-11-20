@@ -1494,10 +1494,29 @@ class _CertificateSectionState extends State<_CertificateSection> {
   CertificateModel _modelFor(String learnerName) => CertificateModel(
     learnerName: learnerName,
     courseTitle: pythonKickstartCourse.title,
-    completedOn: DateTime.now(),
+    completedOn: _completedOn(),
     xpEarned: _course.xpEarned,
     stepCount: _course.totalSteps,
   );
+
+  /// The date the learner actually finished the course.
+  ///
+  /// Built from the earliest attempt recorded for each step, then the latest of
+  /// those: that is the moment the final step was first completed. Retrying an
+  /// old step months later therefore does not move the certificate date, and a
+  /// certificate printed today does not claim to have been earned today.
+  DateTime _completedOn() {
+    final deps = context.read<AppDependencies>();
+    final firstByStep = <String, DateTime>{};
+    for (final record in deps.courseProgress.history(deps.learnerRef)) {
+      final seen = firstByStep[record.stepId];
+      if (seen == null || record.at.isBefore(seen)) {
+        firstByStep[record.stepId] = record.at;
+      }
+    }
+    if (firstByStep.isEmpty) return DateTime.now();
+    return firstByStep.values.reduce((a, b) => a.isAfter(b) ? a : b);
+  }
 
   String _learnerName() {
     final session = context.read<AuthController?>()?.session;
