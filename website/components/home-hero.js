@@ -15,17 +15,25 @@ const slides = [
     kicker: "Curiosity becomes capability",
     title: <>Make room for <em>big ideas.</em></>,
     description: "From first lines of code to hands-on robotics, young creators learn by making, testing and sharing.",
-    image: "https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=2000&q=88",
-    alt: "Students learning together in a classroom",
+    image: "https://res.cloudinary.com/z43ds8bn/image/upload/v1795249852/young-boy-experiencing-virtual-reality-with-amazed-expression_1134-145257.jpg",
+    alt: "A young boy wearing a virtual reality headset",
     caption: "EXPLORE. BUILD. GROW."
   },
   {
     kicker: "Opportunity belongs to everyone",
     title: <>Build skills for a <em>brighter tomorrow.</em></>,
     description: "Join a community opening doors to practical digital learning for children and young people across Ghana.",
-    image: "https://images.unsplash.com/photo-1529390079861-591de354faf5?auto=format&fit=crop&w=2000&q=88",
-    alt: "A group of students working together",
+    image: "https://res.cloudinary.com/z43ds8bn/image/upload/v1795249852/childhood-modern-technology-electronic-gadgets-concept-serious-handsome-schoolboy-stylish-clothes-holding-open-generic-laptop-with-confident-look-surfing-internet-while-doing-homework_343059-2215.jpg",
+    alt: "A confident schoolboy working on a laptop",
     caption: "LEARN TODAY. LEAD TOMORROW."
+  },
+  {
+    kicker: "Mentors who help ideas take shape",
+    title: <>Learning is better with <em>a guide.</em></>,
+    description: "Small classes and dedicated teachers mean every learner gets the encouragement to go further.",
+    image: "https://res.cloudinary.com/z43ds8bn/image/upload/v1795249852/portrait-black-teenage-girl-using-laptop-school-engineering-class-with-male-teacher_236854-42295.jpg",
+    alt: "A teenage girl working on a laptop with her teacher in an engineering class",
+    caption: "GUIDED. ENCOURAGED. READY."
   }
 ];
 
