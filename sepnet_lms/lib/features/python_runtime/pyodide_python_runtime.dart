@@ -20,6 +20,28 @@ const String _pyodideIndexOverride = String.fromEnvironment(
   'SB_PYODIDE_INDEX_URL',
 );
 
+/// The global `document`.
+@JS('document')
+external JSObject get _documentJS;
+
+extension type _DocumentJS(JSObject _) implements JSObject {
+  external JSString get baseURI;
+}
+
+/// The document's base URL, i.e. where `<base href>` points.
+///
+/// This must come from the document and not from `Uri.base`. `Uri.base` is
+/// `window.location.href`, whose path for `https://host/app#/lms` is `/app`
+/// with no trailing slash, so resolving a relative asset against it drops the
+/// `app/` segment and asks for `/pyodide_worker.js` at the site root — a 404,
+/// which is what stopped the editor from ever starting. Flutter writes the
+/// build's `--base-href` into `<base href="/app/">`, and `document.baseURI`
+/// honours it, so the worker and the interpreter resolve to `/app/...`.
+String _documentBaseURL() {
+  final base = _DocumentJS(_documentJS).baseURI.toDart;
+  return base.isEmpty ? Uri.base.toString() : base;
+}
+
 /// Base URL of the Pyodide distribution used for this build.
 ///
 /// Resolved against the document base so the vendored copy works no matter
@@ -30,7 +52,7 @@ String defaultPyodideIndexURL() {
         ? _pyodideIndexOverride
         : '$_pyodideIndexOverride/';
   }
-  return Uri.base.resolve('pyodide/').toString();
+  return Uri.parse(_documentBaseURL()).resolve('pyodide/').toString();
 }
 
 /// Executes learner code with a **real** CPython interpreter compiled to
@@ -100,7 +122,7 @@ class PyodidePythonRuntime implements PythonRuntime {
   bool _disposed = false;
 
   static String _resolveWorkerURL() =>
-      Uri.base.resolve('pyodide_worker.js').toString();
+      Uri.parse(_documentBaseURL()).resolve('pyodide_worker.js').toString();
 
   @override
   String get displayName => _pythonVersion.isEmpty

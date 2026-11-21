@@ -195,10 +195,10 @@ class AppConfig {
   /// Origin the bundle was loaded from, or `''` when there is no document
   /// origin (native builds, `file:`/opaque origins).
   ///
-  /// `Uri.base` is the document base — `/app/index.html` under
-  /// `<base href="/app/">` — and only the origin matters, so the served path
-  /// is irrelevant. Returns `''` rather than an opaque `"null"` origin so the
-  /// caller can fall back to a compiled-in URL.
+  /// `Uri.base` is `window.location.href`, so `origin` is the page's own
+  /// origin whatever path the bundle is served from. Returns `''` rather than
+  /// an opaque `"null"` origin so the caller can fall back to a compiled-in
+  /// URL.
   static String _webOrigin() {
     if (!kIsWeb) return '';
     final origin = Uri.base.origin;
