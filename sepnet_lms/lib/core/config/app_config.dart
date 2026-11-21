@@ -61,6 +61,10 @@ class AppConfig {
 
   /// Public origin of the website hosting `/api/auth` and shared API routes.
   /// This is an origin, not a Neon database URL or secret.
+  ///
+  /// On the web this is the origin the page itself was loaded from, because
+  /// the bundle is always served by the same site that hosts `/api`. See
+  /// [forCurrentPlatform].
   final String sharedApiBaseUrl;
 
   bool get cloudAuthEnabled => sharedApiBaseUrl.trim().isNotEmpty;
@@ -124,6 +128,15 @@ class AppConfig {
   ///    execution tests possible on a developer machine.
   factory AppConfig.forCurrentPlatform() {
     final kind = _resolveRuntimeKind();
+    // The web bundle is served from `public/app` on the very site that hosts
+    // `/api`, so the page's own origin is always the correct API base. Deriving
+    // it here (rather than trusting a compiled-in origin) is what lets one
+    // build work on the custom domain, its `www` host and any preview
+    // deployment: the call stays same-origin, so the site's
+    // `connect-src 'self'` CSP never blocks it. A compiled-in SB_API_BASE_URL
+    // still wins off the web, where there is no document origin to read.
+    final pageOrigin = _webOrigin();
+    final sharedApi = pageOrigin.isNotEmpty ? pageOrigin : _sharedApiBaseUrl;
     return AppConfig(
       environment: _env,
       lmsBaseUrl: _lmsBaseUrl,
@@ -136,11 +149,11 @@ class AppConfig {
       maxOutputChars: 200000,
       aiTutorBaseUrl: _aiTutorBaseUrl,
       guardianReportUrl: _guardianReportUrl,
-      sharedApiBaseUrl: _sharedApiBaseUrl,
+      sharedApiBaseUrl: sharedApi,
       // One server address is enough: the site serves the ranking API.
       leaderboardUrl: _leaderboardUrl.isNotEmpty
           ? _leaderboardUrl
-          : (_sharedApiBaseUrl.isNotEmpty ? _sharedApiBaseUrl : _lmsBaseUrl),
+          : (sharedApi.isNotEmpty ? sharedApi : _lmsBaseUrl),
     );
   }
 
@@ -177,6 +190,19 @@ class AppConfig {
       return PythonRuntimeKind.seriousPython;
     }
     return PythonRuntimeKind.process;
+  }
+
+  /// Origin the bundle was loaded from, or `''` when there is no document
+  /// origin (native builds, `file:`/opaque origins).
+  ///
+  /// `Uri.base` is the document base — `/app/index.html` under
+  /// `<base href="/app/">` — and only the origin matters, so the served path
+  /// is irrelevant. Returns `''` rather than an opaque `"null"` origin so the
+  /// caller can fall back to a compiled-in URL.
+  static String _webOrigin() {
+    if (!kIsWeb) return '';
+    final origin = Uri.base.origin;
+    return origin.startsWith('http') ? origin : '';
   }
 
   static String _defaultPythonExecutable() {
