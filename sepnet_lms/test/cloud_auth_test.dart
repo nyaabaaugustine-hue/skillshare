@@ -145,6 +145,9 @@ void main() {
       'email': 'student@example.com',
       'emailVerified': true,
     };
+    final payload = base64Url
+        .encode(utf8.encode(jsonEncode(<String, Object?>{'sub': 'student-1'})))
+        .replaceAll('=', '');
     final requests = <http.Request>[];
     final responses = <http.Response>[
       http.Response('{}', 200),
@@ -162,11 +165,10 @@ void main() {
         }),
         200,
       ),
+      // The tutor JWT comes from the Better Auth `/token` route: `session.token`
+      // from `get-session` is an opaque session id the Worker cannot verify.
       http.Response(
-        jsonEncode(<String, Object?>{
-          'user': user,
-          'session': <String, Object?>{'activeOrganizationId': 'family-1'},
-        }),
+        jsonEncode(<String, Object?>{'token': 'header.$payload.signature'}),
         200,
       ),
     ];
@@ -188,6 +190,12 @@ void main() {
 
     expect(signedIn.email, 'student@example.com');
     expect(signedIn.role, 'student');
+    expect(requests.map((request) => request.url.path), <String>[
+      '/api/auth/sign-in/email',
+      '/api/auth/get-session',
+      '/api/auth/get-session',
+      '/api/auth/token',
+    ]);
     expect(requests.first.url.path, '/api/auth/sign-in/email');
     expect(jsonDecode(requests.first.body), <String, Object?>{
       'email': 'student@example.com',
@@ -215,7 +223,7 @@ void main() {
         200,
       ),
       http.Response(
-        jsonEncode(<String, Object?>{'user': user, 'session': <String, Object?>{}}),
+        jsonEncode(<String, Object?>{'token': 'header.payload.signature'}),
         200,
       ),
     ];

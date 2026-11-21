@@ -159,25 +159,30 @@ class AuthController extends ChangeNotifier {
       return fresh;
     } catch (error) {
       debugPrint('Tutor token refresh failed: $error');
-      return forceRefresh ? null : token;
+      if (forceRefresh) return null;
+      // An opaque session id (not a JWT) can only be rejected by the Worker, so
+      // drop it rather than send a request that is certain to fail with 401.
+      return token.split('.').length == 3 ? token : null;
     }
   }
 
-  /// True when the JWT expires within two minutes (or its `exp` is unreadable).
+  /// True when the JWT expires within two minutes, or when the token is not a
+  /// parseable JWT (an opaque session id, or unreadable claims) — either way the
+  /// tutor must be given a freshly minted token instead of this value.
   static bool _expiresSoon(String token) {
     try {
       final parts = token.split('.');
-      if (parts.length != 3) return false;
+      if (parts.length != 3) return true;
       final claims = jsonDecode(
         utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
       );
-      if (claims is! Map<String, dynamic>) return false;
+      if (claims is! Map<String, dynamic>) return true;
       final exp = claims['exp'];
-      if (exp is! int) return false;
+      if (exp is! int) return true;
       final remaining = exp * 1000 - DateTime.now().millisecondsSinceEpoch;
       return remaining < const Duration(minutes: 2).inMilliseconds;
     } catch (_) {
-      return false;
+      return true;
     }
   }
 

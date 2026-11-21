@@ -256,7 +256,7 @@ class CloudAuth {
   Future<String> refreshAccessToken() async {
     _lastJwt = null;
     final token = await _getAccessToken();
-    if (token == null || token.isEmpty) {
+    if (token == null || token.split('.').length != 3) {
       throw const CloudAuthException(
         'The sign-in service did not return a tutor access token.',
       );
@@ -276,30 +276,47 @@ class CloudAuth {
     return token;
   }
 
-  /// Returns the session's JWT, or `null` when the auth service did not issue
-  /// one. Signing in must not fail because a token is unavailable: the app can
-  /// still use the session and falls back to the offline tutor.
+  /// Returns the session's access JWT, or `null` when the auth service did not
+  /// issue one. Signing in must not fail because a token is unavailable: the
+  /// app can still use the session and falls back to the offline tutor.
   ///
-  /// Neon Auth does not accept an empty body at `get-access-token` (it answers
-  /// 400), and it already returns the JWT on `set-auth-jwt` for every session
-  /// response and in `session.token` from `get-session`.
+  /// `session.token` from `get-session` is Neon Auth's *opaque* session id, not
+  /// a JWT, and the tutor Worker rejects it (`invalid_token`). The signed JWT is
+  /// either echoed on the `set-auth-jwt` response header or minted on demand by
+  /// `GET /token` (the Better Auth JWT plugin route), so only a three-part value
+  /// is ever returned.
   Future<String?> _getAccessToken() async {
-    final echoed = _lastJwt;
-    if (echoed != null && echoed.isNotEmpty) return echoed;
+    if (_isJwt(_lastJwt)) return _lastJwt;
+    try {
+      final payload = await _request('GET', 'token');
+      final token = payload['token'] ?? payload['accessToken'];
+      if (token is String && _isJwt(token)) return token;
+    } on CloudAuthException catch (error) {
+      debugPrint('Tutor access token unavailable: ${error.message}');
+    }
+    // `_captureAuthJwt` runs inside `_request`, so a session response may have
+    // refreshed `_lastJwt` even when its JSON body carries the opaque id.
+    if (_isJwt(_lastJwt)) return _lastJwt;
     try {
       final payload = await _request('GET', 'get-session');
+      if (_isJwt(_lastJwt)) return _lastJwt;
       final nested = payload['data'];
       final session = payload['session'] ??
           (nested is Map ? nested['session'] : null);
       final token = session is Map
           ? session['token'] ?? session['access_token']
           : payload['token'] ?? payload['accessToken'];
-      if (token is String && token.isNotEmpty) return token;
+      if (token is String && _isJwt(token)) return token;
     } on CloudAuthException catch (error) {
       debugPrint('Access token unavailable: ${error.message}');
     }
-    return _lastJwt;
+    return _isJwt(_lastJwt) ? _lastJwt : null;
   }
+
+  /// A signed Neon Auth access JWT has three dot-separated parts. Anything else
+  /// (notably the opaque session id) cannot be verified by the tutor Worker.
+  static bool _isJwt(String? value) =>
+      value != null && value.isNotEmpty && value.split('.').length == 3;
 
   Future<void> _createStudentFamily(Map<String, dynamic> user) async {
     final userId = user['id']?.toString() ?? '';
