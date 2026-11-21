@@ -136,6 +136,26 @@ flutter build web --release            # -> build/web, ~40 MB total
 `sqflite_common_ffi_web` runs SQLite as wasm in a shared worker and persists to
 IndexedDB, so the offline story still holds on web.
 
+### PWA: install and offline
+
+`tool/build_web.ps1` also installs the PWA service worker: it copies
+`web/sw.js` over the generated `build/web/flutter_service_worker.js`, which is
+the file Flutter's bootstrap registers. Do not register a second worker on the
+same scope — the two replace each other and the page ends up uncontrolled.
+`web/index.html` registers that one file.
+
+Requirements when hosting (see `docs/PWA_COMPATIBILITY.md` for the detail):
+HTTPS or localhost, the same origin as `/api/auth`, `text/javascript` for the
+worker with no long cache, and a CSP that allows `'wasm-unsafe-eval'` so
+CanvasKit and Pyodide can compile their `.wasm`. Ship `manifest.json`,
+`apple-touch-icon.png` and `icons/` alongside the bundle.
+
+The shell (document, CanvasKit, fonts, `main.dart.js`) is pre-cached, so an
+installed app opens with no network. Pyodide is cached on first use, so an
+offline session can run Python only after one online session that used the
+editor. Bump `CACHE_VERSION` in `web/sw.js` when the shell list or strategy
+changes; old caches are deleted on activate.
+
 To serve it:
 
 ```powershell

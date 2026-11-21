@@ -5,6 +5,8 @@
     "start_url": "/app/",
     "scope": "/app/",
     "display": "standalone",
+    "display_override": ["standalone", "minimal-ui"],
+    "categories": ["education", "productivity"],
     "lang": "en",
     "dir": "ltr",
     "background_color": "#FFFFFF",

@@ -74,6 +74,16 @@ try {
   if (-not (Test-Path (Join-Path $Built 'index.html'))) {
     throw "Flutter reported success but build\web\index.html is missing."
   }
+
+  # PWA: Flutter 3.47 generates a flutter_service_worker.js that only
+  # unregisters itself, so nothing caches the app shell. Flutter's bootstrap
+  # registers that exact file, so replace its contents with the real caching
+  # worker. One script, one registration - registering a second worker on the
+  # same scope makes the two fight and leaves the page uncontrolled.
+  $Worker = Join-Path $ProjectRoot 'web\sw.js'
+  if (-not (Test-Path $Worker)) { throw "PWA service worker not found at '$Worker'." }
+  Copy-Item $Worker (Join-Path $Built 'flutter_service_worker.js') -Force
+  Write-Output "PWA: installed web/sw.js as build\web\flutter_service_worker.js"
   Write-Output "Web build: $Built"
   Write-Output "Copy build\web\* into website\public\app (dropping *.js.symbols), commit, and deploy."
 } finally {

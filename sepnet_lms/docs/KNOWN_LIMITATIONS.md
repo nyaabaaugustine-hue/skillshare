@@ -28,7 +28,8 @@ stale caveats behind.
 | The app builds an APK | `flutter build apk --debug` → `app-debug.apk`, 209 MB, contents inspected with `aapt2` and by unzipping: `libpython3.14.so`, `libdart_bridge.so`, `stdlib.zip`, `app.zip` all present | High that it *builds*; **zero** evidence it *runs* |
 | The APK runs on a real phone | **No** | None — no device or emulator |
 | The embedded Python runtime works on device | **No** | None — never executed on hardware |
-| The web build compiles and boots | `flutter build web --release` → 40 MB, served and screenshotted with SQLite running through `sqflite_common_ffi_web` | High that it *runs* |
+| The web build compiles and boots | `flutter build web --release` → 58 MB, served and screenshotted with SQLite running through `sqflite_common_ffi_web` | High that it *runs* |
+| The installed PWA boots with no network | `build/web` served at `/app/`, loaded once, then the server stopped and the page reloaded: the app still painted, and `fetch(..., {cache:'no-store'})` for shell assets returned 200 from `skillbridge-shell-v4` | High on Chromium 141/Windows; no iOS, Firefox or Android test |
 | The web build executes Python | Yes, through Pyodide | `web/pyodide_worker.js` + `web/skillbridge_exec.py`; verified by the worker/executor sync tests, not yet in a real browser session |
 | iOS builds | **No** | None — no macOS host |
 
@@ -67,24 +68,20 @@ stale caveats behind.
    takes to launch on a low-end Android phone is unknown and matters a lot for
    the target audience.
 
-6. **The web build runs Python through Pyodide, but the app is not offline.**
-   `web/pyodide_worker.js` loads Pyodide and executes `web/skillbridge_exec.py`
-   (a byte-identical copy of the native executor, enforced by
-   `test/web_executor_sync_test.dart`), so the browser really runs the
-   learner's code, and the distribution is vendored at `web/pyodide/` rather
-   than fetched from a CDN. What is still missing is a service worker: Flutter
-   3.47 generates a `flutter_service_worker.js` whose entire body unregisters
-   itself, and `--pwa-strategy` no longer exists, so **nothing caches the app
-   shell**. The manifest makes the app installable and the Pyodide dependency
-   no longer leaves the origin, but opening the installed app with no network
-   fails with a normal browser offline error, and the editor is unreachable.
-   Closing this needs a hand-written service worker (cache-first for
-   same-origin assets, versioned cache name, network-first navigations) shipped
-   over `flutter_service_worker.js` — deliberately not done blind, because a
-   bad worker can serve a stale or broken shell to every learner. Pyodide also
-   has no threads, so the watchdog half of the time limit is inert there and
-   only the Python-side output caps apply. `FakePythonRuntime` is used by
-   widget tests only.
+6. **The web build is an installable PWA, and the app shell now works
+   offline — Python still needs one online run first.** `web/sw.js` (installed
+   as `build/web/flutter_service_worker.js`, the file Flutter's bootstrap
+   registers) pre-caches the 22-file boot set and caches other same-origin
+   assets on demand, with versioned caches and a network-first navigation
+   fallback. Flutter 3.47's generated worker only unregisters itself, which is
+   why it is replaced. Pyodide (~14 MB) and handout PDFs are cached on first
+   use rather than pre-cached, so an offline session has Python only after the
+   editor was used online once; the remote tutor and leaderboard need the
+   network and fall back to the offline tutor. Pyodide has no threads, so the
+   watchdog half of the time limit is inert and only the Python-side output
+   caps apply. Browser-by-browser behaviour is in
+   `docs/PWA_COMPATIBILITY.md`. `FakePythonRuntime` is used by widget tests
+   only.
 
 ## Editor
 

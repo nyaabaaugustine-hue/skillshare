@@ -24,12 +24,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="SkillBridge Academy — friendly Python learning for every learner.">
 
-  <!-- iOS meta tags & icons -->
+  <!-- iOS meta tags & icons. iOS ignores the web manifest for the home-screen
+       icon and launch chrome, so these are not optional duplicates. -->
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="SkillBridge Academy">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <meta name="theme-color" content="#FFFFFF">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#1697F5">
 
   <!-- Favicon: a dedicated, simplified robot mark that stays crisp at 16-32px.
        The ?v= suffix makes browsers fetch the new icon instead of a cached one;
@@ -51,5 +53,33 @@
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
   <script src="flutter_bootstrap.js" async></script>
+
+  <!--
+    PWA service worker.
+
+    Flutter 3.47 generates a `flutter_service_worker.js` that only unregisters
+    itself, and its bootstrap registers that file only when a registration
+    already exists. So: `tool/build_web.ps1` replaces the generated file with
+    web/sw.js (the caching worker), and the page registers it here. Both point
+    at the same file, so whichever registration wins runs the same code and
+    the app is never left uncontrolled.
+
+    Skipped on insecure origins (a browser refuses it anyway); a failure is
+    swallowed because it must never stop the app from booting.
+  -->
+  <script>
+    if (
+      "serviceWorker" in navigator &&
+      (location.protocol === "https:" ||
+        location.hostname === "localhost" ||
+        location.hostname === "127.0.0.1")
+    ) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker
+          .register("flutter_service_worker.js", { scope: "./" })
+          .catch(function () {});
+      });
+    }
+  </script>
 </body>
 </html>
