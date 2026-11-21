@@ -2,11 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'package:skillbridge_python_lab/core/di/app_dependencies.dart';
+import 'package:skillbridge_python_lab/core/files/handout_saver.dart';
 import 'package:skillbridge_python_lab/features/auth/auth_controller.dart';
 import 'package:skillbridge_python_lab/features/course/course_controller.dart';
 import 'package:skillbridge_python_lab/features/course/python_course_content.dart';
@@ -1288,25 +1290,25 @@ class _NewsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // No dates on these cards: they are standing announcements, not a dated
+    // feed, and a hard-coded 2026 next to "enrollment open" reads as stale the
+    // moment the date passes.
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
       children: const [
         _NewsCard(
           title: 'Welcome to the SkillBridge Academy',
           tag: 'GENERAL',
-          date: '20 Sep 2026',
           text: 'Access Python lessons anytime, track your progress, and keep building your future.',
         ),
         _NewsCard(
           title: 'New cohort enrollment open',
           tag: 'ENROLLMENT',
-          date: '18 Sep 2026',
           text: 'Seats are limited. Scholarships are available for eligible learners.',
         ),
         _NewsCard(
           title: 'Weekly live Q&A sessions',
           tag: 'SCHEDULE',
-          date: '15 Sep 2026',
           text: 'Bring your questions every Saturday at 10:00 AM GMT.',
         ),
       ],
@@ -1318,13 +1320,11 @@ class _NewsCard extends StatelessWidget {
   const _NewsCard({
     required this.title,
     required this.tag,
-    required this.date,
     required this.text,
   });
 
   final String title;
   final String tag;
-  final String date;
   final String text;
 
   @override
@@ -1341,36 +1341,21 @@ class _NewsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: SkillBridgeColors.accent.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                  child: Text(
-                    tag,
-                    style: const TextStyle(
-                      color: SkillBridgeColors.accent,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: SkillBridgeColors.accent.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Text(
+                tag,
+                style: const TextStyle(
+                  color: SkillBridgeColors.accent,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.1,
                 ),
-                const Spacer(),
-                Text(
-                  date,
-                  style: TextStyle(
-                    color: context.appColors.textMuted,
-                    fontSize: 11.5,
-                  ),
-                ),
-              ],
+              ),
             ),
             const SizedBox(height: 11),
             Text(
@@ -1401,6 +1386,28 @@ class _NewsCard extends StatelessWidget {
 class _ResourcesSection extends StatelessWidget {
   const _ResourcesSection({super.key});
 
+  /// Loads the bundled handout and hands it to the platform saver.
+  ///
+  /// [ScaffoldMessenger] is captured before the first `await` so the toast is
+  /// still shown if the widget unmounts while the file is being prepared.
+  Future<void> _download(BuildContext context, String fileName) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final data = await rootBundle.load('assets/handouts/$fileName');
+      final message = await saveHandout(
+        bytes: data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+        fileName: fileName,
+      );
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Could not open that handout. Please try again.'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const resources = [
@@ -1408,17 +1415,25 @@ class _ResourcesSection extends StatelessWidget {
         'Python Basics Cheat Sheet',
         'PDF',
         'Syntax, data types and common operations',
+        'python_basics_cheat_sheet.pdf',
       ),
       (
         'Course Slides - Demystifying Python',
         'PDF',
         'Slides from the Python sessions',
+        'course_slides_demystifying_python.pdf',
       ),
-      ('Practice Exercises', 'ZIP', 'Hands-on exercises with solutions'),
+      (
+        'Practice Exercises',
+        'PDF',
+        'Hands-on exercises with solutions',
+        'practice_exercises.pdf',
+      ),
       (
         'Career Guide - Tech in Ghana',
         'PDF',
         'CV tips, interviews and opportunities',
+        'career_guide_tech_in_ghana.pdf',
       ),
     ];
     return ListView(
@@ -1478,9 +1493,7 @@ class _ResourcesSection extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(18),
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${item.$1} is ready to download.')),
-                ),
+                onTap: () => _download(context, item.$4),
                 child: Padding(
                   padding: const EdgeInsets.all(13),
                   child: Row(
