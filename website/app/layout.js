@@ -14,7 +14,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      {/* Browser extensions (ClickUp and friends) stamp attributes onto <body>
+          before React hydrates, which React reports as a mismatch on an
+          element this app never gave a className or style to. */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }
