@@ -50,9 +50,30 @@ class _BootstrapAppState extends State<BootstrapApp> {
   /// Navigator so Settings (a pushed route) can sign out too.
   final AuthController _auth = AuthController();
 
+  /// Used to open a cold deep link, see [_pendingRoute].
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  /// The route the browser asked for on a cold load, e.g. `/lms` for
+  /// `…/app#/lms`.
+  ///
+  /// It is deliberately not opened straight away. The Navigator would build that
+  /// screen during the first frame, before [AppDependencies] exists and before
+  /// the splash and sign-in gates have run, and those screens read
+  /// dependencies while they build. `provider` remembers a failed creation and
+  /// rethrows it as a `StateError` on every later read, so one early read would
+  /// break the app for the rest of the session. The shell is therefore always
+  /// the initial route and the requested one is replayed by
+  /// [_replayPendingRoute] once the app is genuinely up.
+  String? _pendingRoute;
+  bool _pendingRouteOpened = false;
+
   @override
   void initState() {
     super.initState();
+    final requested = WidgetsBinding.instance.platformDispatcher.defaultRouteName;
+    if (requested.isNotEmpty && requested != Navigator.defaultRouteName) {
+      _pendingRoute = requested;
+    }
     _auth.startSignedOut();
     _load();
   }
@@ -102,6 +123,40 @@ class _BootstrapAppState extends State<BootstrapApp> {
   void _finishSplash() {
     if (!mounted) return;
     setState(() => _splashDone = true);
+    // The shell is reachable now, so a cold deep link can be honoured.
+    _replayPendingRoute();
+  }
+
+  /// The Navigator's initial stack is always the shell, deep link or not.
+  ///
+  /// Left to the default, `…/app#/lms` would be generated as the first route
+  /// and the hub would build before the dependency graph exists.
+  List<Route<dynamic>> _initialRoutes(String initialRoute) {
+    return <Route<dynamic>>[
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: Navigator.defaultRouteName),
+        builder: (_) => _home(),
+      ),
+    ];
+  }
+
+  /// Opens the route the browser asked for, when this launch was a deep link.
+  ///
+  /// Only ever called once the shell is genuinely up. Navigation is deferred to
+  /// a post-frame callback, and an unrecognised fragment — or one whose
+  /// arguments are missing, which the router answers with the shell — is
+  /// dropped rather than thrown at.
+  void _replayPendingRoute() {
+    final name = _pendingRoute;
+    if (name == null || _pendingRouteOpened) return;
+    if (_deps == null || !_auth.isAuthenticated) return;
+    final route = AppRouter.onGenerateRoute(RouteSettings(name: name));
+    _pendingRouteOpened = true;
+    if (route == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _navigatorKey.currentState?.push(route);
+    });
   }
 
   Widget _home() {
@@ -164,13 +219,16 @@ class _BootstrapAppState extends State<BootstrapApp> {
           return MaterialApp(
             title: 'SkillBridge Academy',
             debugShowCheckedModeBanner: false,
+            navigatorKey: _navigatorKey,
             theme: buildLightTheme(),
             darkTheme: buildDarkTheme(),
             themeMode: themeMode,
             themeAnimationDuration: const Duration(milliseconds: 300),
             themeAnimationCurve: Curves.easeOutCubic,
             onGenerateRoute: AppRouter.onGenerateRoute,
-            home: _home(),
+            // The stack always opens on the shell, even when the browser asked
+            // for `#/lms`: the deep link is replayed once startup has finished.
+            onGenerateInitialRoutes: _initialRoutes,
           );
         },
       ),
