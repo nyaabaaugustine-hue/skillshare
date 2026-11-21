@@ -16,6 +16,21 @@ import 'certificate_card.dart';
 import 'learning_map.dart';
 import 'learning_path.dart';
 
+/// One tab in the hub's section bar.
+typedef _LmsSection = ({String label, IconData icon});
+
+/// The hub's sections in bar order. The bar renders this list and
+/// [LmsHubScreen.initialSection] is clamped against it, so a section can never
+/// be reachable by index without also being drawn, or drawn without being
+/// reachable.
+const List<_LmsSection> _lmsSections = <_LmsSection>[
+  (label: 'Courses', icon: Icons.auto_stories_rounded),
+  (label: 'News', icon: Icons.campaign_rounded),
+  (label: 'Resources', icon: Icons.download_rounded),
+  (label: 'Certificate', icon: Icons.workspace_premium_rounded),
+  (label: 'About', icon: Icons.info_outline_rounded),
+];
+
 class LmsHubScreen extends StatefulWidget {
   const LmsHubScreen({super.key, this.initialSection = 0});
 
@@ -28,18 +43,10 @@ class LmsHubScreen extends StatefulWidget {
 class _LmsHubScreenState extends State<LmsHubScreen> {
   late int _section;
 
-  static const _sections = <({String label, IconData icon})>[
-    (label: 'Courses', icon: Icons.auto_stories_rounded),
-    (label: 'News', icon: Icons.campaign_rounded),
-    (label: 'Resources', icon: Icons.download_rounded),
-    (label: 'Certificate', icon: Icons.workspace_premium_rounded),
-    (label: 'About', icon: Icons.info_outline_rounded),
-  ];
-
   @override
   void initState() {
     super.initState();
-    _section = widget.initialSection.clamp(0, _sections.length - 1).toInt();
+    _section = widget.initialSection.clamp(0, _lmsSections.length - 1).toInt();
   }
 
   @override
@@ -135,19 +142,47 @@ class _LmsHubScreenState extends State<LmsHubScreen> {
   }
 }
 
-class _SectionSelector extends StatelessWidget {
+class _SectionSelector extends StatefulWidget {
   const _SectionSelector({required this.selected, required this.onSelected});
 
   final int selected;
   final ValueChanged<int> onSelected;
 
-  static const _items = <({String label, IconData icon})>[
-    (label: 'Courses', icon: Icons.auto_stories_rounded),
-    (label: 'News', icon: Icons.campaign_rounded),
-    (label: 'Resources', icon: Icons.download_rounded),
-    (label: 'Certificate', icon: Icons.workspace_premium_rounded),
-    (label: 'About', icon: Icons.info_outline_rounded),
+  @override
+  State<_SectionSelector> createState() => _SectionSelectorState();
+}
+
+class _SectionSelectorState extends State<_SectionSelector> {
+  final List<GlobalKey> _pillKeys = <GlobalKey>[
+    for (var i = 0; i < _lmsSections.length; i++) GlobalKey(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _revealSelected();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SectionSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selected != widget.selected) _revealSelected();
+  }
+
+  /// Scrolls the active pill into view.
+  ///
+  /// The hub can open on any section — the drawer passes an index and `#/lms`
+  /// links can too — and on a narrow phone the five pills are wider than the
+  /// bar. Without this the learner would land on, say, Certificate while the
+  /// bar still showed Courses and News, with no sign of which tab is active.
+  void _revealSelected() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final pill = _pillKeys[widget.selected].currentContext;
+      if (pill == null) return;
+      Scrollable.ensureVisible(pill, alignment: 0.5);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -156,15 +191,16 @@ class _SectionSelector extends StatelessWidget {
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
         scrollDirection: Axis.horizontal,
-        itemCount: _items.length,
+        itemCount: _lmsSections.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final item = _items[index];
+          final item = _lmsSections[index];
           return _NavPill(
+            key: _pillKeys[index],
             icon: item.icon,
             label: item.label,
-            active: selected == index,
-            onTap: () => onSelected(index),
+            active: widget.selected == index,
+            onTap: () => widget.onSelected(index),
           );
         },
       ),
@@ -176,6 +212,7 @@ class _SectionSelector extends StatelessWidget {
 /// brand gradient; the rest stay quiet so the bar never competes with the page.
 class _NavPill extends StatelessWidget {
   const _NavPill({
+    super.key,
     required this.icon,
     required this.label,
     required this.active,
@@ -242,8 +279,54 @@ class _NavPill extends StatelessWidget {
   }
 }
 
-class _CoursesSection extends StatelessWidget {
+class _CoursesSection extends StatefulWidget {
   const _CoursesSection({super.key});
+
+  @override
+  State<_CoursesSection> createState() => _CoursesSectionState();
+}
+
+class _CoursesSectionState extends State<_CoursesSection> {
+  /// How many places on the map the learner has finished, read from the same
+  /// source the path below uses so the tile and the path can never disagree.
+  int _completed = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProgress();
+  }
+
+  /// The tile used to advertise a fixed 33% and its tap only raised a snackbar,
+  /// so it told the learner nothing true about their own progress. It now reads
+  /// the real count, and tapping it opens the next lesson for real.
+  Future<void> _loadProgress() async {
+    try {
+      final deps = context.read<AppDependencies>();
+      final progress = await deps.lmsClient.fetchProgress();
+      if (!mounted) return;
+      setState(() {
+        _completed = progress.completedChallenges.clamp(
+          0,
+          learningPlaces.length,
+        );
+      });
+    } catch (_) {
+      // Offline: keep the first lesson as the next one.
+    }
+  }
+
+  void _openNextLesson() {
+    final next = learningPlaces[_completed.clamp(0, learningPlaces.length - 1)];
+    Navigator.of(context).pushNamed(
+      '/lms-video',
+      arguments: {
+        'title': next.title,
+        'subtitle': next.duration,
+        'publicId': next.publicId,
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -258,18 +341,14 @@ class _CoursesSection extends StatelessWidget {
               ?.copyWith(fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 10),
-        _CourseCard(onTap: () => _showCourse(context)),
+        _CourseCard(
+          completed: _completed,
+          total: learningPlaces.length,
+          onTap: _openNextLesson,
+        ),
         const SizedBox(height: 18),
         const LearningPathView(),
       ],
-    );
-  }
-
-  void _showCourse(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Course player connected — choose a lesson to continue.'),
-      ),
     );
   }
 }
@@ -853,12 +932,27 @@ class _HeroStat extends StatelessWidget {
 }
 
 class _CourseCard extends StatelessWidget {
-  const _CourseCard({required this.onTap});
+  const _CourseCard({
+    required this.completed,
+    required this.total,
+    required this.onTap,
+  });
+
+  /// Lessons the learner has finished, out of [total].
+  final int completed;
+  final int total;
 
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final started = completed > 0;
+    final finished = total > 0 && completed >= total;
+    final label = finished
+        ? 'COMPLETED'
+        : started
+        ? 'IN PROGRESS'
+        : 'START HERE';
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -916,9 +1010,9 @@ class _CourseCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'IN PROGRESS',
-                        style: TextStyle(
+                      Text(
+                        label,
+                        style: const TextStyle(
                           color: SkillBridgeColors.accent,
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
@@ -936,7 +1030,11 @@ class _CourseCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        'Beginner - 1h 47m - video + practice',
+                        finished
+                            ? 'All $total lessons complete'
+                            : started
+                            ? '$completed of $total lessons complete'
+                            : 'Beginner - video + practice',
                         style: TextStyle(
                           color: context.appColors.textMuted,
                           fontSize: 12,
@@ -946,7 +1044,7 @@ class _CourseCard extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(6),
                         child: LinearProgressIndicator(
-                          value: 0.33,
+                          value: total == 0 ? 0 : completed / total,
                           minHeight: 6,
                           backgroundColor: context.appColors.surfaceHigh,
                         ),

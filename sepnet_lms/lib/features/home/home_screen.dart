@@ -390,7 +390,7 @@ class _ProgressTab extends StatelessWidget {
             _ProgressCard(progress: home.progress),
             _CourseProgressCard(course: course, onOpenPath: onOpenPath),
             _CourseMomentumCard(course: course),
-            const _BadgeRow(),
+            _BadgeRow(progress: home.progress),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: PremiumButton(
@@ -1112,40 +1112,75 @@ class _StatusStrip extends StatelessWidget {
   }
 }
 
+/// A milestone a learner can reach, and whether they have reached it yet.
+typedef _Milestone = ({IconData icon, String label, Color color, bool earned});
+
 class _BadgeRow extends StatelessWidget {
-  const _BadgeRow();
+  const _BadgeRow({required this.progress});
+
+  final LearnerProgress progress;
+
+  /// These used to be three fixed badges every learner saw from their very
+  /// first launch, which claimed milestones nobody had earned. They now light
+  /// up from the learner's own totals and stay dim until they are reached.
+  List<_Milestone> get _milestones => <_Milestone>[
+    (
+      icon: Icons.lightbulb_rounded,
+      label: 'First step',
+      color: const Color(0xFFFFC857),
+      earned: progress.completedChallenges >= 1,
+    ),
+    (
+      icon: Icons.code_rounded,
+      label: 'Code explorer',
+      color: const Color(0xFF63B3FF),
+      earned: progress.completedChallenges >= 5,
+    ),
+    (
+      icon: Icons.emoji_events_rounded,
+      label: 'Halfway hero',
+      color: const Color(0xFFFF7D9A),
+      earned: progress.completionRatio >= 0.5,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final milestones = _milestones;
+    final earned = milestones.where((m) => m.earned).length;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Milestones',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+          Row(
+            children: [
+              const Text(
+                'Milestones',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+              ),
+              const Spacer(),
+              Text(
+                '$earned of ${milestones.length}',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: context.appColors.textMuted,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           Row(
-            children: const [
-              _MiniBadge(
-                icon: Icons.lightbulb_rounded,
-                label: 'Curious mind',
-                color: Color(0xFFFFC857),
-              ),
-              SizedBox(width: 10),
-              _MiniBadge(
-                icon: Icons.code_rounded,
-                label: 'Code explorer',
-                color: Color(0xFF63B3FF),
-              ),
-              SizedBox(width: 10),
-              _MiniBadge(
-                icon: Icons.favorite_rounded,
-                label: 'Keep going',
-                color: Color(0xFFFF7D9A),
-              ),
+            children: [
+              for (var i = 0; i < milestones.length; i++) ...[
+                if (i > 0) const SizedBox(width: 10),
+                _MiniBadge(
+                  icon: milestones[i].icon,
+                  label: milestones[i].label,
+                  color: milestones[i].color,
+                  earned: milestones[i].earned,
+                ),
+              ],
             ],
           ),
         ],
@@ -1159,25 +1194,31 @@ class _MiniBadge extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.color,
+    this.earned = true,
   });
 
   final IconData icon;
   final String label;
   final Color color;
 
+  /// A milestone still ahead of the learner stays dim, so the row shows both
+  /// what has been earned and what is left to earn.
+  final bool earned;
+
   @override
   Widget build(BuildContext context) {
+    final tone = earned ? color : context.appColors.textMuted;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
         decoration: BoxDecoration(
           color: context.appColors.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: color.withValues(alpha: 0.35)),
+          border: Border.all(color: tone.withValues(alpha: 0.35)),
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 26),
+            Icon(earned ? icon : Icons.lock_rounded, color: tone, size: 26),
             const SizedBox(height: 8),
             Text(
               label,
