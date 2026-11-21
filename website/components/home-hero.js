@@ -7,8 +7,8 @@ const slides = [
     kicker: "A brighter digital future starts here",
     title: <>Empowering Ghana’s next generation <em>through technology.</em></>,
     description: "We equip children aged 7–16 with digital skills, coding, robotics and the confidence to build a brighter future.",
-    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=2000&q=88",
-    alt: "A young person learning technology",
+    image: "https://res.cloudinary.com/z43ds8bn/image/upload/v1795200962/WhatsApp_Image_2026-11-17_at_3.11.34_AM.jpg",
+    alt: "SkillBridge Academy learners",
     caption: "LEARN. CREATE. INNOVATE."
   },
   {
