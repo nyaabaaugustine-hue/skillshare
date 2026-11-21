@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import EnquiryButton from "./enquiry-popup";
+
 const slides = [
   {
     kicker: "A brighter digital future starts here",
@@ -77,7 +79,14 @@ export default function HomeHero() {
           <p>{slide.description}</p>
           <div className="hero-actions">
             <a className="button button-green" href="/programmes">Explore programmes <span aria-hidden="true" className="arrow">↗</span></a>
-            <a className="button button-glass" href="/contact">Become a volunteer</a>
+            <EnquiryButton
+              className="button button-glass"
+              enquiryType="Volunteering"
+              title="Become a volunteer"
+              description="Tell us a little about yourself and how you would like to help young learners."
+            >
+              Become a volunteer
+            </EnquiryButton>
           </div>
           <div className="hero-note"><span className="note-dot" /> Learning today. Leading tomorrow.</div>
         </div>

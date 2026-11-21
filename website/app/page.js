@@ -2,7 +2,8 @@
 
 import { SiteFooter, SiteHeader } from "../components/site-chrome";
 import HomeHero from "../components/home-hero";
-import team from "../components/team-data";
+import EnquiryButton from "../components/enquiry-popup";
+import { getFeaturedNews, getTeamMembers } from "../lib/content";
 
 const programmes = [
   {
@@ -49,7 +50,13 @@ function SectionEyebrow({ children }) {
   return <div className="eyebrow"><span />{children}</div>;
 }
 
-export default function Home() {
+export const revalidate = 30;
+
+export default async function Home({ searchParams }) {
+  const [team, news] = await Promise.all([getTeamMembers(), getFeaturedNews()]);
+  const params = await searchParams;
+  const schoolStatus = params?.school;
+  const courseStatus = params?.course;
   return (
     <main>
       <SiteHeader />
@@ -97,10 +104,93 @@ export default function Home() {
                 <strong>{item.subtitle}</strong>
                 <p>{item.description}</p>
                 <ul>{item.topics.map((topic) => <li key={topic}>{topic}</li>)}</ul>
-                <a href="#contact" className="card-link">Explore pathway <Arrow /></a>
+                <EnquiryButton
+                  className="enquiry-plain enquiry-card-link"
+                  enquiryType="Programmes and courses"
+                  title={`Enquire about ${item.title}`}
+                  description={`${item.age} · tell us a little about the learner and we will explain what this pathway covers.`}
+                  programme={item.title}
+                >
+                  Explore pathway <Arrow />
+                </EnquiryButton>
               </div>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="featured-course" id="featured-course">
+        <div className="section-wrap featured-grid">
+          <div className="featured-media">
+            <img
+              src="/images/python-beginners.jpg"
+              alt="Teenagers learning to code in Python with a mentor in a bright makerspace"
+            />
+            <span className="featured-badge">FEATURED COURSE</span>
+            <div className="featured-media-meta">
+              <span><strong>12 weeks</strong>Guided learning</span>
+              <span><strong>Python 3</strong>No experience needed</span>
+              <span><strong>Weekly</strong>Online + in person</span>
+            </div>
+          </div>
+          <div className="featured-copy">
+            <SectionEyebrow>NEW FOR THIS TERM</SectionEyebrow>
+            <h2>Python for <span>beginners.</span></h2>
+            <p>
+              Start from zero and finish with a working project. In twelve weekly sessions,
+              learners write their first real programs, build a small app, and learn the
+              problem-solving habits that carry into every other subject.
+            </p>
+            <ul className="featured-outcomes">
+              <li>Writing and running your own Python</li>
+              <li>Variables, loops and decisions</li>
+              <li>Building a project step by step</li>
+              <li>Sharing work with a supportive group</li>
+            </ul>
+
+            {courseStatus === "joined" ? (
+              <p className="form-note form-note-ok" role="status">
+                You are on the list. We will email you the start date and what to bring.
+              </p>
+            ) : null}
+            {courseStatus === "error" ? (
+              <p className="form-note form-note-error" role="alert">
+                That did not send. Add your name and a valid email and try again.
+              </p>
+            ) : null}
+
+            <div className="featured-form-panel">
+              <h3>Join the next Python cohort</h3>
+              <p>Free for learners aged 12–18. Places are limited to 20 per cohort.</p>
+              <form className="school-form" action="/api/enroll" method="post" aria-label="Python for Beginners enrolment">
+                <input type="hidden" name="programme" value="Python for Beginners" />
+                <div className="form-field">
+                  <label htmlFor="learner-name">Full name</label>
+                  <input id="learner-name" name="full_name" autoComplete="name" required />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="learner-email">Email</label>
+                  <input id="learner-email" name="email" type="email" autoComplete="email" required />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="learner-phone">Phone (optional)</label>
+                  <input id="learner-phone" name="phone" type="tel" autoComplete="tel" />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="learner-school">School or community (optional)</label>
+                  <input id="learner-school" name="school" />
+                </div>
+                <div className="form-field-wide">
+                  <button className="button button-green school-submit" type="submit">
+                    Reserve a place <span aria-hidden="true" className="arrow">↗</span>
+                  </button>
+                  <p className="form-note">
+                    We only use these details to contact you about the course.
+                  </p>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -196,9 +286,19 @@ export default function Home() {
             <SectionEyebrow>START A SCHOOL ENQUIRY</SectionEyebrow>
             <h2>Register your school</h2>
             <p>Share a few details so our team can learn how to support your students.</p>
+            {schoolStatus === "received" ? (
+              <p className="form-note form-note-ok" role="status">
+                Thank you — your enquiry reached us. Our team will be in touch.
+              </p>
+            ) : null}
+            {schoolStatus === "error" ? (
+              <p className="form-note form-note-error" role="alert">
+                That did not send. Check the required fields and try again.
+              </p>
+            ) : null}
             <form
               className="school-form"
-              action="https://formspree.io/f/maeodqly"
+              action="/api/enquiries"
               method="post"
               aria-label="School registration enquiry"
             >
@@ -250,7 +350,7 @@ export default function Home() {
                 <button className="button button-primary school-submit" type="submit">Submit school enquiry <span aria-hidden="true" className="arrow">↗</span></button>
                 <p className="form-note">
                   Your enquiry will be sent to our team. For help, contact{" "}
-                  <a href="mailto:support@skillbridge.tech">support@skillbridge.tech</a>.
+                  <a href="mailto:support@skillsbridge.tech">support@skillsbridge.tech</a>.
                 </p>
               </div>
             </form>
@@ -283,20 +383,29 @@ export default function Home() {
         <div className="news-placeholder">
           <img
             className="news-image"
-            src="https://res.cloudinary.com/dx1nrew3h/image/upload/v1794785382/child-surfing-internet-tablet-computer_342744-389_e16uvq.avif"
+            src={news.image}
             alt="A young person using a tablet to explore digital learning"
           />
           <div className="news-date">SKILLBRIDGE JOURNAL</div>
-          <h3>Every young person deserves the chance to create with technology.</h3>
-          <p>Follow our programmes, community activities and the ideas young people are bringing to life.</p>
-          <a className="text-link" href="#contact">Connect with us <Arrow /></a>
+          <h3>{news.title}</h3>
+          <p>{news.excerpt}</p>
+          <EnquiryButton className="text-link enquiry-plain" enquiryType="General enquiry">
+            Connect with us <Arrow />
+          </EnquiryButton>
         </div>
       </section>
 
       <section className="contact-band" id="contact">
         <div className="section-wrap contact-inner">
           <div><SectionEyebrow>LET’S MAKE IT POSSIBLE</SectionEyebrow><h2>Bring technology learning to more children.</h2></div>
-          <a className="button button-green" href="mailto:hello@skillbridge.org">Start a conversation <Arrow /></a>
+          <EnquiryButton
+            className="button button-green"
+            enquiryType="General enquiry"
+            title="Start a conversation"
+            description="Tell us what you have in mind — a programme, a partnership, or a question. We usually reply within two working days."
+          >
+            Start a conversation <Arrow />
+          </EnquiryButton>
         </div>
       </section>
 

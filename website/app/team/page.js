@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { SiteFooter, SiteHeader } from "../../components/site-chrome";
+import EnquiryButton from "../../components/enquiry-popup";
 import team from "../../components/team-data";
 
 export const metadata = {
@@ -18,7 +19,14 @@ export default function TeamPage() {
             <div className="eyebrow"><span />THE PEOPLE BEHIND THE POSSIBILITY</div>
             <h1>Meet the team building <em>what’s next.</em></h1>
             <p>Educators, community builders and advocates for a more inclusive digital future.</p>
-            <a className="button button-green" href="/contact">Connect with our team <span className="arrow">↗</span></a>
+            <EnquiryButton
+              className="button button-green"
+              enquiryType="General enquiry"
+              title="Connect with our team"
+              description="Send us a note and the right person on the team will get back to you."
+            >
+              Connect with our team <span className="arrow">↗</span>
+            </EnquiryButton>
           </div>
         </section>
         <section className="inner-content section-wrap team-section">
@@ -39,7 +47,14 @@ export default function TeamPage() {
                   <h3>{member.name}</h3>
                   <p className="team-role">{member.role}</p>
                   <p className="team-bio">{member.bio}</p>
-                  <a href="/contact" aria-label={`Contact SkillBridge about ${member.role}`}>Connect with SkillBridge <span className="arrow">↗</span></a>
+                  <EnquiryButton
+                    className="enquiry-plain enquiry-card-link"
+                    enquiryType="General enquiry"
+                    title={`Connect with SkillBridge`}
+                    description={`Tell us what you would like to discuss about the ${member.role} role.`}
+                  >
+                    Connect with SkillBridge <span className="arrow">↗</span>
+                  </EnquiryButton>
                 </div>
               </article>
             ))}

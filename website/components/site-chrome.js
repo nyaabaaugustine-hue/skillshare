@@ -63,7 +63,7 @@ export function SiteFooter() {
         </div>
         <div><h4>Explore</h4><a href="/about">About us</a><a href="/programmes">Our programmes</a><a href="/team">Our team</a><a href="/#news">News &amp; impact</a></div>
         <div><h4>Get involved</h4><a href="/contact">Volunteer</a><a href="/contact">Partner with us</a><a href="/contact">Donate</a><a href="/contact">Support a school</a></div>
-        <div><h4>Contact</h4><p>East Legon, Accra, Ghana</p><a href="mailto:hello@skillbridge.org">hello@skillbridge.org</a><a href="/contact">Visit us</a></div>
+        <div><h4>Contact</h4><p>East Legon, Accra, Ghana</p><a href="mailto:support@skillsbridge.tech">support@skillsbridge.tech</a><a href="/contact">Visit us</a></div>
       </div>
       <div className="footer-bottom section-wrap">
         <span>© {new Date().getFullYear()} SkillBridge. All rights reserved.</span>

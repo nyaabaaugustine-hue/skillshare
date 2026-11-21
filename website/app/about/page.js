@@ -1,4 +1,5 @@
 import { SiteFooter, SiteHeader } from "../../components/site-chrome";
+import EnquiryButton from "../../components/enquiry-popup";
 
 export const metadata = {
   title: "About SkillBridge | Learn Today. Innovate Tomorrow.",
@@ -15,7 +16,14 @@ export default function AboutPage() {
             <div className="eyebrow"><span />WHO WE ARE</div>
             <h1>Bridging young people to a world of <em>possibility.</em></h1>
             <p>We believe every child deserves the chance to learn, create and find their place in a digital future.</p>
-            <a className="button button-green" href="/contact">Work with us <span className="arrow">↗</span></a>
+            <EnquiryButton
+              className="button button-green"
+              enquiryType="Partnerships"
+              title="Work with us"
+              description="Tell us about your organisation and the kind of collaboration you have in mind."
+            >
+              Work with us <span className="arrow">↗</span>
+            </EnquiryButton>
           </div>
         </section>
         <section className="inner-content section-wrap about-story">

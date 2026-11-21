@@ -1,4 +1,5 @@
 import { SiteFooter, SiteHeader } from "../../components/site-chrome";
+import EnquiryButton from "../../components/enquiry-popup";
 
 export const metadata = {
   title: "Programmes | SkillBridge",
@@ -33,7 +34,14 @@ export default function ProgrammesPage() {
             <div className="eyebrow"><span />LEARN BY DOING</div>
             <h1>A pathway for every <em>curious mind.</em></h1>
             <p>Age-based programmes make digital learning practical, welcoming and exciting at every stage.</p>
-            <a className="button button-green" href="/contact">Ask about a programme <span className="arrow">↗</span></a>
+            <EnquiryButton
+              className="button button-green"
+              enquiryType="Programmes and courses"
+              title="Ask about a programme"
+              description="Tell us the learner's age and what they are curious about, and we will point you to the right pathway."
+            >
+              Ask about a programme <span className="arrow">↗</span>
+            </EnquiryButton>
           </div>
         </section>
         <section className="inner-content section-wrap pathway-section">
@@ -50,7 +58,15 @@ export default function ProgrammesPage() {
                   <h3>{pathway.title}</h3>
                   <p>{pathway.description}</p>
                   <ul>{pathway.topics.map((topic) => <li key={topic}>{topic}</li>)}</ul>
-                  <a href="/contact">Enquire about this pathway <span className="arrow">↗</span></a>
+                  <EnquiryButton
+                    className="enquiry-plain enquiry-card-link"
+                    enquiryType="Programmes and courses"
+                    title={`Enquire about ${pathway.title}`}
+                    description={`${pathway.age} · tell us a little about the learner and we will explain what this pathway covers.`}
+                    programme={pathway.title}
+                  >
+                    Enquire about this pathway <span className="arrow">↗</span>
+                  </EnquiryButton>
                 </div>
               </article>
             ))}
@@ -59,7 +75,14 @@ export default function ProgrammesPage() {
         <section className="pathway-callout">
           <div className="section-wrap inner-cta">
             <div><div className="eyebrow"><span />LEARNING TOGETHER</div><h2>Bring digital skills to your school or community.</h2></div>
-            <a className="button button-primary" href="/contact">Start a conversation <span className="arrow">↗</span></a>
+            <EnquiryButton
+              className="button button-primary"
+              enquiryType="Partnerships"
+              title="Start a conversation"
+              description="Bring digital skills to your school or community — tell us who you would like to reach."
+            >
+              Start a conversation <span className="arrow">↗</span>
+            </EnquiryButton>
           </div>
         </section>
       </main>

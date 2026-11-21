@@ -1,4 +1,5 @@
 import { SiteFooter, SiteHeader } from "../../components/site-chrome";
+import EnquiryButton from "../../components/enquiry-popup";
 
 export const metadata = {
   title: "Contact | SkillBridge",
@@ -15,7 +16,14 @@ export default function ContactPage() {
             <div className="eyebrow"><span />LET’S CONNECT</div>
             <h1>Let’s open more doors <em>together.</em></h1>
             <p>Ask us about programmes, volunteering, partnerships or bringing technology learning to your community.</p>
-            <a className="button button-green" href="mailto:hello@skillbridge.org">Email our team <span className="arrow">↗</span></a>
+            <EnquiryButton
+              className="button button-green"
+              enquiryType="General enquiry"
+              title="Email our team"
+              description="Send us a message about programmes, volunteering, partnerships or bringing technology learning to your community."
+            >
+              Email our team <span className="arrow">↗</span>
+            </EnquiryButton>
           </div>
         </section>
         <section className="inner-content section-wrap contact-page-content">
@@ -23,7 +31,7 @@ export default function ContactPage() {
             <div className="eyebrow"><span />SAY HELLO</div>
             <h2>We’d love to hear from you.</h2>
             <p>Start a conversation with our team and tell us how you would like to get involved.</p>
-            <a className="contact-detail" href="mailto:hello@skillbridge.org"><span className="contact-detail-icon">✉</span><span><small>EMAIL</small><b>hello@skillbridge.org</b></span></a>
+            <a className="contact-detail" href="mailto:support@skillsbridge.tech"><span className="contact-detail-icon">✉</span><span><small>EMAIL</small><b>support@skillsbridge.tech</b></span></a>
             <div className="contact-detail"><span className="contact-detail-icon">⌖</span><span><small>HEADQUARTERS · GHANA</small><b>East Legon, Accra</b></span></div>
             <a className="button button-primary" href="https://www.google.com/maps/search/?api=1&query=East%20Legon%2C%20Accra" target="_blank" rel="noreferrer">Open in Google Maps <span className="arrow">↗</span></a>
           </div>
