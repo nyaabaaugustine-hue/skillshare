@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'reminder_gateway.dart';
 
 /// Web / unsupported-platform reminders: deliberately do nothing.
@@ -9,6 +11,11 @@ class Reminders implements ReminderGateway {
   Reminders();
 
   static Future<Reminders> create() async => Reminders();
+
+  final StreamController<String> _opened = StreamController<String>.broadcast();
+
+  @override
+  Stream<String> get opened => _opened.stream;
 
   @override
   bool get supported => false;
@@ -39,4 +46,17 @@ class Reminders implements ReminderGateway {
 
   @override
   Future<void> cancelAll() async {}
+
+  @override
+  Future<void> show({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {}
+
+  @override
+  void dispose() {
+    unawaited(_opened.close());
+  }
 }

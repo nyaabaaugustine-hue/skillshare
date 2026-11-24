@@ -15,6 +15,7 @@ import 'package:skillbridge_python_lab/features/course/course_path_screen.dart';
 import 'package:skillbridge_python_lab/features/course/guardian_report.dart';
 import 'package:skillbridge_python_lab/features/course/guardian_report_mailer.dart';
 import 'package:skillbridge_python_lab/features/auth/auth_controller.dart';
+import 'package:skillbridge_python_lab/features/messages/announcement_controller.dart';
 import 'package:skillbridge_python_lab/features/leaderboard/leaderboard_screen.dart';
 import 'package:skillbridge_python_lab/features/leaderboard/leaderboard_sync.dart';
 import 'package:skillbridge_python_lab/features/lms/learning_map.dart';
@@ -278,6 +279,8 @@ class _HomeScreenState extends State<HomeScreen> {
             progress: _controller.progress,
             onOpenSettings: () => Navigator.of(context).pushNamed('/settings'),
             onOpenTutor: () => Navigator.of(context).pushNamed('/ai-tutor'),
+            onOpenAnnouncements: () =>
+                Navigator.of(context).pushNamed('/announcements'),
           ),
         },
       ),
@@ -497,14 +500,17 @@ class _MoreTab extends StatelessWidget {
     required this.progress,
     required this.onOpenSettings,
     required this.onOpenTutor,
+    required this.onOpenAnnouncements,
   });
 
   final LearnerProgress progress;
   final VoidCallback onOpenSettings;
   final VoidCallback onOpenTutor;
+  final VoidCallback onOpenAnnouncements;
 
   @override
   Widget build(BuildContext context) {
+    final unread = context.watch<AnnouncementController?>()?.unreadCount ?? 0;
     return ListView(
       padding: const EdgeInsets.fromLTRB(0, 16, 0, 28),
       children: [
@@ -554,6 +560,35 @@ class _MoreTab extends StatelessWidget {
         const SizedBox(height: 18),
         _DailyMissionCard(),
         const _SectionTitle(title: 'Account'),
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: ListTile(
+            leading: const Icon(Icons.campaign_outlined),
+            title: const Text('Announcements'),
+            subtitle: const Text('Updates from SkillBridge Academy'),
+            trailing: unread > 0
+                ? Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: SkillBridgeColors.primary,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '$unread',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  )
+                : const Icon(Icons.chevron_right_rounded),
+            onTap: onOpenAnnouncements,
+          ),
+        ),
         Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: ListTile(
@@ -830,10 +865,7 @@ class _DrawerItem extends StatelessWidget {
       title: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
       subtitle: Text(
         caption,
-        style: TextStyle(
-          fontSize: 12,
-          color: context.appColors.textMuted,
-        ),
+        style: TextStyle(fontSize: 12, color: context.appColors.textMuted),
       ),
       trailing: Icon(
         Icons.chevron_right_rounded,
@@ -1298,10 +1330,7 @@ class _Stat extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: context.appColors.textMuted,
-            ),
+            style: TextStyle(fontSize: 12, color: context.appColors.textMuted),
           ),
         ],
       ),

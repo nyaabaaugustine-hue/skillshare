@@ -1,22 +1,53 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'app/router.dart';
 import 'app/theme.dart';
+import 'core/config/platform.dart';
 import 'core/di/app_dependencies.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/auth/login_register_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/home/guardian_home_screen.dart';
 import 'features/home/connectivity_controller.dart';
+import 'features/messages/announcement_controller.dart';
+import 'features/messages/announcement_repository.dart';
+import 'features/messages/push_message.dart';
 import 'features/onboarding/welcome_video_dialog.dart';
 import 'features/settings/settings_controller.dart';
 import 'features/splash/splash_screen.dart';
+import 'firebase_options.dart';
+
+/// Handles FCM messages when the app is not in the foreground.
+///
+/// Background isolates have no widget tree, so this only initializes Firebase
+/// and records the message; the inbox is fetched when the app opens.
+@pragma('vm:entry-point')
+Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  final push = PushMessage.fromRemoteMessage(message);
+  if (push != null) {
+    debugPrint('Background announcement received: ${push.id}');
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Desktop has no generated Firebase options and no messaging plugin. Keep it
+  // usable: the in-app inbox still works, push is simply unavailable there.
+  if (kIsWeb || isAndroid || isIOS) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    if (!kIsWeb && (isAndroid || isIOS)) {
+      FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
+    }
+  }
   runApp(const BootstrapApp());
 }
 
@@ -50,6 +81,11 @@ class _BootstrapAppState extends State<BootstrapApp> {
   /// Navigator so Settings (a pushed route) can sign out too.
   final AuthController _auth = AuthController();
 
+  StreamSubscription<PushMessage>? _pushMessagesSub;
+  StreamSubscription<PushMessage>? _pushOpenedSub;
+  AnnouncementController? _announcements;
+  PushMessage? _pendingAnnouncement;
+
   @override
   void initState() {
     super.initState();
@@ -59,6 +95,9 @@ class _BootstrapAppState extends State<BootstrapApp> {
 
   @override
   void dispose() {
+    unawaited(_pushMessagesSub?.cancel() ?? Future<void>.value());
+    unawaited(_pushOpenedSub?.cancel() ?? Future<void>.value());
+    _announcements?.dispose();
     _auth.dispose();
     super.dispose();
   }
@@ -69,14 +108,21 @@ class _BootstrapAppState extends State<BootstrapApp> {
         accessTokenProvider: () => _auth.session?.token,
       );
       if (!mounted) return;
+      _announcements = AnnouncementController(
+        repository: HttpAnnouncementRepository(call: _auth.requestSharedApi),
+      );
       _auth.configure(
         deps.config,
         learnerRef: deps.learnerRef,
         courseProgress: deps.courseProgress,
+        push: deps.push,
       );
       // Shared accounts (same Neon Auth login on phone and web) when the
       // public website API origin is configured; guest/offline access remains.
       await _auth.initCloudAuth();
+      _listenToPush(deps);
+      final launchMessage = await deps.push.initialMessage();
+      if (launchMessage != null) _pendingAnnouncement = launchMessage;
       // Schedules the daily nudge (and asks for notification permission the
       // first time). Never blocks the first frame.
       unawaited(deps.reminders.bootstrap());
@@ -102,6 +148,41 @@ class _BootstrapAppState extends State<BootstrapApp> {
   void _finishSplash() {
     if (!mounted) return;
     setState(() => _splashDone = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _flushPendingAnnouncement();
+    });
+  }
+
+  void _listenToPush(AppDependencies deps) {
+    _pushMessagesSub?.cancel();
+    _pushOpenedSub?.cancel();
+    _pushMessagesSub = deps.push.messages.listen((message) {
+      _announcements?.applyPush(message);
+    });
+    _pushOpenedSub = deps.push.opened.listen(_openAnnouncement);
+  }
+
+  void _openAnnouncement(PushMessage message) {
+    // Hold taps until the learner is signed in and the navigator exists. A tap
+    // on a cold start can arrive before either is ready.
+    if (!_auth.isAuthenticated || !_splashDone) {
+      _pendingAnnouncement = message;
+      return;
+    }
+    _announcements?.applyPush(message);
+    final navigator = AppRouter.navigatorKey.currentState;
+    if (navigator == null) {
+      _pendingAnnouncement = message;
+      return;
+    }
+    navigator.pushNamed('${AppRouter.announcements}/${message.id}');
+  }
+
+  void _flushPendingAnnouncement() {
+    final pending = _pendingAnnouncement;
+    if (pending == null) return;
+    _pendingAnnouncement = null;
+    _openAnnouncement(pending);
   }
 
   Widget _home() {
@@ -145,6 +226,9 @@ class _BootstrapAppState extends State<BootstrapApp> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<AuthController>.value(value: _auth),
+        ChangeNotifierProvider<AnnouncementController>(
+          create: (_) => _announcements!,
+        ),
         Provider<AppDependencies>(create: (_) => _deps!),
         ChangeNotifierProvider<SettingsController>(
           create: (_) => SettingsController(_deps!.settings),
@@ -162,6 +246,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
               ? ThemeMode.dark
               : context.watch<SettingsController>().themeMode;
           return MaterialApp(
+            navigatorKey: AppRouter.navigatorKey,
             title: 'SkillBridge Academy',
             debugShowCheckedModeBanner: false,
             theme: buildLightTheme(),

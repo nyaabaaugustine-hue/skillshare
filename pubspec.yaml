@@ -50,6 +50,8 @@ dependencies:
   # UTC offset in reminders_io.dart, which avoids a second plugin that clashed
   # with this project's Java 11 target.
   timezone: ^0.10.1
+  firebase_core: ^5.2.0
+  firebase_messaging: ^17.1.0
 
 dev_dependencies:
   flutter_test:

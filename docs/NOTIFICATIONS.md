@@ -1,4 +1,4 @@
-# Learning reminders
+# Notifications and announcements
 
 Two local notifications, both with the bundled chime
 (`android/app/src/main/res/raw/reminder_chime.wav`, generated: A5 then E6).
@@ -39,8 +39,8 @@ never nudged at 6pm, and a learner who skips a day is nudged at 6pm that day.
 
 ## Behaviour and limits
 
-- **Web:** no notifications at all; the settings row still shows so accounts are
-  consistent, and the app explains the platform limit in the subtitle copy.
+- **Web:** local reminders are unavailable (the settings row explains this). Web
+  push announcements are optional and require a VAPID key — see below.
 - **Permission:** requested once, on the first launch after reminders are on
   (`reminder_permission_asked`). If the learner denies it, nothing is scheduled
   and the OS can only re-prompt from system settings — the app does not nag.
@@ -71,3 +71,73 @@ never nudged at 6pm, and a learner who skips a day is nudged at 6pm that day.
 - **Not verified:** actual delivery on a phone — permission prompt, the chime
   playing, 3-hour timing and behaviour after a reboot. No device or emulator test
   was run, so treat delivery as untested until someone installs the APK.
+
+## Admin announcements (Firebase Cloud Messaging)
+
+One-way messages from the website admin console to signed-in learners. The
+**in-app inbox is authoritative**; FCM is a best-effort delivery channel. When
+Firebase credentials or a device token are unavailable, publishing still
+succeeds with `pushEnabled: false` and the message waits in the inbox.
+
+### Firebase project
+
+- Project: `skillbridge-academy` (`skillbridge-academy-e5e4c`).
+- Flutter config: `lib/firebase_options.dart`, `android/app/google-services.json`,
+  `web/firebase-messaging-sw.js`.
+- Web push needs a VAPID key from Firebase Console → Cloud Messaging → Web
+  configuration. Supply it at build time:
+
+  ```bash
+  flutter build web --dart-define=SB_FCM_VAPID_KEY=<key>
+  ```
+
+  Without the key, native push still works and web falls back to the inbox.
+- iOS additionally needs an APNs key uploaded to Firebase and the Push
+  Notifications capability enabled in Xcode.
+
+### Backend
+
+- Apply `.work/academy-live/db/014_announcements.sql` to the Neon database.
+- Set `FIREBASE_SERVICE_ACCOUNT_JSON` in the backend environment (or
+  `GOOGLE_APPLICATION_CREDENTIALS`). Never commit the service-account file or
+  ship it in the Flutter app.
+- Publish from `/admin/announcements`; the server derives the user id from the
+  Neon Auth session, so a client cannot send messages as another learner.
+
+### Data payload and tap routing
+
+FCM data payload:
+
+```json
+{
+  "type": "announcement",
+  "announcementId": "<uuid>",
+  "title": "Title",
+  "body": "Short preview"
+}
+```
+
+`PushMessage.fromData` ignores anything else. Foreground messages post a local
+heads-up (ids `2000+`) through the existing reminder channel. Tapping a heads-up,
+a background FCM notification or a terminated-app launch opens
+`/announcements/<id>` via `AppRouter.navigatorKey`; the detail screen marks the
+announcement read.
+
+### Flutter files
+
+| File | Role |
+|---|---|
+| `lib/features/messages/push_gateway.dart` | Testable push interface |
+| `lib/features/messages/push_service.dart` | Firebase adapter, token + tap streams |
+| `lib/features/messages/push_message.dart` | Payload parsing |
+| `lib/features/messages/announcement*.dart` | Model, repository, controller, inbox UI |
+| `lib/main.dart` | Firebase bootstrap, providers, tap routing |
+| `lib/features/auth/auth_controller.dart` | Token register/delete on auth changes |
+
+### Privacy
+
+Tokens are registered only for signed-in accounts and deleted on sign-out. The
+server stores one token per device per user and prunes tokens FCM reports as
+invalid. Announcement titles/bodies are duplicated in the push payload only so a
+tap can render immediately; the authoritative copy and read state stay in the
+database.

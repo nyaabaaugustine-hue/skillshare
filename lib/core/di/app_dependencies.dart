@@ -11,6 +11,8 @@ import 'package:skillbridge_python_lab/core/storage/settings_repository.dart';
 import 'package:skillbridge_python_lab/core/storage/submission_repository.dart';
 import 'package:skillbridge_python_lab/features/course/course_progress_repository.dart';
 import 'package:skillbridge_python_lab/features/offline_sync/connectivity_service.dart';
+import 'package:skillbridge_python_lab/features/messages/push_gateway.dart';
+import 'package:skillbridge_python_lab/features/messages/push_service.dart';
 import 'package:skillbridge_python_lab/features/offline_sync/submission_sync_service.dart';
 import 'package:skillbridge_python_lab/features/python_runtime/python_runtime.dart';
 import 'package:skillbridge_python_lab/features/python_runtime/python_runtime_factory.dart';
@@ -36,6 +38,7 @@ class AppDependencies {
     required this.idGenerator,
     required this.learnerRef,
     required this.reminders,
+    required this.push,
     this.ownsLmsClient = true,
     this.ownsRuntime = true,
   });
@@ -56,6 +59,9 @@ class AppDependencies {
 
   /// Daily + "you stopped halfway" reminders. A no-op on web.
   final ReminderService reminders;
+
+  /// FCM push adapter. Desktop builds get a no-op implementation.
+  final PushGateway push;
   final bool ownsLmsClient;
   final bool ownsRuntime;
 
@@ -85,14 +91,29 @@ class AppDependencies {
     } else {
       lmsClient = HttpLmsClient(
         baseUrl: resolved.lmsBaseUrl,
-        tokenProvider: CallbackTokenProvider(
-          accessTokenProvider ?? () => null,
-        ),
+        tokenProvider: CallbackTokenProvider(accessTokenProvider ?? () => null),
       );
     }
 
     final submissions = SubmissionRepository(database);
     final runtime = createPythonRuntime(resolved);
+    final reminders = ReminderService(
+      gateway: await Reminders.create(),
+      settings: settings,
+      learnedToday: () => ReminderService.learnedOn(
+        courseProgress.activityDates(learnerRef),
+        DateTime.now(),
+      ),
+    );
+    final push = PushService(reminders: reminders);
+    await push.initialize(
+      // Web push public key from Firebase console > Cloud Messaging. It is a
+      // public value; a build can still override it with --dart-define.
+      vapidKey: const String.fromEnvironment(
+        'SB_FCM_VAPID_KEY',
+        defaultValue: 'BPc1Ed7KtjSKLU8l9ni0MsOk-oii_HpLSMp1A_VDhvRYuVmVb3ozFcuZUFquT5GRursvWhSCXnJu7kfZpfVSFI4',
+      ),
+    );
 
     return AppDependencies(
       config: resolved,
@@ -112,20 +133,16 @@ class AppDependencies {
       ),
       idGenerator: IdGenerator(),
       learnerRef: learnerRef,
-      reminders: ReminderService(
-        gateway: await Reminders.create(),
-        settings: settings,
-        learnedToday: () => ReminderService.learnedOn(
-          courseProgress.activityDates(learnerRef),
-          DateTime.now(),
-        ),
-      ),
+      reminders: reminders,
+      push: push,
       ownsLmsClient: ownsLms,
       ownsRuntime: true,
     );
   }
 
   Future<void> dispose() async {
+    push.dispose();
+    reminders.dispose();
     if (ownsRuntime) await runtime.dispose();
     await connectivity.dispose();
     await database.close();

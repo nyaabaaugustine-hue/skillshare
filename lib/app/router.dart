@@ -5,6 +5,8 @@ import 'package:skillbridge_python_lab/features/home/home_screen.dart';
 import 'package:skillbridge_python_lab/features/exercises/exercise.dart';
 import 'package:skillbridge_python_lab/features/exercises/exercise_details_screen.dart';
 import 'package:skillbridge_python_lab/features/lessons/lesson_screen.dart';
+import 'package:skillbridge_python_lab/features/messages/announcement_detail_screen.dart';
+import 'package:skillbridge_python_lab/features/messages/announcements_screen.dart';
 import 'package:skillbridge_python_lab/features/lms/lms_hub_screen.dart';
 import 'package:skillbridge_python_lab/features/ai/ai_tutor_screen.dart';
 import 'package:skillbridge_python_lab/features/lms/cloudinary_video_screen.dart';
@@ -23,6 +25,11 @@ import 'package:skillbridge_python_lab/features/settings/settings_screen.dart';
 class AppRouter {
   const AppRouter._();
 
+  /// Lets a background notification tap open a route from outside the widget
+  /// tree. Installed on MaterialApp.navigatorKey by the bootstrap widget.
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   static const String home = '/';
   static const String editor = '/editor';
   static const String exercise = '/exercise';
@@ -32,8 +39,20 @@ class AppRouter {
   static const String lmsVideo = '/lms-video';
   static const String courseLesson = '/course-lesson';
   static const String quizRoute = '/quiz';
+  static const String announcements = '/announcements';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
+    final name = settings.name;
+    if (name != null && name.startsWith('$announcements/')) {
+      final id = name.substring('$announcements/'.length);
+      if (id.isNotEmpty) {
+        return MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => AnnouncementDetailScreen(id: id),
+        );
+      }
+    }
+
     switch (settings.name) {
       case editor:
         // Either a bare Exercise (practice tab) or a map carrying the exercise
@@ -122,6 +141,11 @@ class AppRouter {
         return MaterialPageRoute<void>(
           settings: settings,
           builder: (_) => QuizScreen(quiz: quizArgument),
+        );
+      case announcements:
+        return MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => const AnnouncementsScreen(),
         );
       case '/progress':
         return MaterialPageRoute<void>(

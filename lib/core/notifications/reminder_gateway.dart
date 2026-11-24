@@ -27,4 +27,22 @@ abstract class ReminderGateway {
   Future<void> cancelComeback();
 
   Future<void> cancelAll();
+
+  /// Posts an immediate, one-off notification.
+  ///
+  /// Used for foreground FCM announcements. Keeping it on this gateway means
+  /// the local-notification plugin is initialized exactly once, by the same
+  /// implementation that owns the learner's scheduled reminders.
+  Future<void> show({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  });
+
+  /// Tapped notification payloads. Announcement heads-ups carry the announcement
+  /// id; scheduled reminders carry no announcement payload.
+  Stream<String> get opened;
+
+  void dispose();
 }

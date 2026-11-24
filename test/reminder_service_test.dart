@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skillbridge_python_lab/core/notifications/reminder_gateway.dart';
@@ -5,6 +7,13 @@ import 'package:skillbridge_python_lab/core/notifications/reminder_service.dart'
 import 'package:skillbridge_python_lab/core/storage/settings_repository.dart';
 
 class _FakeGateway implements ReminderGateway {
+  _FakeGateway();
+
+  final StreamController<String> _opened = StreamController<String>.broadcast();
+
+  @override
+  Stream<String> get opened => _opened.stream;
+
   bool initialized = false;
   bool permissionAsked = false;
   bool cancelledAll = false;
@@ -55,6 +64,25 @@ class _FakeGateway implements ReminderGateway {
 
   @override
   Future<void> cancelAll() async => cancelledAll = true;
+
+  @override
+  Future<void> show({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    shownId = id;
+    shownPayload = payload;
+  }
+
+  int? shownId;
+  String? shownPayload;
+
+  @override
+  void dispose() {
+    unawaited(_opened.close());
+  }
 }
 
 Future<(ReminderService, _FakeGateway, SettingsRepository)> _build({
@@ -134,6 +162,19 @@ void main() {
         expect(gateway.permissionAsked, isFalse);
       },
     );
+
+    test('foreground announcements post a heads-up with their id', () async {
+      final (service, gateway, _) = await _build();
+      await service.showHeadsUp(
+        id: 2042,
+        title: 'New announcement',
+        body: 'Read it now',
+        payload: 'ann-42',
+      );
+
+      expect(gateway.shownId, 2042);
+      expect(gateway.shownPayload, 'ann-42');
+    });
 
     test('learnedOn only matches the same calendar day', () {
       final now = DateTime(2026, 11, 16, 20);

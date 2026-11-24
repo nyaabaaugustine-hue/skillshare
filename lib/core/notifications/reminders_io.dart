@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -36,7 +37,12 @@ class Reminders implements ReminderGateway {
   bool _ready = false;
   bool _timezoneReady = false;
 
+  final StreamController<String> _opened = StreamController<String>.broadcast();
+
   static Future<Reminders> create() async => Reminders();
+
+  @override
+  Stream<String> get opened => _opened.stream;
 
   @override
   bool get supported => Platform.isAndroid || Platform.isIOS;
@@ -69,6 +75,14 @@ class Reminders implements ReminderGateway {
             requestSoundPermission: false,
           ),
         ),
+        onDidReceiveNotificationResponse: (response) {
+          // Reminders use the payload 'reminder'; only announcement heads-ups
+          // carry an id the router can open.
+          final payload = response.payload;
+          if (payload != null && payload.isNotEmpty && payload != 'reminder') {
+            _opened.add(payload);
+          }
+        },
       );
       await _prepareTimezone();
       _ready = true;
@@ -217,5 +231,27 @@ class Reminders implements ReminderGateway {
     } catch (error) {
       debugPrint('Could not cancel reminders: $error');
     }
+  }
+
+  @override
+  Future<void> show({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    if (!supported) return;
+    await initialize();
+    if (!_ready) return;
+    try {
+      await _plugin.show(id, title, body, _details, payload: payload);
+    } catch (error) {
+      debugPrint('Could not show announcement notification: $error');
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_opened.close());
   }
 }

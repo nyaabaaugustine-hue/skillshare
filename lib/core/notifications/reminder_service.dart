@@ -121,4 +121,26 @@ class ReminderService {
     await settings.setReminderTime(hour: hour, minute: minute);
     await rescheduleDaily();
   }
+
+  /// Tapped announcement heads-ups, as announcement ids.
+  Stream<String> get opened => gateway.opened;
+
+  /// Shows a foreground push announcement immediately.
+  ///
+  /// This deliberately reuses the reminder gateway rather than creating a
+  /// second `FlutterLocalNotificationsPlugin`: the plugin's Android channel and
+  /// its notification tap callback are process-wide, so two initializations
+  /// would silently overwrite each other.
+  Future<void> showHeadsUp({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    if (!gateway.supported) return;
+    await gateway.initialize();
+    await gateway.show(id: id, title: title, body: body, payload: payload);
+  }
+
+  void dispose() => gateway.dispose();
 }

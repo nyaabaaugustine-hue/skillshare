@@ -6,9 +6,12 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/config/app_config.dart';
+import '../../core/config/platform.dart';
+import '../../core/errors/app_exception.dart';
 import '../../core/security/id_generator.dart';
 import '../course/course_progress_repository.dart';
 import '../course/course_progress_sync_service.dart';
+import '../messages/push_gateway.dart';
 import 'cloud_auth.dart';
 import 'family_link.dart';
 
@@ -128,6 +131,9 @@ class AuthController extends ChangeNotifier {
   /// successfully. Development and tests may use the offline mock.
   CloudAuth? _cloud;
   StreamSubscription<CloudUser>? _cloudEvents;
+  PushGateway? _push;
+  String? _registeredUserId;
+  String? _registeredToken;
 
   AuthSession? get session => _session;
 
@@ -143,6 +149,87 @@ class AuthController extends ChangeNotifier {
 
   /// True when this build signs in against the shared website/Neon Auth origin.
   bool get cloudAuthEnabled => _cloud != null;
+
+  /// Stable Neon Auth id, used as `user_id` by the shared APIs.
+  String? get cloudUserId => _cloud?.currentSession?.id;
+
+  /// True when the shared inbox/device-token APIs can be called.
+  bool get canUseSharedApi => _cloud != null && (_session?.isAccount ?? false);
+
+  /// Calls an authenticated website API with the shared Neon Auth session.
+  ///
+  /// Screens and repositories use this instead of holding a bearer token: the
+  /// cookie is managed by [CloudAuth] and is never exposed to Flutter code.
+  Future<http.Response> requestSharedApi(
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+  }) {
+    final cloud = _cloud;
+    if (cloud == null || !(_session?.isAccount ?? false)) {
+      throw const AuthenticationException();
+    }
+    return cloud.requestSharedApi(method, path, body: body);
+  }
+
+  /// Registers the current FCM token with the shared backend.
+  ///
+  /// Best-effort by design: a push failure must never make sign-in fail. The
+  /// in-app inbox remains available even when this device cannot receive push.
+  Future<void> registerPushToken({bool force = false}) async {
+    final push = _push;
+    final userId = cloudUserId;
+    if (push == null || !push.supported || userId == null) return;
+    if (!canUseSharedApi) return;
+    if (!force && _registeredUserId == userId) return;
+
+    try {
+      // iOS and web require an explicit prompt; on Android this is a no-op when
+      // the OS permission was already granted for local reminders.
+      if (!await push.requestPermission()) return;
+      final token = await push.token();
+      if (token == null || token.isEmpty) return;
+      final response = await requestSharedApi(
+        'POST',
+        '/api/device-tokens',
+        body: <String, Object?>{'token': token, 'platform': _pushPlatform},
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        _registeredUserId = userId;
+        _registeredToken = token;
+      }
+    } catch (error) {
+      debugPrint('FCM token registration skipped: $error');
+    }
+  }
+
+  /// Removes this device's registration before the session is cleared.
+  Future<void> deletePushToken() async {
+    final push = _push;
+    _registeredUserId = null;
+    if (push == null || !push.supported) return;
+
+    final token = await push.token() ?? _registeredToken;
+    _registeredToken = null;
+    if (token != null && token.isNotEmpty && canUseSharedApi) {
+      try {
+        await requestSharedApi(
+          'DELETE',
+          '/api/device-tokens',
+          body: <String, Object?>{'token': token},
+        );
+      } catch (error) {
+        debugPrint('Could not remove the FCM token from the server: $error');
+      }
+    }
+    await push.deleteToken();
+  }
+
+  String get _pushPlatform {
+    if (isAndroid) return 'android';
+    if (isIOS) return 'ios';
+    return 'web';
+  }
 
   /// Returns a usable tutor access JWT, refreshing it when it is expired or
   /// about to expire (or when the Worker rejected it with 401).
@@ -189,10 +276,12 @@ class AuthController extends ChangeNotifier {
     AppConfig config, {
     String? learnerRef,
     CourseProgressRepository? courseProgress,
+    PushGateway? push,
   }) {
     _config = config;
     if (learnerRef != null && learnerRef.isNotEmpty) _learnerRef = learnerRef;
     _courseProgress = courseProgress;
+    _push = push;
     if (courseProgress != null) {
       courseProgress.onProgressChanged = _onLocalProgressChanged;
     }
@@ -251,6 +340,7 @@ class AuthController extends ChangeNotifier {
     _busy = false;
     _error = null;
     notifyListeners();
+    unawaited(registerPushToken());
     // Device-local FamilyLinkStore entries are not trusted cloud relationships.
   }
 
@@ -443,7 +533,8 @@ class AuthController extends ChangeNotifier {
     UserRole role = UserRole.student,
   }) {
     if (_cloud != null && role == UserRole.guardian) {
-      _error = 'A Parent / Guardian must sign in with an invited family account.';
+      _error =
+          'A Parent / Guardian must sign in with an invited family account.';
       notifyListeners();
       return Future<bool>.value(false);
     }
@@ -484,6 +575,7 @@ class AuthController extends ChangeNotifier {
       );
       _pendingVerificationEmail = null;
       _syncCloudProgress();
+      unawaited(registerPushToken());
       return true;
     } on CloudAuthException catch (e) {
       _error = e.message;
@@ -545,6 +637,7 @@ class AuthController extends ChangeNotifier {
       _session = session;
       if (_cloud == null) await _bindFamily(identifier ?? session.email ?? '');
       _syncCloudProgress();
+      unawaited(registerPushToken());
       return true;
     } on _AuthFailure catch (e) {
       _error = e.message;
@@ -577,6 +670,9 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    // Delete while the Neon Auth cookie is still valid; dropping it first
+    // would leave an orphaned device token on the server.
+    await deletePushToken();
     await _cloud?.signOut();
     _session = null;
     _familyLink = null;

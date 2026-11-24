@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "532825203301",
+    "project_id": "skillbridge-academy-e5e4c",
+    "storage_bucket": "skillbridge-academy-e5e4c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:532825203301:android:15f96ea90c62ca75c29c8c",
+        "android_client_info": {
+          "package_name": "com.skillbridge.skillbridge_python_lab"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxX9X712Ilxnxi9pq_ZccgoIM5yIiqa9E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

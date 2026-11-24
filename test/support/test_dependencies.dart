@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -15,12 +16,19 @@ import 'package:skillbridge_python_lab/core/storage/exercise_repository.dart';
 import 'package:skillbridge_python_lab/core/storage/settings_repository.dart';
 import 'package:skillbridge_python_lab/core/storage/submission_repository.dart';
 import 'package:skillbridge_python_lab/features/course/course_progress_repository.dart';
+import 'package:skillbridge_python_lab/features/messages/push_gateway.dart';
+import 'package:skillbridge_python_lab/features/messages/push_message.dart';
 import 'package:skillbridge_python_lab/features/offline_sync/connectivity_service.dart';
 import 'package:skillbridge_python_lab/features/offline_sync/submission_sync_service.dart';
 import 'package:skillbridge_python_lab/features/python_runtime/python_runtime.dart';
 import 'package:skillbridge_python_lab/integrations/lms/mock_lms_client.dart';
 
 class _TestReminderGateway implements ReminderGateway {
+  final StreamController<String> _opened = StreamController<String>.broadcast();
+
+  @override
+  Stream<String> get opened => _opened.stream;
+
   @override
   bool get supported => false;
 
@@ -50,6 +58,57 @@ class _TestReminderGateway implements ReminderGateway {
 
   @override
   Future<void> cancelAll() async {}
+
+  @override
+  Future<void> show({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {}
+
+  @override
+  void dispose() {
+    unawaited(_opened.close());
+  }
+}
+
+/// No-op push adapter: widget tests exercise the UI, not Firebase plugins.
+class _TestPushGateway implements PushGateway {
+  final StreamController<PushMessage> _messages =
+      StreamController<PushMessage>.broadcast();
+  final StreamController<PushMessage> _opened =
+      StreamController<PushMessage>.broadcast();
+
+  @override
+  bool get supported => false;
+
+  @override
+  Future<void> initialize({String? vapidKey}) async {}
+
+  @override
+  Future<bool> requestPermission() async => false;
+
+  @override
+  Future<String?> token() async => null;
+
+  @override
+  Future<void> deleteToken() async {}
+
+  @override
+  Future<PushMessage?> initialMessage() async => null;
+
+  @override
+  Stream<PushMessage> get messages => _messages.stream;
+
+  @override
+  Stream<PushMessage> get opened => _opened.stream;
+
+  @override
+  void dispose() {
+    unawaited(_messages.close());
+    unawaited(_opened.close());
+  }
 }
 
 /// Builds a real dependency graph against a real SQLite database, injecting
@@ -109,5 +168,6 @@ Future<AppDependencies> buildTestDependencies({
       gateway: _TestReminderGateway(),
       settings: settings,
     ),
+    push: _TestPushGateway(),
   );
 }
