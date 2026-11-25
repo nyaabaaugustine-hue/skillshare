@@ -1,8 +1,8 @@
-# SkillsBridg Academy
+# SkillBridge Academy
 
-Offline-capable Python learning and practice app for SkillsBridg Academy learners.
+Offline-capable Python learning and practice app for SkillBridge Academy learners.
 
-Status: early scaffold. Only the theme and Welcome screen exist. Nothing has been built, run or tested yet.
+Status: working Flutter learner app with a Next.js website and staff dashboard. The app includes a course path, a real Python editor with on-device execution, an offline submission queue, progress sync, AI tutor, guardian reports and an announcements inbox. See `docs/ARCHITECTURE.md`, `docs/VALUE_ROADMAP.md` and `docs/KNOWN_LIMITATIONS.md` for what is implemented, verified and still outstanding.
 
 ## First-time setup (Windows)
 
