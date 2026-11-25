@@ -36,6 +36,35 @@ Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   }
 }
 
+/// Flutter web keeps routes in the URL fragment. A notification tap opens
+/// `/app/index.html#/announcements/<id>`, so the app must honour that fragment
+/// on a cold start instead of always opening `/`.
+final RegExp _announcementFragment = RegExp(r'^/?announcements/([^/?#]+)');
+
+/// Extracts an announcement id from a browser URL fragment.
+///
+/// Kept separate from [initialAnnouncementIdFromUrl] so the parser can be
+/// unit-tested on the VM, where `kIsWeb` is false.
+String? announcementIdFromFragment(String fragment) {
+  final normalized = fragment.startsWith('#')
+      ? fragment.substring(1)
+      : fragment;
+  final match = _announcementFragment.firstMatch(normalized);
+  if (match == null) return null;
+  try {
+    final id = Uri.decodeComponent(match.group(1)!);
+    return id.isEmpty ? null : id;
+  } catch (_) {
+    // A malformed fragment must never prevent the app from booting.
+    return null;
+  }
+}
+
+String? initialAnnouncementIdFromUrl() {
+  if (!kIsWeb) return null;
+  return announcementIdFromFragment(Uri.base.fragment);
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Desktop has no generated Firebase options and no messaging plugin. Keep it
@@ -89,12 +118,14 @@ class _BootstrapAppState extends State<BootstrapApp> {
   @override
   void initState() {
     super.initState();
+    _auth.addListener(_onAuthChanged);
     _auth.startSignedOut();
     _load();
   }
 
   @override
   void dispose() {
+    _auth.removeListener(_onAuthChanged);
     unawaited(_pushMessagesSub?.cancel() ?? Future<void>.value());
     unawaited(_pushOpenedSub?.cancel() ?? Future<void>.value());
     _announcements?.dispose();
@@ -145,8 +176,21 @@ class _BootstrapAppState extends State<BootstrapApp> {
     _load();
   }
 
+  void _onAuthChanged() {
+    // A cold-start notification can arrive before Neon Auth restores the
+    // session. Keep it pending and open it as soon as the learner is signed in.
+    if (_auth.isAuthenticated && _splashDone) _flushPendingAnnouncement();
+  }
+
   void _finishSplash() {
     if (!mounted) return;
+    // Note: MaterialApp.initialRoute cannot be used here. On web it would build
+    // the announcement route before `_deps` exists, bypassing the splash and
+    // the lazy providers. Handle the fragment after bootstrap instead.
+    final deepLinkId = initialAnnouncementIdFromUrl();
+    if (deepLinkId != null && _pendingAnnouncement == null) {
+      _pendingAnnouncement = PushMessage(id: deepLinkId);
+    }
     setState(() => _splashDone = true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _flushPendingAnnouncement();

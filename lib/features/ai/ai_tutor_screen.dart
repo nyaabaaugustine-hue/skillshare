@@ -41,6 +41,12 @@ class AiTutorScreen extends StatefulWidget {
 }
 
 class _AiTutorScreenState extends State<AiTutorScreen> {
+  // Remote so every build (web and mobile) uses the same tutor artwork. Keep
+  // the code icon as a fallback when the image cannot be fetched.
+  static const _tutorIconUrl =
+      'https://res.cloudinary.com/ea91sdts/image/upload/v1795290743/'
+      'robot_ai_button_tight_transparent.png';
+
   final _input = TextEditingController();
   final _focus = FocusNode();
   final _scroll = ScrollController();
@@ -581,10 +587,17 @@ class _AiTutorScreenState extends State<AiTutorScreen> {
                   color: SkillBridgeColors.primary.withValues(alpha: 0.24),
                 ),
               ),
-              child: const Icon(
-                Icons.code_rounded,
-                color: SkillBridgeColors.primary,
-                size: 19,
+              clipBehavior: Clip.antiAlias,
+              child: Image.network(
+                _tutorIconUrl,
+                width: 36,
+                height: 36,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.code_rounded,
+                  color: SkillBridgeColors.primary,
+                  size: 19,
+                ),
               ),
             ),
             const SizedBox(width: 11),

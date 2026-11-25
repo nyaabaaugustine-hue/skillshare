@@ -112,8 +112,16 @@ class PushService implements PushGateway {
           );
           return null;
         }
+        // The web app is served from /app/, so Firebase's default root worker
+        // (/firebase-messaging-sw.js) does not exist here. Register the worker
+        // next to the app instead; its scope is /app/ and it also caches the
+        // app shell for offline use.
+        final workerPath = Uri.base.resolve('firebase-messaging-sw.js').path;
         // ignore: deprecated_member_use
-        return await messaging.getToken(vapidKey: vapid);
+        return await messaging.getToken(
+          vapidKey: vapid,
+          serviceWorkerScriptPath: workerPath,
+        );
       }
       // ignore: deprecated_member_use
       return await messaging.getToken();

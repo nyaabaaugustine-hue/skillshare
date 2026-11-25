@@ -56,9 +56,14 @@ Riverpod is mechanical because the controllers are already UI-free.
 ## The composition root
 
 `lib/core/di/app_dependencies.dart` is the only place that knows which concrete
-adapter to build. It is called once from `main.dart` (inside a `FutureBuilder`
-so the user sees a real loading state and a real error state rather than a
-white screen), and once per test with fakes.
+adapter to build. It is called once from `main.dart` (inside `BootstrapApp`, a
+single long-lived `StatefulWidget` that shows a real loading state and a real
+error state rather than a white screen), and once per test with fakes.
+
+`BootstrapApp` also owns the `AuthController`, announcement stream subscriptions
+and pending notification tap. Providers are installed above `MaterialApp` so
+pushed routes can read them; swapping the old `MaterialApp` on rebuild caused
+an "inactive element" assertion and must not be reintroduced.
 
 Configuration arrives through `AppConfig`, which reads `--dart-define` values at
 compile time. There are no runtime environment files and no secrets.
@@ -166,11 +171,17 @@ additionally go through `ExecutionException.friendlyLabel`, which turns
 
 ## Presentation
 
-Three-tab `NavigationBar` shell (Home / Progress / Settings) with pushed routes
-for the editor and the exercise details. Widgets are kept dumb: they render a
-controller's state and forward intents. The one exception is `EditorScreen`,
-which owns the `CodeEditingController` and `FocusNode` because they must be
-disposed with the widget.
+`BootstrapApp` gates on auth: signed-in learners get the five-tab `NavigationBar`
+shell (Home / Practice / Progress / Discover / More), guardians get a read-only
+report, and everyone else gets sign-in or guest entry. Pushed routes cover the
+editor, lesson details, achievements, settings and the announcement inbox.
+Widgets are kept dumb: they render a controller's state and forward intents. The
+one exception is `EditorScreen`, which owns the `CodeEditingController` and
+`FocusNode` because they must be disposed with the widget.
+
+On web the app is served from `/app/`, Flutter routes live in the URL fragment,
+and `/app/firebase-messaging-sw.js` handles both FCM background messages and
+app-shell caching. See `docs/WEB_DEPLOYMENT.md`.
 
 Editor internals live in `lib/features/editor/widgets/` and are individually
 unit-tested:

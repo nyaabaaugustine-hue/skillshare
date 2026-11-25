@@ -25,3 +25,130 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // Your own code goes below this line. FlutterFire CLI does not touch it.
+//
+// This worker has two jobs:
+//  1. Receive data-only FCM announcement messages while the page is closed.
+//  2. Keep the Flutter web app shell available offline.
+// It deliberately lives under /app/ so it does not replace the site's root
+// /sw.js worker used by the website's separate direct Web Push system.
+
+const CACHE_NAME = "skillbridge-app-v1";
+const APP_PREFIX = "/app/";
+const APP_SHELL = [
+  "/app/",
+  "/app/index.html",
+  "/app/main.dart.js",
+  "/app/flutter.js",
+  "/app/flutter_bootstrap.js",
+  "/app/manifest.json",
+  "/app/favicon.png",
+  "/app/assets/AssetManifest.bin",
+  "/app/assets/AssetManifest.bin.json",
+  "/app/assets/FontManifest.json",
+];
+const NEVER_CACHE = ["firebase-messaging-sw.js", "flutter_service_worker.js"];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(CACHE_NAME)
+      .then((cache) =>
+        Promise.all(
+          APP_SHELL.map((url) => cache.add(url).catch(() => undefined)),
+        ),
+      )
+      .then(() => self.skipWaiting()),
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter(
+            (key) => key.startsWith("skillbridge-app-") && key !== CACHE_NAME,
+          )
+          .map((key) => caches.delete(key)),
+      );
+      await self.clients.claim();
+    })(),
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const request = event.request;
+  if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin || !url.pathname.startsWith(APP_PREFIX)) {
+    return;
+  }
+  if (NEVER_CACHE.some((name) => url.pathname.endsWith("/" + name))) return;
+
+  if (request.mode === "navigate") {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+        try {
+          const response = await fetch(request);
+          if (response.ok) await cache.put("/app/index.html", response.clone());
+          return response;
+        } catch {
+          return (
+            (await cache.match(request)) ||
+            (await cache.match("/app/index.html")) ||
+            Response.error()
+          );
+        }
+      })(),
+    );
+    return;
+  }
+
+  event.respondWith(
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(request);
+      const update = fetch(request)
+        .then(async (response) => {
+          if (response.ok) await cache.put(request, response.clone());
+          return response;
+        })
+        .catch(() => undefined);
+      if (cached) {
+        // Stale-while-revalidate: instant offline reads, updated on the next visit.
+        event.waitUntil(update);
+        return cached;
+      }
+      return (await update) || Response.error();
+    })(),
+  );
+});
+
+// Firebase's web SDK only shows notifications for messages that include a
+// `notification` block. Our announcements are data-only, so show them here.
+messaging.onBackgroundMessage((payload) => {
+  const data = (payload && payload.data) || {};
+  if (data.type !== "announcement") return undefined;
+
+  const id = String(data.announcementId || "latest");
+  const link = "/app/index.html#/announcements/" + encodeURIComponent(id);
+  const message = {
+    ...payload,
+    fcmOptions: { ...(payload.fcmOptions || {}), link },
+  };
+
+  return self.registration.showNotification(
+    data.title || "SkillBridge Academy",
+    {
+      body: data.body || "You have a new announcement.",
+      icon: "/app/icons/Icon-192.png",
+      badge: "/app/icons/Icon-192.png",
+      tag: "announcement-" + id,
+      // The Firebase SDK recognises this key and handles focus/navigation.
+      data: { FCM_MSG: message },
+    },
+  );
+});

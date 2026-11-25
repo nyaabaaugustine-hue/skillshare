@@ -4,6 +4,33 @@ This is the honest list. Anything not mentioned here as "verified" has **not**
 been verified. If a limitation below stops being true, delete it — do not leave
 stale caveats behind.
 
+## Current status (2026-11-25)
+
+The numbered items below were written during the early scaffold and some are now
+out of date. The corrections in this section take precedence:
+
+* The Flutter suite is **296 tests**, all passing. The Next.js backend has
+  **42 tests**, passes `tsc --noEmit`, lint (0 errors, 2 warnings) and
+  `next build`.
+* Sign-in, shared accounts and Neon Auth sessions now exist. The app is no
+  longer a guest-only scaffold.
+* The learner shell has five tabs: Home, Practice, Progress, Discover and More.
+  There is a guardian read-only home, an announcements inbox and pushed
+  announcements.
+* The website serves the Flutter app from `/app/`. Web builds **must** use
+  `flutter build web --release --base-href=/app/`; a default `/` base href puts
+  the assets at the wrong URLs. See `docs/WEB_DEPLOYMENT.md`.
+* The web app now has a scoped service worker at `/app/firebase-messaging-sw.js`
+  that caches the app shell and handles data-only FCM announcements. Connected
+  Chrome confirmed registration, activation and a populated cache; a true
+  offline reload and a real push have not been exercised.
+* The Android APK has been rebuilt as a 142.1 MB debug build. It still has
+  **zero** hardware evidence: on-device Python, FCM delivery and notification
+  taps are unverified. Release signing, `--split-per-abi` and iOS remain open.
+* The website's root `/sw.js` belongs to a separate direct Web Push system;
+  it is not the announcement FCM worker.
+* 13 masked values in `.env.vercel-complete` remain placeholders.
+
 ## Status of every claim in this repo
 
 | Claim | Verified how | Confidence |
@@ -19,13 +46,13 @@ stale caveats behind.
 | The UI works end to end | 10 tests in `test/widget_test.dart`, real SQLite behind a fake runtime | Medium — headless `flutter_test` only |
 | The editor and a real interpreter meet | `test/editor_real_runtime_test.dart` drives the real editor, `EditorController` and `harness_cli.py` against host CPython 3.14.8 | High — but the **desktop** runtime only (see limitation 4) |
 | The app runs end to end on a desktop | `flutter build windows --debug` → `skillbridge_python_lab.exe` launched and rendered the seeded home screen (screenshot taken); the harness executes from the same working directory it uses | High that it *runs*; the UI is driven by hand, not by a script |
-| The whole suite is green | `flutter test` → 155 tests, all passing | High, in this environment only |
+| The whole suite is green | `flutter test` → 296 tests, all passing; backend `npm test` → 42 tests | High, in this environment only |
 | The lesson flow and inline code chips work | `test/lesson_screen_test.dart` (21 tests): step advance/back, progress bar, single CONTINUE, finish fires exactly once, empty lesson leaves rather than stalling, backtick parsing incl. an unmatched trailing tick, chip semantics label, lesson JSON round-trip | High — headless `flutter_test` only |
 | The lesson hands off to the editor | `test/widget_test.dart` and `test/editor_real_runtime_test.dart` both drive Home → details → lesson → editor before asserting on the editor | High — headless only |
 | The Windows desktop build needs no admin | Plugin links are pre-created as junctions by `tool/link_windows_plugins.ps1`, which exploits Flutter's "skip existing link" branch; Developer Mode is **off** here | High — verified by building on this machine |
 | The Android toolchain is correctly installed | `flutter doctor` reports no issues; SDK 36, build-tools 36.0.0, NDK 28.2.13676358, CMake 3.22.1 all present | High |
 | The Python app packages for Android | `dart run serious_python:main package python_app -p Android` succeeds and stages `build/python-app/` | High |
-| The app builds an APK | `flutter build apk --debug` → `app-debug.apk`, 209 MB, contents inspected with `aapt2` and by unzipping: `libpython3.14.so`, `libdart_bridge.so`, `stdlib.zip`, `app.zip` all present | High that it *builds*; **zero** evidence it *runs* |
+| The app builds an APK | `flutter build apk --debug` → `app-debug.apk`, 142.1 MB, contents inspected with `aapt2` and by unzipping: `libpython3.14.so`, `libdart_bridge.so`, `stdlib.zip`, `app.zip` all present | High that it *builds*; **zero** evidence it *runs* |
 | The APK runs on a real phone | **No** | None — no device or emulator |
 | The embedded Python runtime works on device | **No** | None — never executed on hardware |
 | The web build compiles and boots | `flutter build web --release` → 40 MB, served and screenshotted with SQLite running through `sqflite_common_ffi_web` | High that it *runs* |
@@ -67,24 +94,20 @@ stale caveats behind.
    takes to launch on a low-end Android phone is unknown and matters a lot for
    the target audience.
 
-6. **The web build runs Python through Pyodide, but the app is not offline.**
-   `web/pyodide_worker.js` loads Pyodide and executes `web/skillbridge_exec.py`
-   (a byte-identical copy of the native executor, enforced by
-   `test/web_executor_sync_test.dart`), so the browser really runs the
-   learner's code, and the distribution is vendored at `web/pyodide/` rather
-   than fetched from a CDN. What is still missing is a service worker: Flutter
-   3.47 generates a `flutter_service_worker.js` whose entire body unregisters
-   itself, and `--pwa-strategy` no longer exists, so **nothing caches the app
-   shell**. The manifest makes the app installable and the Pyodide dependency
-   no longer leaves the origin, but opening the installed app with no network
-   fails with a normal browser offline error, and the editor is unreachable.
-   Closing this needs a hand-written service worker (cache-first for
-   same-origin assets, versioned cache name, network-first navigations) shipped
-   over `flutter_service_worker.js` — deliberately not done blind, because a
-   bad worker can serve a stale or broken shell to every learner. Pyodide also
-   has no threads, so the watchdog half of the time limit is inert there and
-   only the Python-side output caps apply. `FakePythonRuntime` is used by
-   widget tests only.
+6. **The web build runs Python through Pyodide; offline is implemented but
+   not device-verified.** `web/pyodide_worker.js` loads Pyodide and executes
+   `web/skillbridge_exec.py` (a byte-identical copy of the native executor,
+   enforced by `test/web_executor_sync_test.dart`), so the browser really runs
+   the learner's code, and the distribution is vendored at `web/pyodide/`
+   rather than fetched from a CDN. Flutter 3.47's generated
+   `flutter_service_worker.js` only unregisters itself, so the app now ships a
+   hand-written worker at `/app/firebase-messaging-sw.js` with a versioned
+   cache, network-first navigations and stale-while-revalidate assets. Chrome
+   confirmed registration, activation and a populated app-shell cache, but a
+   true offline reload after closing the browser has **not** been exercised.
+   Pyodide also has no threads, so the watchdog half of the time limit is inert
+   there and only the Python-side output caps apply. `FakePythonRuntime` is
+   used by widget tests only.
 
 ## Editor
 
@@ -127,18 +150,18 @@ stale caveats behind.
 
 ## LMS and rewards
 
-17. **There is no LMS API.** `MockLmsClient` is authoritative;
-    `HttpLmsClient` implements a *proposed* contract that has never received a
-    response. `docs/LMS_INTEGRATION.md` lists seven open questions that can
-    each change the client.
-18. **`HttpLmsClient` has no tests**, deliberately: writing them would mean
-    inventing an API and then verifying the client against our own invention.
-19. **No `AuthTokenProvider` implementation ships.** Only the interface and a
-    dev-only `StaticTokenProvider` exist. There is no sign-in flow, and
-    therefore no real session-expiry handling beyond what the mock can prove.
-20. **Achievements are a single screen reading server values.** There is no
-    local award logic — which is the point — but it also means the screen is
-    thin until the LMS exists.
+17. **The LMS surface is partial.** Real backend endpoints exist for progress,
+    awards, leaderboard, reports and enrolment, but lesson content is still
+    seeded client-side and `HttpLmsClient` does not parse a `lesson` field.
+    `docs/LMS_INTEGRATION.md` still lists open contract questions.
+18. **The HTTP adapters are not covered end to end.** Local storage, sync and
+    controllers are tested with fakes; not every Flutter → backend call has a
+    browser/device-level test.
+19. **Auth exists, but expiry UX is not device-verified.** Neon Auth sign-in and
+    shared sessions ship in `CloudAuth`; token refresh and failure handling need
+    a real-device pass.
+20. **Achievements read server values.** There is no local award logic — which
+    is the point — but the screen is thin until more content is authored.
 
 ## Android / release
 
@@ -149,10 +172,11 @@ stale caveats behind.
     launch takes, or whether the loopback server answers. Every claim about
     on-device execution is untested. This is the single largest gap in the
     project.
-22. **The debug APK is ~209 MB.** Three ABIs, unstripped debug symbols, and the
-    debug-only `libVkLayer_khronos_validation.so` (14.5 MB per ABI). Release
-    builds with `--split-per-abi` will be far smaller, but no size has been
-    measured, and download size is a first-order constraint for the target
+22. **The debug APK is still large (142.1 MB at the last measurement).** Three
+    ABIs, unstripped debug symbols, and the debug-only
+    `libVkLayer_khronos_validation.so` account for most of it. Release builds
+    with `--split-per-abi` will be far smaller, but no signed release size has
+    been measured, and download size is a first-order constraint for the target
     audience.
 23. **`assets/sitepackages.zip` is empty**, because `python_app/` declares no
     `requirements.txt`. That is fine today and wrong as soon as a dependency is

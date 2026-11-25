@@ -130,7 +130,8 @@ is that the native and embedded runtimes sit behind conditional imports
 
 ```powershell
 dart run sqflite_common_ffi_web:setup   # writes web/sqlite3.wasm, web/sqflite_sw.js
-flutter build web --release            # -> build/web, ~40 MB total
+flutter build web --release --base-href=/app/ `
+  --dart-define=SB_FCM_VAPID_KEY=<public key>   # -> build/web; required for the live site
 ```
 
 `sqflite_common_ffi_web` runs SQLite as wasm in a shared worker and persists to
@@ -236,7 +237,9 @@ ABIs shipped: `arm64-v8a`, `armeabi-v7a`, `x86_64`. `minSdkVersion` 24,
 `targetSdkVersion` 36, package `com.skillbridge.skillbridge_python_lab`, label
 "SkillBridge Python Lab".
 
-The **debug APK is ~209 MB** for three reasons, all avoidable in release:
+The rebuilt debug APK is **142.1 MB** (down from the earlier 209 MB) because the
+packaging step changed. It is still large for three reasons, all avoidable in
+release:
 
 1. Three ABIs. `--split-per-abi` or `flutter build appbundle` fixes this.
 2. Debug builds are unstripped.

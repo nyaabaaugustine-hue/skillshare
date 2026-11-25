@@ -85,13 +85,21 @@ succeeds with `pushEnabled: false` and the message waits in the inbox.
 - Flutter config: `lib/firebase_options.dart`, `android/app/google-services.json`,
   `web/firebase-messaging-sw.js`.
 - Web push needs a VAPID key from Firebase Console → Cloud Messaging → Web
-  configuration. Supply it at build time:
+  configuration. A public default is compiled in; override it at build time:
 
   ```bash
-  flutter build web --dart-define=SB_FCM_VAPID_KEY=<key>
+  flutter build web --release --base-href=/app/ `
+    --dart-define=SB_FCM_VAPID_KEY=<key>
   ```
 
   Without the key, native push still works and web falls back to the inbox.
+- `PushService` registers `/app/firebase-messaging-sw.js` explicitly. Firebase's
+  default root worker does not exist on this site, and the site's root `/sw.js`
+  belongs to a separate direct Web Push system and must not be replaced.
+- The same `/app/` worker caches the Flutter app shell for offline use and shows
+  data-only announcements as notifications. Chrome confirmed registration,
+  activation and cache population, but a real push and a true offline reload
+  have not been exercised.
 - iOS additionally needs an APNs key uploaded to Firebase and the Push
   Notifications capability enabled in Xcode.
 
